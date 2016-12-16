@@ -1,0 +1,229 @@
+---
+title: "Traitement des données de la BDAT"
+author: "Jean-Baptiste Paroissien"
+date: "05/12/2016"
+output: html_notebook
+fig_caption: yes
+highlight: zenburn
+number_sections: yes
+theme: spacelab
+---
+
+```{r setup, include=TRUE,warning=FALSE,echo=FALSE,message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("/media/sf_GIS_ED/Dev/")
+# Chargement des librairies
+library(RODBC)
+library(gdata)
+library(rgrass7)
+library(fields)
+library(geoR)
+library(stringr)
+library(ggplot2)
+library(plotly)
+library(rgdal)
+library(maptools)
+library(RColorBrewer)
+library(classInt)
+library(devtools)
+library(Hmisc)
+library(gridExtra)
+library(mapproj)
+# library(choroplethr)
+# install_github("trulia/choroplethr", "trulia")
+# Définition des principaux répertoires de travail
+repLucas <- "/media/sf_GIS_ED/Dev/Data/Lucas/"
+repCLC <- "/media/sf_GIS_ED/Dev/Data/CLC/"
+repBase <- "/media/sf_GIS_ED/Dev/Data/Base/"
+repagreste <- "/media/sf_GIS_ED/Dev/Data/Vegetation_Occup/Agreste/Disar/"
+# Mise en place de la connexion ODBC
+loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
+
+# Fonction très pratique pour remplacer une suite de charact?res par une autre
+gsub2 <- function(pattern, replacement, x, ...) {
+  for(i in 1:length(pattern))
+    x <- gsub(pattern[i], replacement[i], x, ...)
+  x
+}
+```
+
+```{r, tidy=FALSE,eval=TRUE}
+Sys.Date()
+sessionInfo()
+```
+
+# Objectifs
+
+Ce fichier de suivi a pour but de centraliser l'ensemble des analyses temporelle d'une variable pédologique de la BDAT. Ce travail est organisé de la façon suivante :
+
+- Analyse des histogrammes de fréquence et tests statistiques pour chacune des périodes de temps analysées,
+- Représentation cartographique par canton
+- Analyse des facteurs explicatifs 
+
+# Analyse de l'évolution temporelle
+
+
+
+## Fréquences cumulées
+
+Scripts pour représenter les fréquences cumulées pour une série de période donnée
+Voir également http://elcep.legtux.org/?cat=2 pour une autre représentation graphique
+
+```{r,highlight=TRUE,eval=FALSE}
+period <- c("9094","9599","0004","0509")
+variable <- "corgox_med"
+xlabel="Carbone organique (g/kg)"
+ylabel="Fréquence"
+dep <- c("17,16,86,79") # Voir pour la sélection de plusieurs département.
+reg <- "54" #pour région Poitou Charentes 
+
+cpt <- 0
+for(i in period){
+  cpt <- cpt + 1
+  
+  tableBDAT <- sqlQuery(loc,paste("select ",variable,"
+                    from bdat.bdat_canton_",i," as s1
+                    inner join canton as cant on cant.code_canton=s1.code_canton                    
+                    where code_reg like '",reg,"'",sep=""))
+  # Selection des cantons avec des données
+  tableBDAT <- tableBDAT[!is.na(tableBDAT),]  
+  
+  x <- sort(tableBDAT)
+  q <- ppoints(length(tableBDAT))
+  
+  # Configuration du graphique
+  nperiod <- length(period)
+  colors <- cm.colors(nperiod)  
+  linetype <- c(1:nperiod)
+  plotchar <- seq(18,18+nperiod,1)
+  
+  # Fréquence cumulée
+  if(cpt==1){
+    plot(q~x, col=colors[cpt],type='l',xlab=xlabel,ylab=ylabel,lwd=3)
+    }else{
+      lines(x,q, pch = plotchar[cpt], type = "l", col=colors[cpt],lty=linetype[cpt],lwd=3)
+    }
+  # Boxplot ?
+}
+```
+
+## Cartographie
+
+Dans cette section, 
+
+```{r,highlight=TRUE,eval=FALSE}
+
+##Variables##
+period <- c("9094","9599","0004","0509")
+variable <- "corgox_med"
+xlabel="Carbone organique (g/kg)"
+ylabel="Fréquence"
+dep <- c("17,16,86,79") # Voir pour la sélection de plusieurs département.
+reg <- "54" #pour région Poitou Charentes 
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'"
+nclasse=5
+
+####
+
+# Jointure vers le fichier postgis (public.canton)
+cpt <- 0
+for(i in period){
+  cpt <- cpt + 1
+  variableBDAT <- paste(variable,i,sep="")
+  print(variableBDAT)
+
+  sqlQuery(loc,paste("alter table canton
+                     drop column if exists ",variableBDAT,sep=""))
+  
+  sqlQuery(loc,paste("alter table canton
+                      add column ",variableBDAT," numeric;
+                      update public.canton
+                      SET ",variableBDAT," = ",variable," from(
+                      select ",variable," ,code_canton
+                      from bdat.bdat_canton_",i,") as s1
+                      where canton.code_canton=s1.code_canton",sep=""))
+}
+  
+# Lecture du postgis
+ogrListLayers(dsn)
+
+mapcanton <- readOGR(dsn = dsn, "canton")
+
+# Sélection de la zone d'étude
+mapcanton <- mapcanton[mapcanton@data$code_reg==reg,]
+
+# Classement
+classe_valeur <- classIntervals(mapcanton@data[,variableBDAT],n=nclasse,style="quantile",digits=2,na.rm=TRUE)[[2]]
+plot.heat(mapcanton,z=variableBDAT,breaks=classe_valeur)
+
+}
+
+
+# Représentation cartographique
+
+cpt=0
+p <- list()
+for(i in period){
+  cpt <- cpt + 1
+  variableBDAT <- paste(variable,i,sep="")
+  print(variableBDAT)
+
+  # ggplot2
+  gpclibPermit()
+  carto <- fortify(mapcanton, region="id_geofla")
+
+  # Jointure et changement de nom
+  carto <- merge(carto, mapcanton@data[,c("id_geofla",variableBDAT)], by.x="id", by.y="id_geofla")
+  colnames(carto)[8] <- "fill"
+  
+  if(cpt==1){# Classement (voir pour avoir un même code couleur pour les 4 cartes)
+  classe_valeur <- classIntervals(carto[,"fill"],n=nclasse,style="quantile",digits=2,na.rm=TRUE)[[2]]
+  }else{}
+
+  # Création de la carte
+  p[[i]] <- ggplot(carto, aes(x=long, y=lat)) +
+            geom_polygon(data=carto, aes(group=group, fill=fill)) +
+            geom_path(data=carto, aes(x=long,y=lat,group=group),color="grey30")+
+            #scale_fill_distiller(palette = "Greens")+
+            scale_fill_distiller(type="seq",name="Teneur en C", palette = "YlGnBu", breaks = classe_valeur)+
+            guides(fill = guide_legend(reverse = TRUE))+
+            #theme_bw()+
+            coord_equal()+
+            labs(title=i)
+}
+
+tt <- do.call(grid.arrange,p)
+ggsave(tt, file = "map1.pdf", width = 16, height = 16)
+
+```
+
+# Test
+
+# Analyse des facteurs explicatifs
+
+```{r,highlight=TRUE,eval=FALSE}
+
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

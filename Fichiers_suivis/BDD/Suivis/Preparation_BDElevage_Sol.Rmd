@@ -1,0 +1,404 @@
+---
+title: "BD Elevage-sol"
+author: "Jean-Baptiste Paroissien"
+date: "26/10/2016"
+output: html_notebook
+fig_caption: yes
+highlight: zenburn
+number_sections: yes
+theme: spacelab
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("/media/sf_GIS_ED/Dev/")
+# Chargement des librairies
+library(RODBC)
+library(gdata)
+library(rgrass7)
+library(fields)
+library(geoR)
+library(stringr)
+
+# Définition des principaux répertoires de travail
+repLucas <- "/media/sf_GIS_ED/Dev/Data/Lucas/"
+repCLC <- "/media/sf_GIS_ED/Dev/Data/CLC/"
+repBDAT <- "/media/sf_GIS_ED/Dev/Data/Sol/bdat/"
+repBase <- "/media/sf_GIS_ED/Dev/Data/Base/"
+repagreste <- "/media/sf_GIS_ED/Dev/Data/Vegetation_Occup/Agreste/Disar/"
+# Mise en place de la connexion ODBC
+loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
+
+# Fonction très pratique pour remplacer une suite de charact?res par une autre
+gsub2 <- function(pattern, replacement, x, ...) {
+  for(i in 1:length(pattern))
+    x <- gsub(pattern[i], replacement[i], x, ...)
+  x
+}
+```
+
+# Objectifs
+
+L'objectif de ce travail est de centraliser dans un même fichier la création et la description d'une base de données de travail pour étudier l'impact de l'élevage sur la qualité des sols. Cette base contient trois types de données en lien avec les données pédologiques, les données associées à l'occupation du sol et enfin les données liées à l'élevage. Le document décrit dans un premier temps l'architecture choisie et présente les scripts et la description des données enregistrées dans la base pour les trois types de données. 
+
+# Le type d'architecture
+
+L'ensemble des données est stocké dans une base de données type postgresql/postgis. Le serveur de la base est en local et des conversions seront réalisées régulièrement vers une base SQLite/Spatialite pour faciliter le partage des données. SQLite diffère de la plupart des systèmes de gestion de base de données par la gestion d'un fichier de base directement sur le disque dur. A la différence de postgresql/postgis, il ne nécessit pas la création d'un serveur, ce qui facilite les échanges. Plus d'infos, [ici](http://www.developpez.com/actu/94614/Un-developpeur-evoque-cinq-raisons-pour-vous-faire-utiliser-SQLite-en-2016-que-pensez-vous-de-ses-arguments/).
+
+## Description de l'arborescence de travail
+
+## Description de la base de données
+
+
+## Création de la base
+
+La création de la base postgresql/postgis est réalisée selon la procédure suivante :
+
+```{r, engine='bash',highlight=TRUE,eval=FALSE}
+sudo -i -u postgres
+postgres=# CREATE USER jb;
+postgres-# ALTER ROLE jb WITH CREATEDB;
+postgres=# CREATE DATABASE SOL_ELEVAGE OWNER jb;
+postgres-# ALTER USER jb WITH ENCRYPTED PASSWORD '******';
+postgres=# CREATE DATABASE sol_elevage OWNER jb;
+--Installation de l'extension postgis--
+-- Enable PostGIS (includes raster)
+CREATE EXTENSION postgis;
+-- Enable Topology
+CREATE EXTENSION postgis_topology;
+-- Enable PostGIS Advanced 3D 
+-- and other geoprocessing algorithms
+-- sfcgal not available with all distributions
+CREATE EXTENSION postgis_sfcgal;
+-- fuzzy matching needed for Tiger
+CREATE EXTENSION fuzzystrmatch;
+-- rule based standardizer
+CREATE EXTENSION address_standardizer;
+-- example rule data set
+CREATE EXTENSION address_standardizer_data_us;
+-- Enable US Tiger Geocoder
+CREATE EXTENSION postgis_tiger_geocoder;
+CREATE EXTENSION postgis_sfcgal;
+```    
+
+
+    
+Configuration du fichier `\etc\odbc.ini` pour se connecter à la base avec RODBC.
+
+```{r, engine='bash',highlight=TRUE,eval=FALSE}
+[ODBC]
+InstallDir = /usr/lib
+
+[solelevage]
+Driver = /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so
+Database = sol_elevage
+Servername = localhost
+Username = jb	
+Password = *******
+Port=5432
+Protocol = 8.1
+ReadOnly = 0
+```
+
+# Intégration des données de travail
+
+| Catégorie                             | Type de données                     | Source                         | Contacts                                     |
+|---------------------------------------|-------------------------------------|--------------------------------|----------------------------------------------|
+| Données sols                          | Raster et ShapeFiles (L93)          | InfoSol                        | infosol@inra.fr                              |
+| Données d'occupation du sol           | .xls, raster (L93)                  | RA, Corine Land Cover          | AGRESTE + christophe.perrot@idele.fr         |
+| Données MAFOR                         | ShapeFiles (L93)                    | Interne IDELE                  | chritophe.perrot@idele.fr                    |
+| Données administratives               | ShapeFiles (L93)                    | IGN + Agreste                  |                                              |
+
+## Caractéristiques techniques
+
+```{r, tidy=FALSE,eval=TRUE}
+Sys.Date()
+sessionInfo()
+```
+
+## Les données de bases
+
+Les données dîtes de "bases" correspondent aux contours des entités administratives utilisées pour agréger certaines variables environnementales. Dans ce travail, les contours des communes, des cantons et des petites régions agricoles sont les principales échelles de travail. Les surfaces de ces échelles sont récupérées de la manière suivante :
+
+- Communes et Canton : La version de 2011 de base de données [Geofla](http://professionnels.ign.fr/geofla) est utilisée. Cette version a été choisie pour être en accord avec les données du dernier recencement agricole (2010)
+- Petite région agricole : Les données associées aux petites régions agricoles proviennent de [l'agreste](http://agreste.agriculture.gouv.fr/IMG/zip/comm-ra-pra2007.zip) et sont jointes aux données Geofla.
+
+```{r, engine='bash',highlight=TRUE,eval=FALSE}
+# Intégration des données communales et cantonnales dans la base
+for(i in c("DEPARTEMENT","CANTON","COMMUNE")){
+  # Téléchargement
+  URL <- paste("https://wxs-telechargement.ign.fr/oikr5jryiph0iwhw36053ptm/telechargement/inspire/GEOFLA_THEME-",i,"_2011_GEOFLA_1-1_SHP_LAMB93_FR-ED111/file/GEOFLA_1-1_SHP_LAMB93_FR-ED111.7z",sep="")
+  system(paste("wget -P ",repBase," ",URL,sep=""))  
+  
+  # Décompression
+  system(paste("7z e ",repBase,"GEOFLA_1-1_SHP_LAMB93_FR-ED111.7z -o",repBase," -y",sep=""))
+  
+  # Intégration dans la BDD (suppression si le vecteur exsite déjà)
+  sqlQuery(loc,paste("drop table if exists public.",tolower(i),sep=""))
+  system(paste("shp2pgsql -s 2154 -c -D -W \"latin1\" -I ",repBase,i,".shp | psql -d sol_elevage -h localhost -U jb",sep=""))
+  
+  # Nettoyage
+  system(paste("rm -d ",repBase,"*",sep=""))
+}
+
+# Construction du code canton pour les jointures avec les données agreste >> "code_canton"
+sqlQuery(loc,"alter table canton
+              add column code_canton varchar(5);
+              UPDATE public.canton
+              SET code_canton = code_dept || code_cant")
+
+```
+
+```{r,highlight=TRUE,eval=FALSE}
+# Intégration des petites régions agricoles
+
+# Téléchargement
+URL_pra <- "http://agreste.agriculture.gouv.fr/IMG/zip/comm-ra-pra2007.zip"
+system(paste("wget -P ",repBase," ",URL_pra,sep=""))  
+
+# Décompression
+system(paste("7z e ",repBase,"comm-ra-pra2007.zip -o",repBase," -y",sep=""))
+
+# Intégration dans la BDD (suppression si le vecteur exsite déjà)
+pra <- read.table(file=paste(repBase,"comm-ra-pra2007.txt",sep=""), header=TRUE,sep='\t',fileEncoding="latin1",quote="Na",fill=TRUE)
+pra <- pra[,1:10]
+
+sqlQuery(loc,paste("drop table if exists public.pra",sep=""))
+sqlSave(loc,pra,tablename="pra")
+
+# Nettoyage
+system(paste("rm -d ",repBase,"*.txt",sep=""))
+
+# Jointure de la table pra vers la table commune (ici, on ajoute le code pra à la couche commune)
+sqlQuery(loc,"alter table commune add column pra text")
+sqlQuery(loc,"update commune
+              set pra = petiterégionagricole from(
+              select pra.petiterégionagricole, pra.codecommune
+              from pra) as s1 where commune.INSEE_com=s1.codecommune")
+```
+# Les données sols
+ 
+| Catégorie                             | Type de données                     | Source                         | Contacts                                     |
+|---------------------------------------|-------------------------------------|--------------------------------|----------------------------------------------|
+| BDAT                                  | ShapeFiles (L93)                    | InfoSol                        | infosol@inra.fr                              |
+| LUCAS                                 | ShapeFiles (L93)                    | JRC                            |                                              |
+| Stock de carbone                      | Raster (L93)                        | Interne IDELE                  | infosol@inra.fr                              |
+| Biomasse microbienne                  | Raster (L93)                        | IGN + Agreste                  | infosol@inra.fr                              |
+
+
+
+
+## BDAT
+
+
+
+
+```{r importBDAT, eval=FALSE}
+period <- c("9094","9599","0004","0509")
+# Selection des fichiers à importer
+ListBDAT <- gsub("\\.txt$","",list.files(repBDAT,pattern="\\.txt$"))
+#ListBDAT <- gsub("\\.txt$","",list.files(repBDAT,pattern="bdat_canton$"))#Voir pour sélectionner uniquement les fichiers bdat_canton
+
+# Pour chaque itération, il faudra faire une jointure pour associer une colonne géographique avec le num_canton (voir la pertinence, finalement, on peut travailler sur les données attributaires et ensuite passer au spatiale une fois le travail d'aanalyse fait)
+for(i in ListBDAT){
+  print(i)
+  # Lecture du fichier
+  txtBDAT <- read.table(paste(repBDAT,i,".txt",sep=""),sep="\t",header=TRUE)
+  txtBDAT[,2] <- as.character(txtBDAT[,2])
+  
+  # Intégration dans la bdd
+  sqlQuery(loc,paste("drop table if exists bdat.",i,sep=""))
+  sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
+}
+```
+
+
+
+
+
+
+
+## Les données LUCAS soil Database
+
+Ici, on présente l'intégration des différentes données lucas.
+Il y a les données de bases lucas topsoil et également d'autres données élaborées en partie construite avec LucasTopsoil.
+
+
+```{r importLucas_topsoil, eval=FALSE}
+# Décompression de l'archive télécharger après une demande ici : http://eusoils.jrc.ec.europa.eu/content/lucas-2009-topsoil-data#tabs-0-description=1&tabs-0-description-2=
+system("unzip Data/Lucas/LUCAS_TOPSOIL_v1.zip -d Data/Lucas/Topsoil/.")
+
+# Conversion vers un fichier csv
+installXLSXsupport()
+Lucasdf <- read.xls(paste(repLucas,"Topsoil/LUCAS_TOPSOIL_v1.xlsx",sep=""),sheet="Sheet1")
+Lucasdf <- Lucasdf[complete.cases(Lucasdf[,c("GPS_LAT","GPS_LONG")]),]
+# Enregistrement dans la base locale
+sqlSave(loc,Lucasdf)
+
+# Conversion en postgis/définition du srid
+sqlQuery(loc,"ALTER TABLE Lucasdf ADD COLUMN geom geometry(Point,4326);
+              UPDATE Lucasdf SET geom = ST_SetSRID(ST_MakePoint(gps_long, gps_lat), 4326);")
+
+# Reprojection en L93
+sqlQuery(loc,"ALTER TABLE Lucasdf
+              ALTER COLUMN geom 
+              TYPE Geometry(Point, 2154) 
+              USING ST_Transform(geom, 2154);")
+ 
+# Sélection spatiale des points Lucas pour la France
+sqlQuery(loc,"CREATE table public.test AS
+              SELECT *
+              FROM Lucasdf
+              WHERE ST_Contains(Lucasdf.the_geom,commune.the_geom")
+
+SELECT "KDhh_survey".* 
+FROM
+public."KDhh_survey",
+public."ur_pilot_survey"
+WHERE
+ST_contains(public."ur_pilot_survey".the_geom, public."KDhh_survey".the_geom);
+
+
+
+system("v.select --overwrite ainput=lucasref_L93 atype=point binput=franceL93 output=lucasref_L93_fr")
+
+# Exportation vers un shapefile
+system("v.out.ogr input=lucasref_L93_fr type=point dsn=/home/jb/Bureau/PrLucas/")
+
+# Exportation vers PostGis
+sqlQuery(databaracoa,"drop table if exists data.lucastopsoil_fr")
+system("shp2pgsql -c -s 2154 /home/jb/Bureau/PrLucas/lucasref_L93_fr.shp data.lucastopsoil_fr| psql -h baracoa.orleans.inra.fr -p 5434 -U jbparoissien jbparoissien")
+
+# Préparation finale
+#Ajout d'une colonne geom pour le système de coodonnées lambert2etendue
+
+# Reprojection de la table en lambert9
+# Ajout des colonnes
+
+sqlQuery(databaracoa,paste("select addgeometrycolumn('data','lucastopsoil_fr', 'the_geom_l2e',27582,'POINT',2)",sep=""))
+sqlQuery(databaracoa,paste("select addgeometrycolumn('data','lucastopsoil_fr', 'the_geom_l93',2154,'POINT',2)",sep=""))
+sqlQuery(databaracoa,paste("update lucastopsoil_fr set the_geom_l93 = geom",sep=""))
+sqlQuery(databaracoa,paste("select DropGeometryColumn('data','lucastopsoil_fr','geom')",sep=""))
+
+# Reprojection
+sqlQuery(databaracoa,paste("update lucastopsoil_fr set the_geom_l2e = st_setsrid(st_transform(st_setsrid(the_geom_l93,2154),27582),27582);",sep=""))
+
+# Pour connaître les coordonnées géographiques
+sqlQuery(databaracoa,"alter table lucastopsoil_fr
+	 add column x_l93 double precision;
+	 alter table lucastopsoil_fr
+	 add column y_l93 double precision;
+	 alter table lucastopsoil_fr
+	 add column x_l2e double precision;
+ 	 alter table lucastopsoil_fr
+	 add column y_l2e double precision;")
+
+
+sqlQuery(databaracoa,"update lucastopsoil_fr set x_l93 = ST_X(ST_SetSRID(the_geom_l93, 2154));
+	 update lucastopsoil_fr set y_l93 = ST_Y(ST_SetSRID(the_geom_l93, 2154));")
+
+sqlQuery(databaracoa,"update lucastopsoil_fr set x_l2e = ST_X(ST_SetSRID(the_geom_l2e, 27582));
+	 update lucastopsoil_fr set y_l2e = ST_Y(ST_SetSRID(the_geom_l2e, 27582));")
+
+
+```
+
+```{r importLucas, eval=FALSE}
+# Décompression des différentes archives vers le réperoire 'Elaborees'
+LucasData <- c("AWC_EU23","BulkDensity_EU23","Clay_EU23","CoarseFragments_EU23","ER100mFinal","ESDB_soil_compaction_pack")
+for(i in LucasData){
+  system(paste("unzip ",repLucas,i,".zip -d ",repLucas,"Elaborees/.",sep=""))
+}
+
+```
+
+# Les données d'occupation du sol
+
+## Corine Land Cover (CLC)
+
+
+Les données CLC ont été téléchargé à cette adresse [http://www.statistiques.developpement-durable.gouv.fr/clc/fichiers/](http://www.statistiques.developpement-durable.gouv.fr/clc/fichiers/)
+Ici, petit texte explicatif 
+
+```{r importCLC,eval=FALSE}
+CLC <- c("CLC90R_FR_RGF_TIF","CLC00R_FR_RGF_TIF","CLC06R_FR_RGF_TIF","CLC12R_FR_RGF_TIF")
+# Décompression des différentes archives téléchargé à cette adresse : 
+for(i in CLC){
+  system(paste("unzip Data/CLC/",i,".zip -d.",sep=""))
+}
+```
+
+## Les données du recensement agricole
+
+Les données du recensement agricole ont été extraites de requêtes lancées sur [Disard](lien vers Disard)
+
+
+Ici, il faudra faire un tableau présentant le nom des tables du RA
+
+| Nom table        | Signification                     | Source                         | Contacts                                     |
+|------------------|-------------------------------------|--------------------------------|----------------------------------------------|
+| S_culture_canton | ShapeFiles (L93)                    | InfoSol                        | infosol@inra.fr                              |
+| Cultures_canton  | ShapeFiles (L93)                    | JRC                            |                                              |
+| Otex_canton      | Raster (L93)                        | Interne IDELE                  | infosol@inra.fr                              |
+| UGB_canton       | Raster (L93)                        | IGN + Agreste                  | infosol@inra.fr                              |
+
+```{r importagreste,eval=TRUE,warning=FALSE,}
+# data.table à voir 
+installXLSXsupport()
+
+# Mettre des NA au lieu de ''
+# Voir le sigle 'S' et modifier les types de champs (char vers double precision)
+# Problème de correspondance entre canton et valeurs numériques, attention,il faut gérer d'abord les problèmes de NA car le as.numeric transforme les blancs en valeurs 1
+
+Liste_fichiers <- gsub("\\.xls$","",list.files(repagreste,pattern="\\.xls$"))
+for(i in Liste_fichiers){
+  # Lecture du fichier
+  xlsfiles <- read.xls(paste(repagreste,i,".xls",sep=""),sheet="Feuille1",header=TRUE,fileEncoding="latin1",sep=",")  
+  
+  # Configuration des types de champs
+  xlsfiles[,-1] <- data.frame(lapply(xlsfiles[,-1], function(v) {
+    as.numeric(as.character(v))}))
+  
+  # Extraction du code canton  
+  toto <- as.character(xlsfiles[[1]])
+  numcanton <- regmatches(toto,gregexpr('[0-9]+.[0-9]+',toto))
+  xlsfiles["Num_canton"] <- as.character(unlist(numcanton))
+  
+  # Extraction du nom du chef lieu (tout ce qu'il y a après le tiret)
+  #regmatches(popo2,gregexpr('^[a-zA-Z]+$',popo2))
+  xlsfiles["nom_chflieu"] <- gsub2(".*- ", "", as.character(unlist(toto)))
+   
+  # Enregistrement dans la base locale
+  sqlQuery(loc,paste("drop table if exists ",i,sep=""))
+  sqlSave(loc,xlsfiles,tablename = i)
+}
+```
+
+## Les données Teruti
+
+En attente du retour de Catherine Mignolet + de Marc Benoît
+
+
+
+
+## Les données NDVI
+
+## La BDNI
+
+Ici, en attente du retour de Christophe Perrot
+
+# Les données climatiques
+
+## Topologie du climat en France
+
+Selon Joly et al., 2010
+
+```{r importClimatL,eval=FALSE}
+# On pourra tester l'intérêt de mettre les rasters en postgis. Surtout en terme de performance
+# Si c'est convaincant (faciliter à visualiser + utilisation dans R + Grass), on pourra peut être utiliser la fonction maison rtopostgis
+```
+
+
+
+
+
