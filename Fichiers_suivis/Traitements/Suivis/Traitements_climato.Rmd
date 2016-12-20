@@ -1,0 +1,118 @@
+---
+title: "Traitement des données du RA"
+author: "Jean-Baptiste Paroissien"
+date: "15/12/2016"
+output: html_notebook
+fig_caption: yes
+highlight: zenburn
+number_sections: yes
+theme: spacelab
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("/media/sf_GIS_ED/Dev/")
+# Chargement des librairies
+library(RODBC);library(gdata);library(rgrass7);library(fields);library(geoR);library(stringr);library(ggplot2);library(plotly);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);
+library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(data.table);library(FactoMineR);library(knitr)
+
+# Définition des principaux répertoires de travail
+masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
+rep_climato <- paste(masterrep,"Data/Climato/Joly2010",sep="") #répertoire des données du travail de Joly et al., 2010
+# Mise en place de la connexion ODBC
+loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
+
+# Fonction très pratique pour remplacer une suite de charactères par une autre
+gsub2 <- function(pattern, replacement, x, ...) {
+  for(i in 1:length(pattern))
+    x <- gsub(pattern[i], replacement[i], x, ...)
+  x
+}
+```
+
+# Objectifs
+
+L'objectif de ce fichier de suivi est de stocker l'ensemble des traitements associés à la préparation des données climatiques, à savoir :
+
+- l'aggrégation des données climatiques par canton
+
+# Calcul de différentes statistiques jointes vers la table public.canton
+
+```{r,highlight=TRUE,eval=FALSE}
+# Calcul de la moyenne par canton
+
+##Paramètres
+variable <- c("TTEMP_AN","JFROIDS_AN","JCHAUDS_AN","AMPLI_T_JUIL_JANV","STD_TEMP_JANV","STD_TEMP_JUIL","HPLUIE_AN","PLUIE_ECART_JANV","PLUIE_ECART_JUIL","JPLUIE_JANV","JPLUIE_JUIL","STD_PLUIE_JANV","STD_PLUIE_JUIL")#,"PLUIE0910_JUIL")# Variables à sélectionner
+#variable <- cbind("TMO","TMN","TMX","TAM","TEH","TEE","PTO","PDH","PDE","PJH","PJE","PEH","PEE","PRA") #Nom du champs de la table brute.
+
+signification <- cbind("Température moyenne annuelle","Jours/an de minimum inférieur à -5°C","Jours/an de maximum supérieur à + 30°C","Amplitude thermique (°C) (juillet-janvier)","Variabilité 1971-2000 en janvier (°C)","Variabilité 1971-2000 en juillet (°C)","Cumul annuel (mm)","Ecart à la moyenne en janvier (mm)","Ecart à la moyenne en juillet (mm)","Jours de précipitation en janvier","Jours de précipitation en juillet","Variabilité 1971-2000 en janvier (mm)","Variabilité 1971-2000 en juillet (mm)")#,"Rapport (sep. + oct.) / juillet")
+
+tableclimat <- "climato.climatjoly"
+
+## Calcul de la moyenne par canton
+cpt <- 0
+for(i in variable){
+  cpt <- cpt + 1
+  print(i)
+
+  #Suppression de la colonne si déjà existante
+  sqlQuery(loc,paste("alter table canton
+                      drop column if exists ",i,sep=""))
+  
+  #Création de la colonne, aggrégation par canton et jointure vers la table canton 
+  print(sqlQuery(loc,paste("alter table canton
+                      add column ",i," numeric;
+                      update public.canton
+                      SET ",i," = s1.",i," from(
+                      select AVG(",i,") as ",i,", (code_dept || code_cant) as num_canton
+                      from ",tableclimat," as climat
+                      inner join commune as c on c.insee_com=climat.dc
+                      group by code_dept || code_cant) as s1
+                      where canton.code_canton=s1.num_canton::text",sep="")))
+  
+  #Ajout d'un commentaire sur la nouvelle colonne crée
+  print(sqlQuery(loc,paste("
+	   COMMENT ON COLUMN canton.",i," IS \'",signification[cpt],"\';",sep="")))
+}
+```
+
+
+
+# Revoir cette partie 
+```{r,highlight=TRUE,eval=FALSE}
+# Calcul de la valeur majoritaire par canton
+
+##Paramètres
+variable <- "TYPO_CLIM"
+signification <- "Type de climat"
+tableclimat <- "climato.climatjoly" # Nom de la table 
+signification <- "Type de climat"
+
+## Calcul de la valeur majoritaire par canton
+cpt <- 0
+for(i in variable){
+  cpt <- cpt + 1
+  print(i)
+
+  #Suppression de la colonne si déjà existante
+  sqlQuery(loc,paste("alter table canton
+                      drop column if exists ",i,sep=""))
+  
+  #Création de la colonne, aggrégation par canton (valeur majoritaire, fonctio mode()) et jointure vers la table canton 
+  sqlQuery(loc,paste("alter table canton
+                      add column ",i," numeric;
+                      update public.canton
+                      SET ",i," = s1.",i," from(
+                      select (code_dept || code_cant) as num_canton, mode() within group (order by ",i,") as ",i,"
+                      from ",tableclimat," as climat
+                      inner join commune as c on c.insee_com=climat.dc
+                      group by code_dept || code_cant) as s1
+                      where canton.code_canton=s1.num_canton::text",sep=""))
+  
+  #Ajout d'un commentaire sur la nouvelle colonne crée
+  print(sqlQuery(loc,paste("
+	   COMMENT ON COLUMN canton.",i," IS \'",signification[cpt],"\';",sep="")))
+}
+
+
+```

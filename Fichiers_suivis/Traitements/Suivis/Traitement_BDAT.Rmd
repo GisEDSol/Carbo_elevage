@@ -1,7 +1,7 @@
 ---
 title: "Traitement des données de la BDAT"
 author: "Jean-Baptiste Paroissien"
-date: "05/12/2016"
+date: "20/12/2016"
 output: html_notebook
 fig_caption: yes
 highlight: zenburn
@@ -13,29 +13,14 @@ theme: spacelab
 knitr::opts_chunk$set(echo = TRUE)
 setwd("/media/sf_GIS_ED/Dev/")
 # Chargement des librairies
-library(RODBC)
-library(gdata)
-library(rgrass7)
-library(fields)
-library(geoR)
-library(stringr)
-library(ggplot2)
-library(plotly)
-library(rgdal)
-library(maptools)
-library(RColorBrewer)
-library(classInt)
-library(devtools)
-library(Hmisc)
-library(gridExtra)
-library(mapproj)
-# library(choroplethr)
-# install_github("trulia/choroplethr", "trulia")
+library(RODBC);library(gdata);library(rgrass7);library(fields);library(geoR);library(stringr);library(ggplot2);library(plotly);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);
+library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(data.table);library(FactoMineR);library(knitr)
+
 # Définition des principaux répertoires de travail
-repLucas <- "/media/sf_GIS_ED/Dev/Data/Lucas/"
-repCLC <- "/media/sf_GIS_ED/Dev/Data/CLC/"
-repBase <- "/media/sf_GIS_ED/Dev/Data/Base/"
-repagreste <- "/media/sf_GIS_ED/Dev/Data/Vegetation_Occup/Agreste/Disar/"
+masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
+
+repagreste <- paste(masterrep,"Data/Vegetation_Occup/Agreste/Disar/",sep="")
+repsortie <- paste(masterrep,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
 # Mise en place de la connexion ODBC
 loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
 
@@ -60,12 +45,64 @@ Ce fichier de suivi a pour but de centraliser l'ensemble des analyses temporelle
 - Représentation cartographique par canton
 - Analyse des facteurs explicatifs 
 
-# Analyse de l'évolution temporelle
 
 
+# Etape 0 : Préparation des données et statistiques
+
+Les données de la BDAT sont ré-organisées pour faciliter les traitements statistiques et la production de graphique. La fonction `melt` est utilisée pour transformer les données d'un format "large" à un format "long".
+
+```{r,highlight=TRUE,eval=FALSE}
+# Paramètres
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" # Configuration de la connexion vers le PostGIS
+varia <- c("corgox_med") # Variable à analyser 
+period <- c("9094","9599","0004","0509")
+mapcanton <- readOGR(dsn = dsn, "canton")
+id <- c("code_canton","code_reg","nom_region") #Nom de l'identifiant
+
+# Boucle pour séparer l'année du nom de la variable étudiée
+cpt <- 0
+for(i in varia){
+  print(i)
+  cpt <- cpt + 1
+  variaperiod <- paste(i,period,sep="")  
+  
+  stats.canton <- mapcanton[,c(id,variaperiod)]
+  # Modification de la structure de la table
+  stats.canton <- melt(data=stats.canton@data,id.vars=id)
+  # Extraction de l'année et renommage des colonnes
+  stats.canton[,"variable"] <- as.character(unlist(regmatches(stats.canton[,"variable"],gregexpr('[0-9]+.[0-9]+',stats.canton[,"variable"]))))
+  colnames(stats.canton)[4:5] <- c("annees",i) #revoir la sélection de ces colonnes
+    
+  if(cpt==1){
+    # Construction de la première table
+    melt.canton <- stats.canton
+  }else{
+    # Ajout à chaque itération de la variable (i)
+    melt.canton <- merge(melt.canton,stats.canton, by.x=c(id,"annees"), by.y=c(id,"annees"),all.x=TRUE,all.y=TRUE)
+  }
+}
+
+# Création finale de la table
+melted.bdat <- melt(data=melt.canton,id.vars=c(id,"annees"))
+melted.bdat$annees <- as.character(melted.bdat$annees)
+
+# Enregistrement dans le schema RA
+tablename <- paste("bdat.","melted_bdat",sep="")
+sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
+sqlSave(loc,melted.bdat,tablename=tablename)
+```
+
+
+# Etape 1 : Analyse des teneurs par période
+
+Cette première étape permettra d’analyser les différences entre chacune des périodes. Les rendus de cette première étape sont les suivants :
+
+- statistiques descriptives et courbes de fréquences cumulées ;
+- boxplot accompagnés de tests de « significacité » des différences entre les périodes (probablement test Wilkcoxon).
 
 ## Fréquences cumulées
 
+Les fréquences cumulées permettent...
 Scripts pour représenter les fréquences cumulées pour une série de période donnée
 Voir également http://elcep.legtux.org/?cat=2 pour une autre représentation graphique
 
@@ -74,8 +111,8 @@ period <- c("9094","9599","0004","0509")
 variable <- "corgox_med"
 xlabel="Carbone organique (g/kg)"
 ylabel="Fréquence"
-dep <- c("17,16,86,79") # Voir pour la sélection de plusieurs département.
-reg <- "54" #pour région Poitou Charentes 
+#dep <- c("17,16,86,79") # Voir pour la sélection de plusieurs département.
+#reg <- "54" #pour région Poitou Charentes 
 
 cpt <- 0
 for(i in period){
@@ -83,8 +120,8 @@ for(i in period){
   
   tableBDAT <- sqlQuery(loc,paste("select ",variable,"
                     from bdat.bdat_canton_",i," as s1
-                    inner join canton as cant on cant.code_canton=s1.code_canton                    
-                    where code_reg like '",reg,"'",sep=""))
+                    inner join canton as cant on cant.code_canton=s1.code_canton",sep=""))
+                    #where code_reg like '",reg,"'",sep=""))
   # Selection des cantons avec des données
   tableBDAT <- tableBDAT[!is.na(tableBDAT),]  
   
@@ -106,6 +143,66 @@ for(i in period){
   # Boxplot ?
 }
 ```
+
+## Statistiques descriptives
+
+### Tableaux
+
+```{r,highlight=TRUE,eval=FALSE}
+# Lecture de la table (revoir la lecture de la table, problème avec le character annees non pris en compte)
+melted.bdat <- sqlQuery(loc,paste("select * from bdat.melted_bdat",sep=""))
+melted.bdat <- melted.bdat[complete.cases(melted.bdat),]
+
+# Résumé des statistiques 
+by(melted.bdat[,c("value","annees")],as.character(melted.bdat[,"annees"]),summary)
+```
+
+### Boxplot
+
+```{r,highlight=TRUE,eval=FALSE}
+varia <- c("corgox_med") # Variable à analyser 
+period <- c("9094","9599","0004","0509")
+
+#melted.RA <- sqlQuery(loc,paste("select * from ra.melted_RA where code_reg similar to '",reg,"'",sep=""))
+melted.bdat <- sqlQuery(loc,paste("select * from bdat.melted_bdat",sep=""))
+melted.bdat <- melted.bdat[complete.cases(melted.bdat),]
+
+cpt <- 0
+for(i in varia){
+  cpt <- cpt + 1
+  melted.RAsth <- melted.bdat[melted.bdat["variable"] == i,]
+  melted.RAsth[,"annees"] <- as.character(melted.RAsth[,"annees"])
+  melted.RAsth[,"code_reg"] <- as.factor(melted.RAsth[,"code_reg"])
+  melted.RAsth[,"nom_region"] <- as.factor(melted.RAsth[,"nom_region"])
+  
+  p <- ggplot(melted.RAsth) +
+            geom_boxplot(aes(x=annees,y=value,col=annees))+
+            #geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
+            scale_x_discrete("Années")+scale_y_continuous("Teneur en carbone (g/kg)")+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+                  text = element_text(size = 12),
+                  axis.title = element_text(face="bold"),
+                  axis.text.x=element_text(size = 11))
+  
+  ggsave(p,file = paste(repsortie,"boxplotbdat.png",sep=""), width = 15, height = 10)  
+  }
+```
+
+
+
+
+```{r,highlight=TRUE,eval=FALSE}
+p <- ggplot(melted.RAsth) +
+            geom_boxplot(aes(x=annees,y=value,col=nom_region))+
+            #geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
+            scale_x_discrete("Années")+scale_y_continuous("Pourcentage")+labs(title=i)+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+                  text = element_text(size = 12),
+                  axis.title = element_text(face="bold"),
+                  axis.text.x=element_text(size = 11))
+```
+
+
 
 ## Cartographie
 

@@ -21,11 +21,14 @@ library(geoR)
 library(stringr)
 
 # Définition des principaux répertoires de travail
-repLucas <- "/media/sf_GIS_ED/Dev/Data/Lucas/"
-repCLC <- "/media/sf_GIS_ED/Dev/Data/CLC/"
-repBDAT <- "/media/sf_GIS_ED/Dev/Data/Sol/bdat/"
-repBase <- "/media/sf_GIS_ED/Dev/Data/Base/"
-repagreste <- "/media/sf_GIS_ED/Dev/Data/Vegetation_Occup/Agreste/Disar/"
+masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
+
+repLucas <- paste(masterrep,"Data/Lucas/",sep="")
+repCLC <- paste(masterrep,"Data/CLC/",sep="")
+repBDAT <- paste(masterrep,"Data/Sol/bdat/",sep="")
+repBase <- paste(masterrep,"Data/Base/",sep="")
+repagreste <- paste(masterrep,"Data/Vegetation_Occup/Agreste/Disar/",sep="")
+
 # Mise en place de la connexion ODBC
 loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
 
@@ -176,6 +179,7 @@ sqlQuery(loc,"update commune
               select pra.petiterégionagricole, pra.codecommune
               from pra) as s1 where commune.INSEE_com=s1.codecommune")
 ```
+
 # Les données sols
  
 | Catégorie                             | Type de données                     | Source                         | Contacts                                     |
@@ -189,9 +193,6 @@ sqlQuery(loc,"update commune
 
 
 ## BDAT
-
-
-
 
 ```{r importBDAT, eval=FALSE}
 period <- c("9094","9599","0004","0509")
@@ -346,11 +347,9 @@ Ici, il faudra faire un tableau présentant le nom des tables du RA
 # data.table à voir 
 installXLSXsupport()
 
-# Mettre des NA au lieu de ''
-# Voir le sigle 'S' et modifier les types de champs (char vers double precision)
-# Problème de correspondance entre canton et valeurs numériques, attention,il faut gérer d'abord les problèmes de NA car le as.numeric transforme les blancs en valeurs 1
+Liste_fichiers <- gsub("\\.xls$","",list.files(repagreste,pattern="\\.xls$"))# Liste des xls présent dans le répertoire de travail (repagreste)
+schema <- "ra" #Nom du schema de stockage des données
 
-Liste_fichiers <- gsub("\\.xls$","",list.files(repagreste,pattern="\\.xls$"))
 for(i in Liste_fichiers){
   # Lecture du fichier
   xlsfiles <- read.xls(paste(repagreste,i,".xls",sep=""),sheet="Feuille1",header=TRUE,fileEncoding="latin1",sep=",")  
@@ -369,33 +368,47 @@ for(i in Liste_fichiers){
   xlsfiles["nom_chflieu"] <- gsub2(".*- ", "", as.character(unlist(toto)))
    
   # Enregistrement dans la base locale
-  sqlQuery(loc,paste("drop table if exists ",i,sep=""))
-  sqlSave(loc,xlsfiles,tablename = i)
+  sqlQuery(loc,paste("drop table if exists ",schema,".",i,sep=""))
+  sqlSave(loc,xlsfiles,tablename = paste(schema,".",i,sep=""))
 }
+
+# Intégration spéciale pour la table UGBTA_canton880010.csv" (issue de http://agreste.agriculture.gouv.fr/IMG/xls/Donnees_principales__canton_departement_.xls)
+tablecsv <- read.csv(paste(repagreste,"UGBTA_canton880010.csv",sep=""),header=TRUE,sep=";",colClasses=c("num_canton"="character"))
+# Configuration des types de champs
+tablecsv[,-1] <- data.frame(lapply(tablecsv[,-1], function(v) {
+    as.numeric(as.character(v))}))
+# Suppression des lignes avec une SAU=0
+tablecsv <- tablecsv[tablecsv$SAU2000>0 & tablecsv$SAU2010>0 & tablecsv$SAU1988>0,]
+
+sqlQuery(loc,paste("drop table if exists ",schema,".UGBTA_canton880010",sep=""))
+sqlSave(loc,tablecsv,tablename = paste(schema,".UGBTA_canton880010",sep=""))
 ```
-
-## Les données Teruti
-
-En attente du retour de Catherine Mignolet + de Marc Benoît
-
-
-
-
-## Les données NDVI
-
-## La BDNI
-
-Ici, en attente du retour de Christophe Perrot
 
 # Les données climatiques
 
 ## Topologie du climat en France
 
-Selon Joly et al., 2010
-
 ```{r importClimatL,eval=FALSE}
-# On pourra tester l'intérêt de mettre les rasters en postgis. Surtout en terme de performance
-# Si c'est convaincant (faciliter à visualiser + utilisation dans R + Grass), on pourra peut être utiliser la fonction maison rtopostgis
+##Paramètres
+rep_climato <- paste(masterrep,"Data/Climato/Joly2010",sep="")#Répertoire des données climatiques à intégrer
+
+#Lecture de la table
+jolytable <- read.csv(paste(rep_climato,"/tableau_commun.txt",sep=""),sep="\t",header=TRUE,colClasses=c("DC"="character"),na.strings = c("-9999","2999.9"))#Dans la lecture, on spécifie le type de colonne pour DC (text) afin d'assurer les jointures. Les valeurs -9999 sont considérées comme NA. Les valeurs 2999.9 sont a priori des erreurs (valeurs abérantes)
+jolytable$HPLUIE_AN <- as.numeric(as.character(jolytable$HPLUIE_AN))
+
+# Les valeurs 9 et 0 pour la colonne typo_clim sont considérées comme NA
+jolytable$TYPO_CLIM[jolytable$TYPO_CLIM==9 | jolytable$TYPO_CLIM==0] <- NA
+
+#Enregistrement vers la base, schéma climatot
+sqlQuery(loc,"drop table if exists climato.climatjoly")
+sqlSave(loc,jolytable,tablename="climato.climatjoly")
+
+#Ajout d'un commentaire pour décrire la table
+sqlQuery(loc,"COMMENT ON TABLE climato.climatjoly IS 'Table importée à cette adresse : http://cybergeo.revues.org/26894?file=1. Le fichier initial est au format TXT, comporte 36267 lignes (une par commune) et 16 colonnes, soit respectivement, l’identifiant communal INSEE (DC) les 14 variables climatiques traitées et une variable définissant le type climatique où se range la commune. La valeur codant l’absence de données est -9999. Plus infos : http://cybergeo.revues.org/23155 
+L’usage de ces fichiers est strictement limité au domaine des services publics. Toute exploitation de la base climatique, totale ou partielle (cartes, tableaux, etc.), doit être accompagnée de la mention de la source décrite ainsi :
+Source : Base de données climatiques communales 2009. THEMA Université de Franche-Comté, CNRS UMR6049 (F-25000 Besançon) /CESAER INRA UMR1041 (F-21000 Dijon) ; d’après Météo France 1971-2000.';")
+
+
 ```
 
 

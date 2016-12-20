@@ -17,10 +17,10 @@ library(RODBC);library(gdata);library(rgrass7);library(fields);library(geoR);lib
 library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(data.table);library(FactoMineR);library(knitr)
 
 # Définition des principaux répertoires de travail
-repLucas <- "/media/sf_GIS_ED/Dev/Data/Lucas/"
-repCLC <- "/media/sf_GIS_ED/Dev/Data/CLC/"
-repBase <- "/media/sf_GIS_ED/Dev/Data/Base/"
-repagreste <- "/media/sf_GIS_ED/Dev/Data/Vegetation_Occup/Agreste/Disar/"
+masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
+
+repagreste <- paste(masterrep,"Data/Vegetation_Occup/Agreste/Disar/",sep="")
+repsortie <- paste(masterrep,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
 # Mise en place de la connexion ODBC
 loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
 
@@ -42,12 +42,14 @@ gsub2 <- function(pattern, replacement, x, ...) {
 dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'"
 
 # Lecture du postgis
-# ogrListLayers(dsn) # Pour connaître la liste des PostGIS de la BDD
 mapcanton <- readOGR(dsn = dsn, "canton")
 
-p_variable <- "var_sth7910"
-l_variable <- "Evolution de la STH 1979-2010 (%) "
-# ggplot2
+# Paramètres
+p_variable <- "var_sth7910" #variable à spatialiser
+l_variable <- "Evolution de la STH 1979-2010 (%) "#label de la variable
+couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+
+# Lancement des instructions ggplot2
 gpclibPermit()
 carto <- fortify(mapcanton, region="id_geofla")
 
@@ -60,9 +62,12 @@ colnames(carto)[8] <- "fill"
 classe_valeur <- round(classIntervals(carto[,"fill"],n=5,style="quantile",digits=2,na.rm=TRUE)[[2]],0)
 carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
 
-p1 <- ggplot(carto, aes(x=long, y=lat)) +  geom_polygon(data=carto, aes(group=group, fill=fill)) + scale_fill_brewer(palette = "YlOrBr",name=paste(l_variable,sep=""),guide = guide_legend(reverse=TRUE,nrow=1))+theme(legend.position="bottom")#+guides(colour = guide_legend(nrow = 1))
+p1 <- ggplot(carto, aes(x=long, y=lat)) +  geom_polygon(data=carto, aes(group=group, fill=fill)) + 
+  geom_path(data=carto, aes(x=long,y=lat,group=group),color="grey30")+
+  scale_fill_brewer(palette = couleur,name=l_variable,guide = guide_legend(reverse=TRUE,nrow=1))+theme(legend.position="bottom")+
+  scale_x_continuous("", breaks=NULL)+scale_y_continuous("", breaks=NULL)
 
-ggsave(p1, file = paste("map_",p_variable,".png",sep=""), width = 7, height = 7)  
+ggsave(p1, file = paste(repsortie,"map_",p_variable,".png",sep=""), width = 7, height = 7)  
 
 ```
 
