@@ -83,9 +83,6 @@ CREATE EXTENSION address_standardizer_data_us;
 CREATE EXTENSION postgis_tiger_geocoder;
 CREATE EXTENSION postgis_sfcgal;
 ```    
-
-
-    
 Configuration du fichier `\etc\odbc.ini` pour se connecter à la base avec RODBC.
 
 ```{r, engine='bash',highlight=TRUE,eval=FALSE}
@@ -128,16 +125,17 @@ Les données dîtes de "bases" correspondent aux contours des entités administr
 
 ```{r, engine='bash',highlight=TRUE,eval=FALSE}
 # Intégration des données communales et cantonnales dans la base
-for(i in c("DEPARTEMENT","CANTON","COMMUNE")){
+for(i in c("DEPARTEMENTS","CANTON","COMMUNE")){
   # Téléchargement
   URL <- paste("https://wxs-telechargement.ign.fr/oikr5jryiph0iwhw36053ptm/telechargement/inspire/GEOFLA_THEME-",i,"_2011_GEOFLA_1-1_SHP_LAMB93_FR-ED111/file/GEOFLA_1-1_SHP_LAMB93_FR-ED111.7z",sep="")
   system(paste("wget -P ",repBase," ",URL,sep=""))  
-  
-  # Décompression
+
+    # Décompression
   system(paste("7z e ",repBase,"GEOFLA_1-1_SHP_LAMB93_FR-ED111.7z -o",repBase," -y",sep=""))
   
   # Intégration dans la BDD (suppression si le vecteur exsite déjà)
   sqlQuery(loc,paste("drop table if exists public.",tolower(i),sep=""))
+  if(i=="DEPARTEMENTS"){i <- "DEPARTEMENT"}else{}
   system(paste("shp2pgsql -s 2154 -c -D -W \"latin1\" -I ",repBase,i,".shp | psql -d sol_elevage -h localhost -U jb",sep=""))
   
   # Nettoyage
@@ -149,7 +147,6 @@ sqlQuery(loc,"alter table canton
               add column code_canton varchar(5);
               UPDATE public.canton
               SET code_canton = code_dept || code_cant")
-
 ```
 
 ```{r,highlight=TRUE,eval=FALSE}

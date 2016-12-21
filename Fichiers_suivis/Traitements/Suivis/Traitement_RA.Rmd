@@ -39,7 +39,7 @@ gsub2 <- function(pattern, replacement, x, ...) {
 
 # Objectifs
 
-L'objectif de ce fichier de suivi est de stocker l'ensemble des traitements associés à la préparation des données du recencement agricole (RA). La préparation des données du RA comprend essentiellement le développement de tables directement exploitables pour de la cartographie ou de l'analyse statistiqfues, à savoir :
+L'objectif de ce fichier est de réaliser l'ensemble des traitements associés à la préparation des données du recencement agricole (RA). La préparation des données du RA comprend essentiellement le développement de tables directement exploitables pour de la cartographie ou de l'analyse statistiqfues, à savoir :
 
 - le calcul de statistiques simples et des jointures vers une table postGIS (public.canton),
 - la préparation d'une table au format large (pour différentes application avec ggplot2.

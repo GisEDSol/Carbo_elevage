@@ -76,9 +76,6 @@ for(i in variable){
 }
 ```
 
-
-
-# Revoir cette partie 
 ```{r,highlight=TRUE,eval=FALSE}
 # Calcul de la valeur majoritaire par canton
 

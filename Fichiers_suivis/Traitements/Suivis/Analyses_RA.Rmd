@@ -1,7 +1,7 @@
 ---
 title: "Traitement des données du RA"
 author: "Jean-Baptiste Paroissien"
-date: "26/10/2016"
+date: "21/12/2016"
 output: html_notebook
 fig_caption: yes
 highlight: zenburn
@@ -18,11 +18,14 @@ library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(
 
 # Définition des principaux répertoires de travail
 masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
-
+repfonctions <- paste(masterrep,"Scripts/master/Fonctions/R/",sep="")
 repagreste <- paste(masterrep,"Data/Vegetation_Occup/Agreste/Disar/",sep="")
 repsortie <- paste(masterrep,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
 # Mise en place de la connexion ODBC
 loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
+
+# Chargement de la fonction cartoperiod
+source(paste(repfonctions,"cartoperiod.R",sep=""))
 
 # Fonction très pratique pour remplacer une suite de charact?res par une autre
 gsub2 <- function(pattern, replacement, x, ...) {
@@ -38,135 +41,45 @@ gsub2 <- function(pattern, replacement, x, ...) {
 
 ### A l'échelle de la france
 ```{r,highlight=TRUE,eval=FALSE}
-# Configuration de la connexion vers le PostGIS
-dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'"
-
-# Lecture du postgis
-mapcanton <- readOGR(dsn = dsn, "canton")
-
-# Paramètres
-p_variable <- "var_sth7910" #variable à spatialiser
-l_variable <- "Evolution de la STH 1979-2010 (%) "#label de la variable
+# Paramètres ###########################
+tablecarto <- "canton" 
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
+variablecarto <- "var_sth7910" #variable à spatialiser
+l_legend <- "Evolution de la STH 1979-2010 (%) "#label de la variable
+nclasse <- 5 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "quantile" #"pretty"#"jenks"
 couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+nomfichier="test"
 
-# Lancement des instructions ggplot2
-gpclibPermit()
-carto <- fortify(mapcanton, region="id_geofla")
-
-# Jointure et changement de nom
-carto <- merge(carto, mapcanton@data[,c("id_geofla",p_variable)], by.x="id", by.y="id_geofla")
-colnames(carto)[8] <- "fill"
-  
-# Classement (pour faciliter l'interprétation, voir pour obtenir une même classe de valeur par période pour les 4 cartes)
-# Extraction de la légende (en horizontal) # Se débrouiller pour partir de 0/Problème dans le classement lorsque l'on part de 1979...certaines valeurs ne sont plus représentées avec les autres années
-classe_valeur <- round(classIntervals(carto[,"fill"],n=5,style="quantile",digits=2,na.rm=TRUE)[[2]],0)
-carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
-
-p1 <- ggplot(carto, aes(x=long, y=lat)) +  geom_polygon(data=carto, aes(group=group, fill=fill)) + 
-  geom_path(data=carto, aes(x=long,y=lat,group=group),color="grey30")+
-  scale_fill_brewer(palette = couleur,name=l_variable,guide = guide_legend(reverse=TRUE,nrow=1))+theme(legend.position="bottom")+
-  scale_x_continuous("", breaks=NULL)+scale_y_continuous("", breaks=NULL)
-
-ggsave(p1, file = paste(repsortie,"map_",p_variable,".png",sep=""), width = 7, height = 7)  
-
+# Lancement
+cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE)
 ```
 
 
 
 ```{r,highlight=TRUE,eval=FALSE}
-# Configuration de la connexion vers le PostGIS
-dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'"
-
-# Sélection de la région d'étude 
-reg <- "54" #54pour région Poitou Charentes 
-
-# Lecture du postgis
-# ogrListLayers(dsn) # Pour connaître la liste des PostGIS de la BDD
-mapcanton <- readOGR(dsn = dsn, "canton")
-
-# Sélection de la zone d'étude
-mapcanton <- mapcanton[mapcanton@data$code_reg==reg,]
-
-# Sélection des variables à cartographier
-
-p_variable <- cbind("p_prairie","p_sth","p_sfp","p_mf","p_c")#Nom des variables élaborées RA calculées et jointes sur le PostGIS canton
-l_variable <- cbind("Pourcentage Prairie","Pourcentage STH/SAU", "Pourcentage SFP/SAU", "Pourcentage MFL/SAU","Pourcentage C/SAU")# Nom des labels associés aux variables à cartographier. Vecteur utilisé pour les titres des cartes
-period <- c("1979","1988","2000","2010") # Années des différents recencements agricoles
-nclasse <- 5
-style_classe <- "quantile"#"pretty"#"jenks" # Nombre de classe pour cartographier les variables
-
-# Fonction pour gérer la légende 
-g_legend<-function(a.gplot){
-  tmp <- ggplot_gtable(ggplot_build(a.gplot))# + theme(legend.position="bottom")
-  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
-  legend <- tmp$grobs[[leg]]
-  return(legend)
-}
+# Paramètres ###########################
+tablecarto <- "canton" 
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
+period <- c("1979","1988","2000","2010") #
+variable <- c("p_prairie","p_sth","p_sfp","p_mf","p_c")#variable(s) à cartographier
+l_legend <- c("Pourcentage Prairie","Pourcentage STH/SAU", "Pourcentage SFP/SAU", "Pourcentage MFL/SAU","Pourcentage C/SAU")# Nom des labels associés aux variables à cartographier. Vecteur utilisé pour les titres des cartes
+#variable <- "p_prairie"
+nclasse <- 5 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "quantile" #"pretty"#"jenks"
+couleur <- "YlGnBu" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
 
 # Boucles pour cartographier chaque variable à chaque période de temps étudiée
 cpt <- 0
-p <- list()
-for(v in p_variable){
+for(v in variable){
   cpt <- cpt + 1
-  print(v)
+  nomfichier <- v
+  l_legendvaria <- l_legend[cpt]
+  variablecarto <- paste(v,period,sep="")
   
-  cpt2 <- 0
-  for(i in period){
-    cpt2 <- cpt2 + 1
-    p_variableRA <- paste(p_variable[cpt],i,sep="")
-    l_variableRA <- l_variable[cpt]
-    print(p_variableRA)
-    
-    # ggplot2
-    gpclibPermit()
-    carto <- fortify(mapcanton, region="id_geofla")
-
-    # Jointure et changement de nom
-    carto <- merge(carto, mapcanton@data[,c("id_geofla",p_variableRA)], by.x="id", by.y="id_geofla")
-    colnames(carto)[8] <- "fill"
-  
-    if(cpt2==1){
-      # Classement (pour faciliter l'interprétation, voir pour obtenir une même classe de valeur par période pour les 4 cartes)
-      # Extraction de la légende (en horizontal) # Se débrouiller pour partir de 0/Problème dans le classement lorsque l'on part de 1979...certaines valeurs ne sont plus représentées avec les autres années
-      classe_valeur <- round(classIntervals(carto[,"fill"],n=nclasse,style=style_classe,digits=2,na.rm=TRUE)[[2]],0)
-      classe_valeur[1] <- 0
-      classe_valeur[nclasse+1] <- 100
-      carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
-      p1 <- ggplot(carto, aes(x=long, y=lat)) +  geom_polygon(data=carto, aes(group=group, fill=fill)) + scale_fill_brewer(palette = "Spectral",name=paste(l_variableRA,sep=""),guide = guide_legend(reverse=FALSE,nrow=1))+theme(legend.position="bottom")#+guides(colour = guide_legend(nrow = 1))
-      plotLegend = g_legend(p1)  
-    }else{
-      carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)
-    }
-
-    # Création de la carte (voir le label de la figure)
-    p[[i]] <- ggplot(carto, aes(x=long, y=lat)) +
-              geom_polygon(data=carto, aes(group=group, fill=fill)) +
-              geom_path(data=carto, aes(x=long,y=lat,group=group),color="grey20")+
-              scale_fill_brewer(palette = "Spectral",name=paste(l_variableRA,sep=""),guide = guide_legend(reverse=FALSE))+
-              guides(fill=FALSE)+        
-              #scale_fill_distiller(type="div",palette = "Spectral",limits = c(classe_valeur[1],classe_valeur[7]),guide="colourbar")+                     #scale_fill_distiller(palette = "Greens")+
-              #scale_fill_distiller(type="div",name=paste(l_variableRA,sep=""), palette = "YlOrBr",breaks = classe_valeur,guide="legend")+
-              #theme_bw()+
-              #theme_minimal()+        
-              #scale_x_continuous("", breaks=NULL)+
-              #scale_y_continuous("", breaks=NULL)+
-              coord_equal()+
-              labs(title=i)
-  }
-  
-  print("Sortie fichier")
-
-  lwidth = sum(plotLegend$width)
-  combinedPlots <- arrangeGrob(p[[1]],p[[2]],p[[3]],p[[4]],nrow=2)
-  
-  tt <- grid.arrange(combinedPlots,plotLegend,nrow=2,heights=c(10, 1))
-  ggsave(tt, file = paste("map_",reg,"_",v,".png",sep=""), width = 10, height = 10)  
+  cartoperiod(dsn,tablecarto,variablecarto=variablecarto,nclasse,style_classe,couleur,l_legend=l_legendvaria,repsortie,nomfichier,dept="37",reg=FALSE)
 }
 ```
-
-
-
-
 
 
 ```{r,highlight=TRUE,eval=FALSE}

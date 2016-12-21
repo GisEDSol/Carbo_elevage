@@ -19,10 +19,17 @@ library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(
 # Définition des principaux répertoires de travail
 masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
 
+repfonctions <- paste(masterrep,"Scripts/master/Fonctions/R/",sep="")
 repagreste <- paste(masterrep,"Data/Vegetation_Occup/Agreste/Disar/",sep="")
 repsortie <- paste(masterrep,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
 # Mise en place de la connexion ODBC
 loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
+
+# Mise en place de la connexion ODBC
+loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
+
+# Chargement de la fonction cartoperiod
+source(paste(repfonctions,"cartoperiod.R",sep=""))
 
 # Fonction très pratique pour remplacer une suite de charact?res par une autre
 gsub2 <- function(pattern, replacement, x, ...) {
@@ -122,6 +129,7 @@ for(i in period){
                     from bdat.bdat_canton_",i," as s1
                     inner join canton as cant on cant.code_canton=s1.code_canton",sep=""))
                     #where code_reg like '",reg,"'",sep=""))
+  
   # Selection des cantons avec des données
   tableBDAT <- tableBDAT[!is.na(tableBDAT),]  
   
@@ -150,13 +158,31 @@ for(i in period){
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Lecture de la table (revoir la lecture de la table, problème avec le character annees non pris en compte)
-melted.bdat <- sqlQuery(loc,paste("select * from bdat.melted_bdat",sep=""))
+melted.bdat <- sqlQuery(loc,paste("select value,annees::text from bdat.melted_bdat",sep=""),as.is=c(FALSE,TRUE))
 melted.bdat <- melted.bdat[complete.cases(melted.bdat),]
 
 # Résumé des statistiques 
-by(melted.bdat[,c("value","annees")],as.character(melted.bdat[,"annees"]),summary)
+#by(melted.bdat[,"value"],melted.bdat[,"annees"],summary)
+summarytable <- tapply(melted.bdat[,"value"], melted.bdat[,"annees"],summary)
+kable(summarytable)
 ```
 
+### Tests statistiques
+
+```{r,highlight=TRUE,eval=FALSE}
+rest <- array(NA, dim = c(25, 2), list(loop=1:25,mod=c("model","pvalue")))
+
+cpt <- 0
+for(i in 1:4){
+	for(a in 1:4){
+		cpt <- cpt+1
+		rest[cpt,"model"] <- paste(names(dfdviactuel[i]),"+",names(dfdviactuel[a]))
+		rest[cpt,"pvalue"] <- wilcox.test(dfdviactuel[,i],dfdviactuel[,a])$p.value
+	}
+}
+
+
+```
 ### Boxplot
 
 ```{r,highlight=TRUE,eval=FALSE}
@@ -164,19 +190,16 @@ varia <- c("corgox_med") # Variable à analyser
 period <- c("9094","9599","0004","0509")
 
 #melted.RA <- sqlQuery(loc,paste("select * from ra.melted_RA where code_reg similar to '",reg,"'",sep=""))
-melted.bdat <- sqlQuery(loc,paste("select * from bdat.melted_bdat",sep=""))
+melted.bdat <- sqlQuery(loc,paste("select value,variable,annees,code_reg,nom_region from bdat.melted_bdat",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE))
 melted.bdat <- melted.bdat[complete.cases(melted.bdat),]
 
 cpt <- 0
 for(i in varia){
   cpt <- cpt + 1
   melted.RAsth <- melted.bdat[melted.bdat["variable"] == i,]
-  melted.RAsth[,"annees"] <- as.character(melted.RAsth[,"annees"])
-  melted.RAsth[,"code_reg"] <- as.factor(melted.RAsth[,"code_reg"])
-  melted.RAsth[,"nom_region"] <- as.factor(melted.RAsth[,"nom_region"])
-  
-  p <- ggplot(melted.RAsth) +
-            geom_boxplot(aes(x=annees,y=value,col=annees))+
+
+    p <- ggplot(melted.RAsth) +
+            geom_boxplot(aes(x=annees,y=value,col=nom_region))+
             #geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
             scale_x_discrete("Années")+scale_y_continuous("Teneur en carbone (g/kg)")+
             theme(plot.title = element_text(size = 14, face = "bold"), 
@@ -187,9 +210,6 @@ for(i in varia){
   ggsave(p,file = paste(repsortie,"boxplotbdat.png",sep=""), width = 15, height = 10)  
   }
 ```
-
-
-
 
 ```{r,highlight=TRUE,eval=FALSE}
 p <- ggplot(melted.RAsth) +
@@ -202,115 +222,133 @@ p <- ggplot(melted.RAsth) +
                   axis.text.x=element_text(size = 11))
 ```
 
-
-
 ## Cartographie
 
-Dans cette section, 
+Dans cette partie, des cartes peuvent être produites selon plusieurs arguments (reste à définir) :
+
+- stratification spatiale (région ou autre entités spatiales),
+- stratification temporelle (groupe de plusieurs années).
 
 ```{r,highlight=TRUE,eval=FALSE}
-
-##Variables##
-period <- c("9094","9599","0004","0509")
+# Paramètres #################
+tablecarto <- "canton" #Nom de la table utilisée pour la cartographie (table postgis)
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" #Paramètre de connexion vers la base de données
+period <- c("9094","9599","0004","0509") #
 variable <- "corgox_med"
-xlabel="Carbone organique (g/kg)"
-ylabel="Fréquence"
-dep <- c("17,16,86,79") # Voir pour la sélection de plusieurs département.
-reg <- "54" #pour région Poitou Charentes 
-dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'"
-nclasse=5
+variablecarto <- paste(variable,period,sep="")#variable à cartographier
+nclasse <- 5 
+style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
+couleur <- "YlGnBu" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
 
-####
-
-# Jointure vers le fichier postgis (public.canton)
-cpt <- 0
-for(i in period){
-  cpt <- cpt + 1
-  variableBDAT <- paste(variable,i,sep="")
-  print(variableBDAT)
-
-  sqlQuery(loc,paste("alter table canton
-                     drop column if exists ",variableBDAT,sep=""))
-  
-  sqlQuery(loc,paste("alter table canton
-                      add column ",variableBDAT," numeric;
-                      update public.canton
-                      SET ",variableBDAT," = ",variable," from(
-                      select ",variable," ,code_canton
-                      from bdat.bdat_canton_",i,") as s1
-                      where canton.code_canton=s1.code_canton",sep=""))
-}
-  
-# Lecture du postgis
-ogrListLayers(dsn)
-
-mapcanton <- readOGR(dsn = dsn, "canton")
-
-# Sélection de la zone d'étude
-mapcanton <- mapcanton[mapcanton@data$code_reg==reg,]
-
-# Classement
-classe_valeur <- classIntervals(mapcanton@data[,variableBDAT],n=nclasse,style="quantile",digits=2,na.rm=TRUE)[[2]]
-plot.heat(mapcanton,z=variableBDAT,breaks=classe_valeur)
-
-}
-
-
-# Représentation cartographique
-
-cpt=0
-p <- list()
-for(i in period){
-  cpt <- cpt + 1
-  variableBDAT <- paste(variable,i,sep="")
-  print(variableBDAT)
-
-  # ggplot2
-  gpclibPermit()
-  carto <- fortify(mapcanton, region="id_geofla")
-
-  # Jointure et changement de nom
-  carto <- merge(carto, mapcanton@data[,c("id_geofla",variableBDAT)], by.x="id", by.y="id_geofla")
-  colnames(carto)[8] <- "fill"
-  
-  if(cpt==1){# Classement (voir pour avoir un même code couleur pour les 4 cartes)
-  classe_valeur <- classIntervals(carto[,"fill"],n=nclasse,style="quantile",digits=2,na.rm=TRUE)[[2]]
-  }else{}
-
-  # Création de la carte
-  p[[i]] <- ggplot(carto, aes(x=long, y=lat)) +
-            geom_polygon(data=carto, aes(group=group, fill=fill)) +
-            geom_path(data=carto, aes(x=long,y=lat,group=group),color="grey30")+
-            #scale_fill_distiller(palette = "Greens")+
-            scale_fill_distiller(type="seq",name="Teneur en C", palette = "YlGnBu", breaks = classe_valeur)+
-            guides(fill = guide_legend(reverse = TRUE))+
-            #theme_bw()+
-            coord_equal()+
-            labs(title=i)
-}
-
-tt <- do.call(grid.arrange,p)
-ggsave(tt, file = "map1.pdf", width = 16, height = 16)
-
+cartoperiod(dsn,tablecarto,period,variable,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE)
 ```
 
-# Test
+  
+# test
 
-# Analyse des facteurs explicatifs
+```{r,highlight=TRUE,eval=FALSE}
+library(shiny)
+library(leaflet)
+
+library(maps)
+mapStates = map("state", fill = TRUE, plot = FALSE)
+
+leaflet(data = mapStates) %>% addTiles() %>%
+  addPolygons(fillColor = topo.colors(10, alpha = NULL), stroke = FALSE)
+
+
+leaflet(data = map) %>% addTiles() %>%
+  addPolygons(fillColor = topo.colors(10, alpha = NULL), stroke = FALSE)
+
+
+
+r_colors <- rgb(t(col2rgb(colors()) / 255))
+names(r_colors) <- colors()
+
+ui <- fluidPage(
+  leafletOutput("mymap"),
+  p())
+
+server <- function(input, output, session) {
+  output$mymap <- renderLeaflet({
+    leaflet() %>%
+    addPolygons(stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5,) %>%
+    addProviderTiles("Test",options = providerTileOptions(noWrap = TRUE))
+    })
+}
+
+shinyApp(ui, server)
+```
 
 ```{r,highlight=TRUE,eval=FALSE}
 
+library("leaflet")
+library("data.table")
+library("sp")
+library("rgdal")
+# library("maptools")
+library("KernSmooth")
+
+inurl <- "https://data.cityofchicago.org/api/views/22s8-eq8h/rows.csv?accessType=DOWNLOAD"
+infile <- "mvthefts.csv"
+
+## LOAD DATA
+## Also, clean up variable names, and convert dates
+if(!file.exists(infile)){
+    download.file(url = inurl, destfile = infile)
+}
+dat <- data.table::fread(infile)
+setnames(dat, tolower(colnames(dat)))
+setnames(dat, gsub(" ", "_", colnames(dat)))
+dat <- dat[!is.na(longitude)]
+dat[ , date := as.IDate(date, "%m/%d/%Y")]
+
+## MAKE CONTOUR LINES
+## Note, bandwidth choice is based on MASS::bandwidth.nrd()
+kde <- bkde2D(dat[ , list(longitude, latitude)],
+              bandwidth=c(.0045, .0068), gridsize = c(100,100))
+CL <- contourLines(kde$x1 , kde$x2 , kde$fhat)
+
+## EXTRACT CONTOUR LINE LEVELS
+LEVS <- as.factor(sapply(CL, `[[`, "level"))
+NLEV <- length(levels(LEVS))
+
+## CONVERT CONTOUR LINES TO POLYGONS
+pgons <- lapply(1:length(CL), function(i)
+    Polygons(list(Polygon(cbind(CL[[i]]$x, CL[[i]]$y))), ID=i))
+spgons = SpatialPolygons(pgons)
+
+## Leaflet map with polygons
+leaflet(spgons) %>% addTiles() %>% 
+    addPolygons(color = heat.colors(NLEV, NULL)[LEVS])
+
+
+## Leaflet map with points and polygons
+## Note, this shows some problems with the KDE, in my opinion...
+## For example there seems to be a hot spot at the intersection of Mayfield and
+## Fillmore, but it's not getting picked up.  Maybe a smaller bw is a good idea?
+
+leaflet(spgons) %>% addTiles() %>%
+    addPolygons(color = heat.colors(NLEV, NULL)[LEVS]) %>%
+    addCircles(lng = dat$longitude, lat = dat$latitude,
+               radius = .5, opacity = .2, col = "blue")
 
 
 
 
+## Leaflet map with polygons, using Spatial Data Frame
+## Initially I thought that the data frame structure was necessary
+## This seems to give the same results, but maybe there are some 
+## advantages to using the data.frame, e.g. for adding more columns
+spgonsdf = SpatialPolygonsDataFrame(Sr = spgons,
+                                    data = data.frame(level = LEVS),
+                                    match.ID = TRUE)
+leaflet() %>% addTiles() %>%
+    addPolygons(data = spgonsdf,
+                color = heat.colors(NLEV, NULL)[spgonsdf@data$level])
 
 ```
-
-
-
-
-
 
 
 
