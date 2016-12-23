@@ -147,6 +147,15 @@ sqlQuery(loc,"alter table canton
               add column code_canton varchar(5);
               UPDATE public.canton
               SET code_canton = code_dept || code_cant")
+
+# Déplacement de la table canton ves le schema dm_vecteurs
+sqlQuery(loc,"alter table public.canton set schema dm_vecteurs;")
+
+# Déplacement de la table département
+sqlQuery(loc,"alter table public.departement set schema dm_vecteurs;")
+
+# Déplacement de la table département
+sqlQuery(loc,"alter table public.commune set schema dm_vecteurs;")
 ```
 
 ```{r,highlight=TRUE,eval=FALSE}
@@ -209,12 +218,6 @@ for(i in ListBDAT){
   sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
 }
 ```
-
-
-
-
-
-
 
 ## Les données LUCAS soil Database
 
@@ -383,6 +386,8 @@ sqlSave(loc,tablecsv,tablename = paste(schema,".UGBTA_canton880010",sep=""))
 
 # Les données climatiques
 
+Rajouter la source des données
+
 ## Topologie du climat en France
 
 ```{r importClimatL,eval=FALSE}
@@ -404,9 +409,44 @@ sqlSave(loc,jolytable,tablename="climato.climatjoly")
 sqlQuery(loc,"COMMENT ON TABLE climato.climatjoly IS 'Table importée à cette adresse : http://cybergeo.revues.org/26894?file=1. Le fichier initial est au format TXT, comporte 36267 lignes (une par commune) et 16 colonnes, soit respectivement, l’identifiant communal INSEE (DC) les 14 variables climatiques traitées et une variable définissant le type climatique où se range la commune. La valeur codant l’absence de données est -9999. Plus infos : http://cybergeo.revues.org/23155 
 L’usage de ces fichiers est strictement limité au domaine des services publics. Toute exploitation de la base climatique, totale ou partielle (cartes, tableaux, etc.), doit être accompagnée de la mention de la source décrite ainsi :
 Source : Base de données climatiques communales 2009. THEMA Université de Franche-Comté, CNRS UMR6049 (F-25000 Besançon) /CESAER INRA UMR1041 (F-21000 Dijon) ; d’après Météo France 1971-2000.';")
+```
 
+# Création d'une vue pour les métadonnées
+
+```{r importClimatL,eval=FALSE}
+CREATE OR REPLACE VIEW metadata AS
+SELECT
+ schema_name,
+ table_name,
+ column_name,
+ comment
+FROM
+(
+         SELECT n.nspname AS schema_name,
+            c.relname AS table_name,
+            a.attname AS column_name,
+            col_description(c.oid, a.attnum::integer) AS comment
+           FROM pg_class c
+      JOIN pg_attribute a ON a.attrelid = c.oid
+   JOIN pg_namespace n ON n.oid = c.relnamespace
+  WHERE NOT n.nspname ~~ 'pg\_%'::text AND NOT n.nspname =
+'information_schema'::name AND NOT a.attisdropped AND a.attnum > 0 AND
+c.relkind = 'r'::"char"
+UNION ALL
+         SELECT n.nspname AS schema_name,
+            c.relname AS table_name,
+            '<table>'::name AS column_name,
+            obj_description(c.oid) AS comment
+           FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+     WHERE NOT n.nspname ~~ 'pg\_%'::text AND NOT n.nspname =
+'information_schema'::name AND c.relkind = 'r'::"char"
+  ORDER BY 1, 2, 3
+) AS ss;
 
 ```
+
+
 
 
 

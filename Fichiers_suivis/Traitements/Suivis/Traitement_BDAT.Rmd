@@ -1,20 +1,23 @@
 ---
 title: "Traitement des données de la BDAT"
 author: "Jean-Baptiste Paroissien"
-date: "20/12/2016"
-output: html_notebook
-fig_caption: yes
-highlight: zenburn
-number_sections: yes
-theme: spacelab
+date: "21/12/2016"
+output:
+  html_notebook:
+    toc: true
+    fig_caption: true
+    highlight: zenburn
+    number_sections: yes
+    theme: spacelab
 ---
 
-```{r setup, include=TRUE,warning=FALSE,echo=FALSE,message=FALSE}
+
+```{r setup, include=TRUE,warning=FALSE,echo=FALSE,message=FALSE,eval=TRUE}
 knitr::opts_chunk$set(echo = TRUE)
 setwd("/media/sf_GIS_ED/Dev/")
 # Chargement des librairies
-library(RODBC);library(gdata);library(rgrass7);library(fields);library(geoR);library(stringr);library(ggplot2);library(plotly);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);
-library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(data.table);library(FactoMineR);library(knitr)
+library(RODBC);library(gdata);library(fields);library(stringr);library(ggplot2);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);
+library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(FactoMineR);library(knitr);library(wesanderson);library(pander);library(GGally)
 
 # Définition des principaux répertoires de travail
 masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
@@ -22,9 +25,6 @@ masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de trava
 repfonctions <- paste(masterrep,"Scripts/master/Fonctions/R/",sep="")
 repagreste <- paste(masterrep,"Data/Vegetation_Occup/Agreste/Disar/",sep="")
 repsortie <- paste(masterrep,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
-# Mise en place de la connexion ODBC
-loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
-
 # Mise en place de la connexion ODBC
 loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
 
@@ -52,19 +52,81 @@ Ce fichier de suivi a pour but de centraliser l'ensemble des analyses temporelle
 - Représentation cartographique par canton
 - Analyse des facteurs explicatifs 
 
+# Etape 0 : Préparation des données et chargement de la table de travail
 
-
-# Etape 0 : Préparation des données et statistiques
+## Préparation des données
 
 Les données de la BDAT sont ré-organisées pour faciliter les traitements statistiques et la production de graphique. La fonction `melt` est utilisée pour transformer les données d'un format "large" à un format "long".
-
+En complément, les évolutions des teneurs pour les différentes périodes analysées sont calculées.
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
 dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" # Configuration de la connexion vers le PostGIS
+table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
 varia <- c("corgox_med") # Variable à analyser 
 period <- c("9094","9599","0004","0509")
-mapcanton <- readOGR(dsn = dsn, "canton")
-id <- c("code_canton","code_reg","nom_region") #Nom de l'identifiant
+mapcanton <- readOGR(dsn = dsn, "dm_vecteurs.canton")
+id <- c("code_canton","code_reg","nom_region","typo_clim") #Nom de l'identifiant
+
+
+cpt <- 0
+for(p in period){
+  cpt <- cpt + 1
+  for(a in  period){
+    if(a==p){next}else{}
+    print(paste(p,"-",a,sep=""))
+    }
+}
+
+# Calcul de l'évolution des teneurs en carbone pour différentes périodes données (en pourcentage)
+
+evolb <- c("9599","9599","9094","9094")
+evola <- c("0004","0509","0509","0004") 
+
+cpt <- 0
+for(a in evola){
+  cpt <- cpt + 1
+  
+  b <- evolb[cpt]
+  
+  var_variable <- paste("var",varia,a,"_",b,sep="")
+
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                      drop column if exists ",var_variable,sep=""))
+  
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                      add column ",var_variable," numeric;
+                      update ",table_dm,"
+                      SET ",var_variable," = ((",table_dm,".",varia,a," - ",table_dm,".",varia,b,")/",table_dm,".",varia,b,")*100",sep=""))
+    
+  # Ajout d'un commentaire sur la nouvelle colonne crée
+  print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Evolution du carbone organique entre ",a," et ",b," (en pourcentage).\';",sep="")))
+}
+	
+# Calcul de l'évolution des teneurs en carbone (différence)
+evolb <- c("9599","9599","9094","9094")
+evola <- c("0004","0509","0509","0004") 
+
+cpt <- 0
+for(a in evola){
+  cpt <- cpt + 1
+  
+  b <- evolb[cpt]
+  
+  var_variable <- paste("diff",varia,a,"_",b,sep="")
+
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                      drop column if exists ",var_variable,sep=""))
+  
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                      add column ",var_variable," numeric;
+                      update ",table_dm,"
+                      SET ",var_variable," = (",table_dm,".",varia,a," - ",table_dm,".",varia,b,")",sep=""))
+    
+  # Ajout d'un commentaire sur la nouvelle colonne crée
+  print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Différence du carbone organique entre ",a," et ",b,".\';",sep="")))
+}
 
 # Boucle pour séparer l'année du nom de la variable étudiée
 cpt <- 0
@@ -78,7 +140,7 @@ for(i in varia){
   stats.canton <- melt(data=stats.canton@data,id.vars=id)
   # Extraction de l'année et renommage des colonnes
   stats.canton[,"variable"] <- as.character(unlist(regmatches(stats.canton[,"variable"],gregexpr('[0-9]+.[0-9]+',stats.canton[,"variable"]))))
-  colnames(stats.canton)[4:5] <- c("annees",i) #revoir la sélection de ces colonnes
+  colnames(stats.canton)[(length(id)+1):(length(id)+2)] <- c("annees",i) #revoir la sélection de ces colonnes
     
   if(cpt==1){
     # Construction de la première table
@@ -92,134 +154,175 @@ for(i in varia){
 # Création finale de la table
 melted.bdat <- melt(data=melt.canton,id.vars=c(id,"annees"))
 melted.bdat$annees <- as.character(melted.bdat$annees)
+melted.bdat$typo_clim <- as.factor(melted.bdat$typo_clim)
 
-# Enregistrement dans le schema RA
-tablename <- paste("bdat.","melted_bdat",sep="")
+# Enregistrement dans le schema dm_traitements
+tablename <- paste("dm_traitements.","melted_bdat",sep="")
 sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
 sqlSave(loc,melted.bdat,tablename=tablename)
 ```
 
 
+
+## Chargement des données et des principaux paramètres d'étude
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+# Chargement des paramètres
+period <- c("9094","9599","0004","0509")
+variable <- "corgox_med"
+xlabel <- "Carbone organique (g/kg)"
+ylabel <- "Fréquence"
+nperiod <- length(period)
+colors <- wes_palette("Zissou",nperiod,type="continuous")
+
+melted.bdat <- sqlQuery(loc,paste("select value,variable,annees,code_reg,nom_region,typo_clim from dm_traitements.melted_bdat",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE))
+dcast.bdat <- sqlQuery(loc,paste("select * from dm_vecteurs.canton",sep=""))
+
+melted.bdat <- melted.bdat[complete.cases(melted.bdat$typo_clim),]
+melted.bdat$annees <- factor(melted.bdat$annees,levels=period)
+```
+
 # Etape 1 : Analyse des teneurs par période
 
-Cette première étape permettra d’analyser les différences entre chacune des périodes. Les rendus de cette première étape sont les suivants :
+Cette première étape permet d'analyser les différences entre chacune des périodes. Les rendus de cette première étape sont les suivants :
 
 - statistiques descriptives et courbes de fréquences cumulées ;
 - boxplot accompagnés de tests de « significacité » des différences entre les périodes (probablement test Wilkcoxon).
 
 ## Fréquences cumulées
 
-Les fréquences cumulées permettent...
-Scripts pour représenter les fréquences cumulées pour une série de période donnée
-Voir également http://elcep.legtux.org/?cat=2 pour une autre représentation graphique
+### France entière et par type de climat
 
-```{r,highlight=TRUE,eval=FALSE}
-period <- c("9094","9599","0004","0509")
-variable <- "corgox_med"
-xlabel="Carbone organique (g/kg)"
-ylabel="Fréquence"
-#dep <- c("17,16,86,79") # Voir pour la sélection de plusieurs département.
-#reg <- "54" #pour région Poitou Charentes 
+La figure ci-dessous présente les courbes de fréquences cumulées pour la france entière. La figure montre un décalage des courbes des périodes 2000-2004 et 2005-2009 vers des valeurs plus faibles. Ces deux périodes se distinguent clairement des périodes de 1990-1994 et 1995-1999 qui sont plus rapprochées. Ces observations mettent en évidence une diminution des teneurs en carbone entre les périodes 1990-1999 et les périodes de 2000-2009. D'après la figure, ce sont les teneurs médianes les plus concernées par cette baisse de teneur.
 
-cpt <- 0
-for(i in period){
-  cpt <- cpt + 1
-  
-  tableBDAT <- sqlQuery(loc,paste("select ",variable,"
-                    from bdat.bdat_canton_",i," as s1
-                    inner join canton as cant on cant.code_canton=s1.code_canton",sep=""))
-                    #where code_reg like '",reg,"'",sep=""))
-  
-  # Selection des cantons avec des données
-  tableBDAT <- tableBDAT[!is.na(tableBDAT),]  
-  
-  x <- sort(tableBDAT)
-  q <- ppoints(length(tableBDAT))
-  
-  # Configuration du graphique
-  nperiod <- length(period)
-  colors <- cm.colors(nperiod)  
-  linetype <- c(1:nperiod)
-  plotchar <- seq(18,18+nperiod,1)
-  
-  # Fréquence cumulée
-  if(cpt==1){
-    plot(q~x, col=colors[cpt],type='l',xlab=xlabel,ylab=ylabel,lwd=3)
-    }else{
-      lines(x,q, pch = plotchar[cpt], type = "l", col=colors[cpt],lty=linetype[cpt],lwd=3)
-    }
-  # Boxplot ?
-}
+[comment]: <> (Voir également http://elcep.legtux.org/?cat=2 pour une autre représentation graphique)
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
+cdf <- ggplot(melted.bdat, aes(x=value))+
+       stat_ecdf(aes(colour=annees))+
+       scale_color_manual(values=colors, 
+                          name="Années")+
+       scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+       theme(plot.title = element_text(size = 14, face = "bold"), 
+             text = element_text(size = 12),
+             axis.title = element_text(face="bold"),
+             axis.text.x=element_text(size = 11))
+cdf
+```
+
+Faire un commentaire par type de climat
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
+cdf <- ggplot(melted.bdat, aes(x=value))+
+       facet_wrap(~typo_clim)+
+       stat_ecdf(aes(colour=annees))+
+       scale_color_manual(values=colors, 
+                          name="Années")+
+       scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+       theme(plot.title = element_text(size = 14, face = "bold"), 
+             text = element_text(size = 12),
+             axis.title = element_text(face="bold"),
+             axis.text.x=element_text(size = 11))
+cdf
 ```
 
 ## Statistiques descriptives
 
 ### Tableaux
 
-```{r,highlight=TRUE,eval=FALSE}
-# Lecture de la table (revoir la lecture de la table, problème avec le character annees non pris en compte)
-melted.bdat <- sqlQuery(loc,paste("select value,annees::text from bdat.melted_bdat",sep=""),as.is=c(FALSE,TRUE))
-melted.bdat <- melted.bdat[complete.cases(melted.bdat),]
+Les statistiques par années sont présentées dans le tableau ci-dessous.
 
+```{r,highlight=TRUE,eval=TRUE, eval=TRUE, message=FALSE, warning=FALSE, highlight=TRUE}
 # Résumé des statistiques 
-#by(melted.bdat[,"value"],melted.bdat[,"annees"],summary)
-summarytable <- tapply(melted.bdat[,"value"], melted.bdat[,"annees"],summary)
-kable(summarytable)
+
+bdatsummary <- apply(melted.bdat["value"],2, function(x) tapply(x, melted.bdat[,"annees"],summary))
+bdatsummary <- lapply(bdatsummary, do.call, what = rbind)
+
+pander(bdatsummary[[1]])
+
 ```
+
+On pourra voir pour faire un tableau par années + par région???Celà permettra d'identifier les régions les plus affectées par les évolutions des teneurs en C.
 
 ### Tests statistiques
 
 ```{r,highlight=TRUE,eval=FALSE}
-rest <- array(NA, dim = c(25, 2), list(loop=1:25,mod=c("model","pvalue")))
-
-cpt <- 0
-for(i in 1:4){
-	for(a in 1:4){
-		cpt <- cpt+1
-		rest[cpt,"model"] <- paste(names(dfdviactuel[i]),"+",names(dfdviactuel[a]))
-		rest[cpt,"pvalue"] <- wilcox.test(dfdviactuel[,i],dfdviactuel[,a])$p.value
-	}
-}
-
-
+pander(pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"]))
 ```
 ### Boxplot
 
-```{r,highlight=TRUE,eval=FALSE}
-varia <- c("corgox_med") # Variable à analyser 
-period <- c("9094","9599","0004","0509")
+Pour les boxplot, présenter les différents niveaux de stratification possibles et revoir l'ordre de présentation des années (revert x??)
+Egalement, faire une cartographie des données climato
 
-#melted.RA <- sqlQuery(loc,paste("select * from ra.melted_RA where code_reg similar to '",reg,"'",sep=""))
-melted.bdat <- sqlQuery(loc,paste("select value,variable,annees,code_reg,nom_region from bdat.melted_bdat",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE))
-melted.bdat <- melted.bdat[complete.cases(melted.bdat),]
+#### France 
+```{r,highlight=TRUE,eval=TRUE}
+p <- ggplot(melted.bdat, aes(x=annees,y=value,col=annees)) + 
+  geom_violin(trim=FALSE)+
+  geom_boxplot(width=0.1, fill="white")+
+  scale_color_manual(values=colors,name="Années")+
+  scale_x_discrete("Années")+scale_y_continuous("Teneur en carbone (g/kg)")+
+  theme(plot.title = element_text(size = 14, face = "bold"), 
+        text = element_text(size = 12),
+        axis.title = element_text(face="bold"),
+        axis.text.x=element_text(size = 11))
+p  
+ggsave(p,file = paste(repsortie,"boxplotbdat.png",sep=""), width = 10, height = 10)  
+```
 
-cpt <- 0
-for(i in varia){
-  cpt <- cpt + 1
-  melted.RAsth <- melted.bdat[melted.bdat["variable"] == i,]
 
-    p <- ggplot(melted.RAsth) +
-            geom_boxplot(aes(x=annees,y=value,col=nom_region))+
-            #geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
+#### Stratification par type de climat
+
+```{r,highlight=TRUE,eval=TRUE}
+p <- ggplot(melted.bdat) +
+            geom_boxplot(aes(x=annees,y=value,col=typo_clim))+
+            #scale_color_manual(name="Années")+
             scale_x_discrete("Années")+scale_y_continuous("Teneur en carbone (g/kg)")+
             theme(plot.title = element_text(size = 14, face = "bold"), 
                   text = element_text(size = 12),
                   axis.title = element_text(face="bold"),
                   axis.text.x=element_text(size = 11))
-  
-  ggsave(p,file = paste(repsortie,"boxplotbdat.png",sep=""), width = 15, height = 10)  
-  }
+p  
+ggsave(p,file = paste(repsortie,"boxplotbdat_typoclim.png",sep=""), width = 15, height = 10)  
 ```
 
-```{r,highlight=TRUE,eval=FALSE}
-p <- ggplot(melted.RAsth) +
-            geom_boxplot(aes(x=annees,y=value,col=nom_region))+
+```{r,highlight=TRUE,eval=TRUE}
+ylim1 <- boxplot.stats(melted.bdat$value)$stats[c(1, 5)]
+
+p <- ggplot(melted.bdat) +
+            geom_boxplot(aes(x=annees,y=value,col=annees),outlier.shape = NA,outlier.size=NA)+
+            facet_wrap(~typo_clim,scales="free")+
+            scale_color_manual(values=colors,name="Années")+
             #geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
-            scale_x_discrete("Années")+scale_y_continuous("Pourcentage")+labs(title=i)+
+            scale_x_discrete("Années")+scale_y_continuous("Teneur en carbone (g/kg)")+
             theme(plot.title = element_text(size = 14, face = "bold"), 
                   text = element_text(size = 12),
                   axis.title = element_text(face="bold"),
-                  axis.text.x=element_text(size = 11))
+                  axis.text.x=element_text(size = 11))+
+            coord_cartesian(ylim = ylim1*1.05)
+p  
+ggsave(p,file = paste(repsortie,"boxplotbdat_typoclim2.png",sep=""), width = 10, height = 10)  
+```
+
+### Graphique de correlation
+```{r,highlight=TRUE,eval=TRUE}
+# Voir les graphiques de "différence" réalisés durant le M1
+# Rajouter les types de climat ou autre niveau de stratification pour voir l'influence de ces régions sur les pertes 
+# Voir également pour rajouter ces données sur une table au format melt
+plot(dcast.bdat$corgox_med9599,dcast.bdat$varcorgox_med0004_9599)
+
+plot(dcast.bdat$corgox_med9599,dcast.bdat$diffcorgox_med0004_9599)
+
+# Calculer les évolutions
+varcorgox_med0004_9599 
+varcorgox_med0509_9599
+varcorgox_med0509_9094
+varcorgox_med0004_9094
+diffcorgox_med0004_9599
+diffcorgox_med0509_9599
+diffcorgox_med0509_9094
+diffcorgox_med0004_9094
+
+test <- dcast.bdat[,c("corgox_med9094","corgox_med9599","corgox_med0004","corgox_med0509")]
+ggpairs(test)
 ```
 
 ## Cartographie
@@ -231,134 +334,16 @@ Dans cette partie, des cartes peuvent être produites selon plusieurs arguments 
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres #################
-tablecarto <- "canton" #Nom de la table utilisée pour la cartographie (table postgis)
+tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
 dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" #Paramètre de connexion vers la base de données
 period <- c("9094","9599","0004","0509") #
 variable <- "corgox_med"
 variablecarto <- paste(variable,period,sep="")#variable à cartographier
 nclasse <- 5 
 style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
-couleur <- "YlGnBu" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+couleur <- "Spectral" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
 l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
+nomfichier <- "corgoxmed_period"
 
-cartoperiod(dsn,tablecarto,period,variable,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE)
+cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE)
 ```
-
-  
-# test
-
-```{r,highlight=TRUE,eval=FALSE}
-library(shiny)
-library(leaflet)
-
-library(maps)
-mapStates = map("state", fill = TRUE, plot = FALSE)
-
-leaflet(data = mapStates) %>% addTiles() %>%
-  addPolygons(fillColor = topo.colors(10, alpha = NULL), stroke = FALSE)
-
-
-leaflet(data = map) %>% addTiles() %>%
-  addPolygons(fillColor = topo.colors(10, alpha = NULL), stroke = FALSE)
-
-
-
-r_colors <- rgb(t(col2rgb(colors()) / 255))
-names(r_colors) <- colors()
-
-ui <- fluidPage(
-  leafletOutput("mymap"),
-  p())
-
-server <- function(input, output, session) {
-  output$mymap <- renderLeaflet({
-    leaflet() %>%
-    addPolygons(stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5,) %>%
-    addProviderTiles("Test",options = providerTileOptions(noWrap = TRUE))
-    })
-}
-
-shinyApp(ui, server)
-```
-
-```{r,highlight=TRUE,eval=FALSE}
-
-library("leaflet")
-library("data.table")
-library("sp")
-library("rgdal")
-# library("maptools")
-library("KernSmooth")
-
-inurl <- "https://data.cityofchicago.org/api/views/22s8-eq8h/rows.csv?accessType=DOWNLOAD"
-infile <- "mvthefts.csv"
-
-## LOAD DATA
-## Also, clean up variable names, and convert dates
-if(!file.exists(infile)){
-    download.file(url = inurl, destfile = infile)
-}
-dat <- data.table::fread(infile)
-setnames(dat, tolower(colnames(dat)))
-setnames(dat, gsub(" ", "_", colnames(dat)))
-dat <- dat[!is.na(longitude)]
-dat[ , date := as.IDate(date, "%m/%d/%Y")]
-
-## MAKE CONTOUR LINES
-## Note, bandwidth choice is based on MASS::bandwidth.nrd()
-kde <- bkde2D(dat[ , list(longitude, latitude)],
-              bandwidth=c(.0045, .0068), gridsize = c(100,100))
-CL <- contourLines(kde$x1 , kde$x2 , kde$fhat)
-
-## EXTRACT CONTOUR LINE LEVELS
-LEVS <- as.factor(sapply(CL, `[[`, "level"))
-NLEV <- length(levels(LEVS))
-
-## CONVERT CONTOUR LINES TO POLYGONS
-pgons <- lapply(1:length(CL), function(i)
-    Polygons(list(Polygon(cbind(CL[[i]]$x, CL[[i]]$y))), ID=i))
-spgons = SpatialPolygons(pgons)
-
-## Leaflet map with polygons
-leaflet(spgons) %>% addTiles() %>% 
-    addPolygons(color = heat.colors(NLEV, NULL)[LEVS])
-
-
-## Leaflet map with points and polygons
-## Note, this shows some problems with the KDE, in my opinion...
-## For example there seems to be a hot spot at the intersection of Mayfield and
-## Fillmore, but it's not getting picked up.  Maybe a smaller bw is a good idea?
-
-leaflet(spgons) %>% addTiles() %>%
-    addPolygons(color = heat.colors(NLEV, NULL)[LEVS]) %>%
-    addCircles(lng = dat$longitude, lat = dat$latitude,
-               radius = .5, opacity = .2, col = "blue")
-
-
-
-
-## Leaflet map with polygons, using Spatial Data Frame
-## Initially I thought that the data frame structure was necessary
-## This seems to give the same results, but maybe there are some 
-## advantages to using the data.frame, e.g. for adding more columns
-spgonsdf = SpatialPolygonsDataFrame(Sr = spgons,
-                                    data = data.frame(level = LEVS),
-                                    match.ID = TRUE)
-leaflet() %>% addTiles() %>%
-    addPolygons(data = spgonsdf,
-                color = heat.colors(NLEV, NULL)[spgonsdf@data$level])
-
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
