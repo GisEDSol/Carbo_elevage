@@ -16,7 +16,7 @@ library(reshape2)
 
 
 # Paramètres #################
-tablecarto <- "canton" #Nom de la table utilisée pour la cartographie (table postgis)
+tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
 dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" #Paramètre de connexion vers la base de données
 period <- c("9094","9599","0004","0509") #
 variable <- "corgox_med"#variable à cartographier

@@ -4,5 +4,4 @@
 
 * [BDD](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/BDD) Répertoire de stockage des fichiers de suivis associés à la création de la base de données.
 * [Shiny](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Shiny) Répertoire test pour la création d'une application Shiny. Ce travail sera réalisé dans un second temps.
-* [Traitements](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements) Répertoire regroupant l'ensemble des traitements de données associés aux données climatique, d'occupation du sol et des données sols.
-
+* [Traitements](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements) Répertoire regroupant l'ensemble des traitements de données associés aux données climatiques, d'occupation du sol (notamment agreste) et des données sols.

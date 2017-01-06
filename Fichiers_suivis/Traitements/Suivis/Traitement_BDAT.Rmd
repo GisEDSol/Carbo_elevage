@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 setwd("/media/sf_GIS_ED/Dev/")
 # Chargement des librairies
 library(RODBC);library(gdata);library(fields);library(stringr);library(ggplot2);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);
-library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(FactoMineR);library(knitr);library(wesanderson);library(pander);library(GGally)
+library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(FactoMineR);library(knitr);library(wesanderson);library(pander);library(GGally);library(factoextra)
 
 # Définition des principaux répertoires de travail
 masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
@@ -46,18 +46,19 @@ sessionInfo()
 
 # Objectifs
 
-Ce fichier de suivi a pour but de centraliser l'ensemble des analyses temporelle d'une variable pédologique de la BDAT. Ce travail est organisé de la façon suivante :
+Ce fichier de suivi a pour but de centraliser l'ensemble des analyses temporelles d'une variable pédologique de la BDAT. Ce travail est organisé de la façon suivante :
 
 - Analyse des histogrammes de fréquence et tests statistiques pour chacune des périodes de temps analysées,
-- Représentation cartographique par canton
-- Analyse des facteurs explicatifs 
+- Représentation cartographique par canton,
+- Analyse des facteurs explicatifs. 
 
-# Etape 0 : Préparation des données et chargement de la table de travail
+# Préparation des données et chargement de la table de travail
 
 ## Préparation des données
 
-Les données de la BDAT sont ré-organisées pour faciliter les traitements statistiques et la production de graphique. La fonction `melt` est utilisée pour transformer les données d'un format "large" à un format "long".
+Les données de la BDAT sont ré-organisées pour faciliter les traitements statistiques et la production de graphiques. La fonction `melt` est utilisée pour transformer les données d'un format "large" à un format "long".
 En complément, les évolutions des teneurs pour les différentes périodes analysées sont calculées.
+
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
 dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" # Configuration de la connexion vers le PostGIS
@@ -162,10 +163,6 @@ sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
 sqlSave(loc,melted.bdat,tablename=tablename)
 ```
 
-
-
-## Chargement des données et des principaux paramètres d'étude
-
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
 # Chargement des paramètres
 period <- c("9094","9599","0004","0509")
@@ -246,7 +243,8 @@ On pourra voir pour faire un tableau par années + par région???Celà permettra
 ### Tests statistiques
 
 ```{r,highlight=TRUE,eval=FALSE}
-pander(pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"]))
+tt <- pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"])
+pander(c(tt[1],tt[2],tt[3]))
 ```
 ### Boxplot
 
@@ -303,7 +301,7 @@ ggsave(p,file = paste(repsortie,"boxplotbdat_typoclim2.png",sep=""), width = 10,
 ```
 
 ### Graphique de correlation
-```{r,highlight=TRUE,eval=TRUE}
+```{r,highlight=TRUE,eval=FALSE}
 # Voir les graphiques de "différence" réalisés durant le M1
 # Rajouter les types de climat ou autre niveau de stratification pour voir l'influence de ces régions sur les pertes 
 # Voir également pour rajouter ces données sur une table au format melt
@@ -335,15 +333,69 @@ Dans cette partie, des cartes peuvent être produites selon plusieurs arguments 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres #################
 tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
-dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" #Paramètre de connexion vers la base de données
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" #Paramètres de connexion vers la base de données
 period <- c("9094","9599","0004","0509") #
 variable <- "corgox_med"
-variablecarto <- paste(variable,period,sep="")#variable à cartographier
+variablecarto <- paste(variable,period,sep="")#variables à cartographier
 nclasse <- 5 
 style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
 couleur <- "Spectral" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
 l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
-nomfichier <- "corgoxmed_period"
+nomfichier <- "corgoxmed_period" #Nom du fichier
 
 cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE)
 ```
+
+# Analyse des facteurs explicatifs
+
+Environ `r round(res.pca$eig[1,2]+res.pca$eig[2,2])` pourcent de l'information est contenu dans les deux premiers axes.
+
+```{r,highlight=TRUE,eval=FALSE}
+# Sélection des variables de travail
+variables <- c("corgox_med9094","ugbgrani_sau2010","ttemp_an","jfroids_an","jchauds_an","hpluie_an","ugbta1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sth1970","p_sth1979","p_sth1988","p_sfp1970","p_sfp1979","p_sfp1988","p_mf1970","p_mf1979","p_mf1988","p_c1970","p_c1979","p_c1988")
+
+dcast.bdat_variables <- dcast.bdat[,variables]
+
+res.pca <- PCA(dcast.bdat_variables, graph = FALSE)
+eigenvalues <- res.pca$eig
+head(eigenvalues[, 1:2])
+fviz_screeplot(res.pca, ncp=10)
+
+fviz_pca_var(res.pca, col.var="contrib") +
+scale_color_gradient2(low="white", mid="blue", 
+                  high="red", midpoint=50) + theme_minimal()
+```
+
+
+
+# Modélisation avec GBM
+
+```{r,highlight=TRUE,eval=FALSE}
+vNames <- c("c",Rcovar,"occup")
+
+### GBM Model parameters ###
+
+# interaction.depth : The maximum depth of variable interactions. 1 implies an additive model, 2 implies a model with up to 2-way interactions, etc
+# .n.trees : The total number of trees to fit. This is equivalent to the number of iterations and  the number of basis functions in the additive expansion.
+# shrinkage : a shrinkage parameter applied to each tree in the expansion. Also known as the learning rate or step-size reduction.
+
+
+### Cubist Model parameters ###
+
+#.committees : an integer: how many committee models (e.g.. boosting iterations) should be used
+
+#.neighbors : an integer from 0 to 9: how many instances to use to correct the rule-based prediction? if neighbors is greater than zero, these predictions are adjusted by training set instances nearby using the approach of Qunilan (1993)
+
+# Test des différents combinaison de paramètres
+model <- c("gbm","cubist")
+idField <- "id"
+titre <- "test"
+
+tuneGrid <- list(gbm=expand.grid(.interaction.depth = c(1,5,9,13),.n.trees = c(150,500,1000,1500),.shrinkage = 0.05),cubist=expand.grid(.committees = c(10,50,100),.neighbors = c(1,5,9)))
+trControl <- list(gbm=trainControl(method = "cv",p=0.8),cubist=trControl <- trainControl(method = "cv",p=0.8))
+
+crossValidateMachineLearning(titre = titre,fold = fold,model = model,data = "bdatigcs_ponct",transfParam ="log",vNames = vNames,coords = coords,tuneGrid=tuneGrid,trControl=trControl,distance = 0,probs = 0.8,nbl = 1,idField = idField)
+```
+
+
+

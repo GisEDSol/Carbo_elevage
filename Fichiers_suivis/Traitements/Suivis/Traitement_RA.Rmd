@@ -1,7 +1,7 @@
 ---
 title: "Traitement des données du Recencement agricole"
 author: "Jean-Baptiste Paroissien"
-date: "21/12/2016"
+date: "06/01/2017"
 output:
   html_notebook:
     toc: true
@@ -42,10 +42,10 @@ gsub2 <- function(pattern, replacement, x, ...) {
 
 # Objectifs et résumé
 
-L'objectif de ce fichier est de réaliser l'ensemble des traitements associés à la préparation des données associées au recencement agricole (RA). La préparation des données du RA comprend essentiellement le développement de tables directement exploitables pour de la cartographie ou des analyses statistiques, à savoir :
+L'objectif de ce fichier est de réaliser l'ensemble des traitements associés à la préparation des données du recencement agricole (RA). La préparation des données du RA comprend essentiellement le développement de tables directement exploitables pour de la cartographie ou des analyses statistiques, à savoir :
 
 - le calcul de statistiques simples et des jointures vers une table postGIS (`dm_vecteurs.canton`),
-- la préparation d'une table au format large (pour différentes application avec ggplot2.
+- la préparation d'une table au format large pour différentes applications avec les fonctions du paquet `ggplot2.
 
 L'ensemble des variables calculées est résumé dans le tableau ci-dessous :
 
@@ -110,7 +110,7 @@ for(v in variable){
                         from ",schema,".",tableRA,") as s1
                         where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
     
-      # Ajout d'un commentaire sur la nouvelle colonne crée
+      # Ajout d'un commentaire sur la nouvelle colonne créée
     	print(sqlQuery(loc,paste("
 	    COMMENT ON COLUMN ",table_dm,".",p_variableRA," IS \'Pourcentage de ",sign_varia," par rapport à la SAU pour ",i,".\';",sep="")))
   }

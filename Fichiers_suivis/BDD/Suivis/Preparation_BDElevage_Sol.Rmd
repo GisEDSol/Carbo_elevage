@@ -1,24 +1,23 @@
 ---
 title: "BD Elevage-sol"
 author: "Jean-Baptiste Paroissien"
-date: "26/10/2016"
-output: html_notebook
-fig_caption: yes
-highlight: zenburn
-number_sections: yes
-theme: spacelab
+date: "06/01/2017"
+output:
+  html_notebook:
+    toc: true
+    fig_caption: true
+    highlight: zenburn
+    number_sections: yes
+    theme: spacelab
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 setwd("/media/sf_GIS_ED/Dev/")
+
 # Chargement des librairies
-library(RODBC)
-library(gdata)
-library(rgrass7)
-library(fields)
-library(geoR)
-library(stringr)
+library(RODBC);library(gdata);library(rgrass7);library(fields);library(geoR);library(stringr);library(ggplot2);library(plotly);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);
+library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(data.table);library(FactoMineR);library(knitr)
 
 # Définition des principaux répertoires de travail
 masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
@@ -42,7 +41,7 @@ gsub2 <- function(pattern, replacement, x, ...) {
 
 # Objectifs
 
-L'objectif de ce travail est de centraliser dans un même fichier la création et la description d'une base de données de travail pour étudier l'impact de l'élevage sur la qualité des sols. Cette base contient trois types de données en lien avec les données pédologiques, les données associées à l'occupation du sol et enfin les données liées à l'élevage. Le document décrit dans un premier temps l'architecture choisie et présente les scripts et la description des données enregistrées dans la base pour les trois types de données. 
+L'objectif de ce document est de centraliser dans un même fichier la création et la description d'une base de données pour étudier l'impact de l'élevage sur la qualité des sols. Cette base contient trois types de données en lien avec les données pédologiques, les données associées à l'occupation du sol et enfin les données liées à l'élevage. Le document décrit dans un premier temps l'architecture choisie et présente les scripts et la description des données enregistrées dans la base pour les trois types de données. 
 
 # Le type d'architecture
 
@@ -83,7 +82,7 @@ CREATE EXTENSION address_standardizer_data_us;
 CREATE EXTENSION postgis_tiger_geocoder;
 CREATE EXTENSION postgis_sfcgal;
 ```    
-Configuration du fichier `\etc\odbc.ini` pour se connecter à la base avec RODBC.
+Configuration du fichier `\etc\odbc.ini` pour se connecter à la base avec R grâce au paquet RODBC.
 
 ```{r, engine='bash',highlight=TRUE,eval=FALSE}
 [ODBC]
@@ -192,11 +191,9 @@ sqlQuery(loc,"update commune
 |---------------------------------------|-------------------------------------|--------------------------------|----------------------------------------------|
 | BDAT                                  | ShapeFiles (L93)                    | InfoSol                        | infosol@inra.fr                              |
 | LUCAS                                 | ShapeFiles (L93)                    | JRC                            |                                              |
+| BDGSF                                 | ShapeFiles (L93)                    | JRC                            |                                              |
 | Stock de carbone                      | Raster (L93)                        | Interne IDELE                  | infosol@inra.fr                              |
 | Biomasse microbienne                  | Raster (L93)                        | IGN + Agreste                  | infosol@inra.fr                              |
-
-
-
 
 ## BDAT
 
@@ -218,6 +215,17 @@ for(i in ListBDAT){
   sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
 }
 ```
+
+## La BDGSF
+
+http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDB_data_1k_raster_intro/ESDB_1k_raster_data_intro.html
+
+```{r importBDGSF, eval=FALSE}
+
+
+```
+
+
 
 ## Les données LUCAS soil Database
 
@@ -317,7 +325,6 @@ for(i in LucasData){
 
 ## Corine Land Cover (CLC)
 
-
 Les données CLC ont été téléchargé à cette adresse [http://www.statistiques.developpement-durable.gouv.fr/clc/fichiers/](http://www.statistiques.developpement-durable.gouv.fr/clc/fichiers/)
 Ici, petit texte explicatif 
 
@@ -331,29 +338,52 @@ for(i in CLC){
 
 ## Les données du recensement agricole
 
-Les données du recensement agricole ont été extraites de requêtes lancées sur [Disard](lien vers Disard)
+Les données du recensement agricole ont été extraites de requêtes lancées sur [Disard](lien vers Disard). L'ensemble des tables intégrées dans la base de données sont présentées dans le tableau ci-dessous.
 
-
-Ici, il faudra faire un tableau présentant le nom des tables du RA
-
-| Nom table        | Signification                     | Source                         | Contacts                                     |
-|------------------|-------------------------------------|--------------------------------|----------------------------------------------|
-| S_culture_canton | ShapeFiles (L93)                    | InfoSol                        | infosol@inra.fr                              |
-| Cultures_canton  | ShapeFiles (L93)                    | JRC                            |                                              |
-| Otex_canton      | Raster (L93)                        | Interne IDELE                  | infosol@inra.fr                              |
-| UGB_canton       | Raster (L93)                        | IGN + Agreste                  | infosol@inra.fr                              |
+```{r,eval=TRUE,warning=FALSE}
+# Description des tables (voir pour rajouter les métadonnées dans les commentaires de table)
+metatable <- read.csv(paste(repagreste,"Catalogue_RA.csv",sep=""),sep=";")
+pander(metatable)
+```
 
 ```{r importagreste,eval=TRUE,warning=FALSE,}
 # data.table à voir 
 installXLSXsupport()
 
-Liste_fichiers <- gsub("\\.xls$","",list.files(repagreste,pattern="\\.xls$"))# Liste des xls présent dans le répertoire de travail (repagreste)
+catalogue <- read.csv(paste(repagreste,"Catalogue_RA.csv",sep=""),sep=";")
+Liste_fichiers <- catalogue[,2]
+Commentaires <- catalogue[,3]
+#Liste_fichiers <- gsub("\\.xls$","",list.files(repagreste,pattern="\\.xls$"))# Liste des xls présent dans le répertoire de travail (repagreste)
 schema <- "ra" #Nom du schema de stockage des données
 
+cpt <- 0
 for(i in Liste_fichiers){
+  
+  if(i=="UGBTA_canton880010"){
+  # Intégration spéciale pour la table UGBTA_canton880010.csv" (Téléchargé http://agreste.agriculture.gouv.fr/IMG/xls/Donnees_principales__canton_departement_.xls)
+  tablecsv <- read.csv(paste(repagreste,"UGBTA_canton880010.csv",sep=""),header=TRUE,sep=";",colClasses=c("num_canton"="character"))
+  
+  # Configuration des types de champs
+  tablecsv[,-1] <- data.frame(lapply(tablecsv[,-1], function(v) {
+    as.numeric(as.character(v))}))
+
+  # Suppression des lignes avec une SAU=0
+  tablecsv <- tablecsv[tablecsv$SAU2000>0 & tablecsv$SAU2010>0 & tablecsv$SAU1988>0,]
+
+  sqlQuery(loc,paste("drop table if exists ",schema,".UGBTA_canton880010",sep=""))
+  sqlSave(loc,tablecsv,tablename = paste(schema,".UGBTA_canton880010",sep=""))
+  
+  # Ajout d'un commentaire
+  print(sqlQuery(loc,paste("
+	    COMMENT ON TABLE ",schema,".",i," IS \'",Comment,".\';",sep="")))
+  next
+  }else{}
+  
+  cpt <- cpt + 1 
   # Lecture du fichier
   xlsfiles <- read.xls(paste(repagreste,i,".xls",sep=""),sheet="Feuille1",header=TRUE,fileEncoding="latin1",sep=",")  
-  
+  Comment <- Commentaires[cpt]
+
   # Configuration des types de champs
   xlsfiles[,-1] <- data.frame(lapply(xlsfiles[,-1], function(v) {
     as.numeric(as.character(v))}))
@@ -370,23 +400,14 @@ for(i in Liste_fichiers){
   # Enregistrement dans la base locale
   sqlQuery(loc,paste("drop table if exists ",schema,".",i,sep=""))
   sqlSave(loc,xlsfiles,tablename = paste(schema,".",i,sep=""))
+  
+  # Ajout d'un commentaire
+  print(sqlQuery(loc,paste("
+	    COMMENT ON TABLE ",schema,".",i," IS \'",Comment,".\';",sep="")))
 }
-
-# Intégration spéciale pour la table UGBTA_canton880010.csv" (issue de http://agreste.agriculture.gouv.fr/IMG/xls/Donnees_principales__canton_departement_.xls)
-tablecsv <- read.csv(paste(repagreste,"UGBTA_canton880010.csv",sep=""),header=TRUE,sep=";",colClasses=c("num_canton"="character"))
-# Configuration des types de champs
-tablecsv[,-1] <- data.frame(lapply(tablecsv[,-1], function(v) {
-    as.numeric(as.character(v))}))
-# Suppression des lignes avec une SAU=0
-tablecsv <- tablecsv[tablecsv$SAU2000>0 & tablecsv$SAU2010>0 & tablecsv$SAU1988>0,]
-
-sqlQuery(loc,paste("drop table if exists ",schema,".UGBTA_canton880010",sep=""))
-sqlSave(loc,tablecsv,tablename = paste(schema,".UGBTA_canton880010",sep=""))
 ```
 
 # Les données climatiques
-
-Rajouter la source des données
 
 ## Topologie du climat en France
 
@@ -413,7 +434,7 @@ Source : Base de données climatiques communales 2009. THEMA Université de Fran
 
 # Création d'une vue pour les métadonnées
 
-```{r importClimatL,eval=FALSE}
+```{r,eval=FALSE}
 CREATE OR REPLACE VIEW metadata AS
 SELECT
  schema_name,
