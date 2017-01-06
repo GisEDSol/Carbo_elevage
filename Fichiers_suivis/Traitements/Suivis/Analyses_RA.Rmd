@@ -1,12 +1,14 @@
 ---
-title: "Traitement des données du RA"
+title: "Analyse des données du recencement agricole"
 author: "Jean-Baptiste Paroissien"
 date: "21/12/2016"
-output: html_notebook
-fig_caption: yes
-highlight: zenburn
-number_sections: yes
-theme: spacelab
+output:
+  html_notebook:
+    toc: true
+    fig_caption: true
+    highlight: zenburn
+    number_sections: yes
+    theme: spacelab
 ---
 
 ```{r setup, include=FALSE}
@@ -34,15 +36,18 @@ gsub2 <- function(pattern, replacement, x, ...) {
   x
 }
 ```
+# Objectifs
+
+L'objectif de ce travail est d'analyser les principales tendances d'occupation du sol en lien avec les données du recencement agricole. Ces données ont été produites avec les scripts `Traitement_RA.Rmd`
 
 # Représentation cartographique de variables associées à l'activité de l'élevage
 
 ## L'occupation du sol
 
 ### A l'échelle de la france
-```{r,highlight=TRUE,eval=FALSE}
+```{r,highlight=TRUE,eval=TRUE}
 # Paramètres ###########################
-tablecarto <- "canton" 
+tablecarto <- "dm_vecteurs.canton" 
 dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
 variablecarto <- "var_sth7910" #variable à spatialiser
 l_legend <- "Evolution de la STH 1979-2010 (%) "#label de la variable
@@ -52,14 +57,12 @@ couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brew
 nomfichier="test"
 
 # Lancement
-cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE)
+cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,dept=FALSE,reg=54)
 ```
-
-
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres ###########################
-tablecarto <- "canton" 
+tablecarto <- "dm_vecteurs.canton" 
 dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
 period <- c("1979","1988","2000","2010") #
 variable <- c("p_prairie","p_sth","p_sfp","p_mf","p_c")#variable(s) à cartographier
@@ -144,6 +147,28 @@ summary(mapcanton@data$p_sth1988)
 summary(mapcanton@data$p_sth2000)
 summary(mapcanton@data$p_sth2010)
 ```
+
+
+
+Boxplot pour le poitou charentes
+```{r,highlight=TRUE,eval=FALSE}
+# Lecture de la table de travail
+reg <- "54" # Nom de la région à sélectionner
+melted.RAreg <- sqlQuery(loc,paste("select * from ra.melted_RA where code_reg like '",reg,"'",sep=""))
+melted.RAreg <- melted.RA[complete.cases(melted.RAreg),]
+
+p1 <- ggplot(melted.RAreg, aes(x=as.factor(annees), y=value, col=variable))+
+              geom_boxplot(alpha=0.7)+
+              scale_x_discrete("Années")+scale_y_continuous("Pourcentage")+
+              theme(plot.title = element_text(size = 14, face = "bold"), 
+                    text = element_text(size = 12),
+                    axis.title = element_text(face="bold"),
+                    axis.text.x=element_text(size = 11))+
+              scale_fill_brewer(palette = "Dark2")
+p1
+ggsave(p1, file = paste("boxplot_",reg,".png",sep=""), width = 10, height = 10)  
+```
+
 
 
 ## Exploration et fouille de données

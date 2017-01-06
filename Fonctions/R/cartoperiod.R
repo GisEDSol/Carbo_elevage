@@ -20,14 +20,14 @@
 #' @export
 #' @examples
 #' ## Ne fonctionne pas 
-#' tablecarto <- "canton" 
-#'dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
-#'period <- c("9094","9599","0004","0509") #
-#'variable <- "corgox_med"
-#'couleur <- "YlGnBu" 
-#'l_legend <- "Teneur en carbone organique (g/kg)" #label de la variable
-#'nomfichier <- "test"
-#'repsortie <- "/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/"
+tablecarto <- "dm_vecteurs.canton" 
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
+period <- c("9094","9599","0004","0509") #
+variable <- "corgox_med"
+couleur <- "YlGnBu" 
+l_legend <- "Teneur en carbone organique (g/kg)" #label de la variable
+nomfichier <- "test"
+repsortie <- "/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/"
 
 #'cartoperiod(dsn,tablecarto,period,variable,nclasse=5,couleur="YlGnBu",l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE)
 
@@ -54,7 +54,7 @@ g_legend<-function(a.gplot){
   tmp <- ggplot_gtable(ggplot_build(a.gplot))# + theme(legend.position="bottom")
   leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
   legend <- tmp$grobs[[leg]]
-  return(legend)
+return(legend)
 }
 
 # Fonction pour effectuer une requête sql avant d'importer un postgis (https://geospatial.commons.gc.cuny.edu/2013/12/31/subsetting-in-readogr/)
@@ -104,12 +104,12 @@ readOgrSql = function (dsn, sql, ...) {
 if((is.character(dept)==FALSE) & (is.character(reg)==FALSE)){
   map <- readOGR(dsn = dsn, tablecarto)
   #map <- map[complete.cases(map@data[variablecarto]),]
-  dep <- readOGR(dsn = dsn, "departement")
+  dep <- readOGR(dsn = dsn, "dm_vecteurs.departement")
   }else{}
 
 if(is.character(dept)==TRUE){
   # Sélection de la zone d'étude
-  print(paste("Sélection département(s) ",dept,sep=""))
+  #print(paste("Sélection département(s) ",dept,sep=""))
 
   strSQL <- paste("select * 
                    from ",tablecarto,"
@@ -119,13 +119,13 @@ if(is.character(dept)==TRUE){
   #map <- map[complete.cases(map@data[variablecarto]),]
 
   depSQL <- paste("select * 
-                   from departement
+                   from dm_vecteurs.departement
                    where code_dept similar to '",dept,"'",sep="")
   dep <- readOgrSql(dsn, depSQL, stringsAsFactors=FALSE)
   }else{}
   
 if(reg!=FALSE){# Sélection de la zone d'étude
-  print(paste("Sélection région(s) ",reg,sep=""))
+  #print(paste("Sélection région(s) ",reg,sep=""))
 
   strSQL <- paste("select * 
                    from ",tablecarto,"
@@ -135,7 +135,7 @@ if(reg!=FALSE){# Sélection de la zone d'étude
   #map <- map[complete.cases(map@data[variablecarto]),]
 
   regSQL <- paste("select * 
-                   from departement
+                   from dm_vecteurs.departement
                    where code_reg similar to '",reg,"'",sep="")
   dep <- readOgrSql(dsn, regSQL, stringsAsFactors=FALSE)
   }else{}
@@ -151,28 +151,51 @@ if(length(variablecarto)==1){
   # Extraction de toutes les valeurs à cartographier pour établir des classes de valeurs à cartographier
   melt.map <- melt(map@data[,variablecarto])[,1]
 
-  # Classement (voir pour round)
-  classe_valeur <- classIntervals(melt.map,n=nclasse,style=style_classe,digits=2,na.rm=TRUE)[[2]]
+  if(style_classe=="fixed"){
+  	#print(paste("Classe par ",style_classe,sep=""))
+	# Jointure et changement de nom
+  	carto <- merge(cartofor, map@data[,c("id_geofla",variablecarto)], by.x="id", by.y="id_geofla")
+  	colnames(carto)[8] <- "fill"
+  	carto$fill <- as.factor(carto$fill)
+
+	tt <- ggplot(carto, aes(x=long, y=lat)) +
+    	                geom_polygon(data=carto, aes(group=group, fill=fill),size=0.1) +
+                      	geom_path(data=carto, aes(x=long,y=lat,group=group),color="white",size=0.1)+# Représenter les cantons
+                      	geom_path(data=cartodep, aes(x=long,y=lat,group=group),color="black",size=0.1)+# Représenter les contours des départements
+                    	scale_fill_brewer(type=qual,palette = couleur,name=l_legend,guide = guide_legend(reverse=TRUE,nrow=1))+theme(legend.position="bottom")+
+                      	theme(plot.title = element_text(size=14,face="bold"),
+                            	text = element_text(size=12),
+                            	axis.text =element_blank(),# change the theme options
+                            	axis.title =element_blank(),# remove axis titles
+                            	axis.ticks =element_blank())+
+                      	#guides(fill=FALSE)+
+                      	coord_equal()
+	}else{
+
+	#	print(paste("Classe par ",style_classe,sep=""))
+		classe_valeur <- classIntervals(melt.map,n=nclasse,style=style_classe,digits=2,na.rm=TRUE)[[2]]
+
+		# Jointure et changement de nom
+  		carto <- merge(cartofor, map@data[,c("id_geofla",variablecarto)], by.x="id", by.y="id_geofla")
+  		colnames(carto)[8] <- "fill"
+
+  		carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
+
+  		tt <- ggplot(carto, aes(x=long, y=lat)) +
+                     geom_polygon(data=carto, aes(group=group, fill=fill),size=0.1) +
+                     geom_path(data=carto, aes(x=long,y=lat,group=group),color="white",size=0.1)+# Représenter les cantons
+                     geom_path(data=cartodep, aes(x=long,y=lat,group=group),color="black",size=0.1)+# Représenter les contours des départements
+                     scale_fill_brewer(palette = couleur,name=l_legend,guide = guide_legend(reverse=TRUE,nrow=1))+theme(legend.position="bottom")+
+                     theme(plot.title = element_text(size=14,face="bold"),
+                           text = element_text(size=12),
+                           axis.text =element_blank(),# change the theme options
+                           axis.title =element_blank(),# remove axis titles
+                           axis.ticks =element_blank())+
+                     #guides(fill=FALSE)+
+                     coord_equal()
+    }
   
-  # Jointure et changement de nom
-  carto <- merge(cartofor, map@data[,c("id_geofla",variablecarto)], by.x="id", by.y="id_geofla")
-  colnames(carto)[8] <- "fill"
-
-
-  carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
-
-  tt <- ggplot(carto, aes(x=long, y=lat)) +
-                      geom_polygon(data=carto, aes(group=group, fill=fill),size=0.1) +
-                      geom_path(data=carto, aes(x=long,y=lat,group=group),color="white",size=0.1)+# Représenter les cantons
-                      geom_path(data=cartodep, aes(x=long,y=lat,group=group),color="black",size=0.1)+# Représenter les contours des départements
-                      scale_fill_brewer(palette = couleur,name=l_legend,guide = guide_legend(reverse=TRUE,nrow=1))+theme(legend.position="bottom")+
-                      theme(plot.title = element_text(size=14,face="bold"),
-                            text = element_text(size=12),
-                            axis.text =element_blank(),# change the theme options
-                            axis.title =element_blank(),# remove axis titles
-                            axis.ticks =element_blank())+
-                      #guides(fill=FALSE)+
-                      coord_equal()
+  # Sortie du fichier
   ggsave(tt, file = paste(repsortie,nomfichier,".png",sep=""), width = 7, height = 7)  
 }else{}
 
@@ -225,5 +248,7 @@ combinedPlots <- arrangeGrob(p[[1]],p[[2]],p[[3]],p[[4]],nrow=2)
 tt <- grid.arrange(combinedPlots,plotLegend,nrow=2,heights=c(10, 1))
 ggsave(tt, file = paste(repsortie,nomfichier,".png",sep=""), width = 10, height = 10)  
 }else{}
+
+return(tt)
 
 }#Fin
