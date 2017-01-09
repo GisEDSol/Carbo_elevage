@@ -54,9 +54,7 @@ Ce fichier de suivi a pour but de centraliser l'ensemble des analyses temporelle
 
 # Préparation des données et chargement de la table de travail
 
-## Préparation des données
-
-Les données de la BDAT sont ré-organisées pour faciliter les traitements statistiques et la production de graphiques. La fonction `melt` est utilisée pour transformer les données d'un format "large" à un format "long".
+Les données de la BDAT sont ré-organisées pour faciliter les traitements statistiques et la production de graphique. La fonction `melt` est utilisée pour transformer les données d'un format "large" à un format "long".
 En complément, les évolutions des teneurs pour les différentes périodes analysées sont calculées.
 
 ```{r,highlight=TRUE,eval=FALSE}
@@ -179,6 +177,25 @@ melted.bdat <- melted.bdat[complete.cases(melted.bdat$typo_clim),]
 melted.bdat$annees <- factor(melted.bdat$annees,levels=period)
 ```
 
+
+## Chargement des données et des principaux paramètres d'étude
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+# Chargement des paramètres
+period <- c("9094","9599","0004","0509")
+variable <- "corgox_med"
+xlabel <- "Carbone organique (g/kg)"
+ylabel <- "Fréquence"
+nperiod <- length(period)
+colors <- wes_palette("Zissou",nperiod,type="continuous")
+
+melted.bdat <- sqlQuery(loc,paste("select value,variable,annees,code_reg,nom_region,typo_clim from dm_traitements.melted_bdat",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE))
+dcast.bdat <- sqlQuery(loc,paste("select * from dm_vecteurs.canton",sep=""))
+
+melted.bdat <- melted.bdat[complete.cases(melted.bdat$typo_clim),]
+melted.bdat$annees <- factor(melted.bdat$annees,levels=period)
+```
+
 # Etape 1 : Analyse des teneurs par période
 
 Cette première étape permet d'analyser les différences entre chacune des périodes. Les rendus de cette première étape sont les suivants :
@@ -245,6 +262,13 @@ On pourra voir pour faire un tableau par années + par région???Celà permettra
 ```{r,highlight=TRUE,eval=FALSE}
 tt <- pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"])
 pander(c(tt[1],tt[2],tt[3]))
+=======
+
+### Tests statistiques
+
+```{r,highlight=TRUE,eval=FALSE}
+pander(pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"]))
+>>>>>>> 3dba389cfdbe7ab14a8d09146cfbd8cb38c6d43c
 ```
 ### Boxplot
 
@@ -301,6 +325,7 @@ ggsave(p,file = paste(repsortie,"boxplotbdat_typoclim2.png",sep=""), width = 10,
 ```
 
 ### Graphique de correlation
+
 ```{r,highlight=TRUE,eval=FALSE}
 # Voir les graphiques de "différence" réalisés durant le M1
 # Rajouter les types de climat ou autre niveau de stratification pour voir l'influence de ces régions sur les pertes 
@@ -396,6 +421,4 @@ trControl <- list(gbm=trainControl(method = "cv",p=0.8),cubist=trControl <- trai
 
 crossValidateMachineLearning(titre = titre,fold = fold,model = model,data = "bdatigcs_ponct",transfParam ="log",vNames = vNames,coords = coords,tuneGrid=tuneGrid,trControl=trControl,distance = 0,probs = 0.8,nbl = 1,idField = idField)
 ```
-
-
 

@@ -2,6 +2,7 @@
 title: "Traitement des données du Recencement agricole"
 author: "Jean-Baptiste Paroissien"
 date: "06/01/2017"
+date: "21/12/2016"
 output:
   html_notebook:
     toc: true
@@ -353,6 +354,7 @@ p_variable <- c("var_sth7079","var_cereale7079","var_sfp7079","var_mf7079")
 variable <- c("superficietoujoursenherbesth","céréales","fourragesetsuperficiestoujoursenherbe","maïsfourrageetensilage")
 signification <- cbind("de la surface toujours en herbe","de la surface en céréales"," de la surface fourragère principale","de la surface en maîs fourrage ensilage")
 type_RA <- "s_cultures_canton"
+
 # Calcul de statistiques pour les cultures
 cpt <- 0
 for(v in variable){

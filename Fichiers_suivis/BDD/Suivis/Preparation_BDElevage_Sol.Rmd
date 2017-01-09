@@ -41,16 +41,29 @@ gsub2 <- function(pattern, replacement, x, ...) {
 
 # Objectifs
 
-L'objectif de ce document est de centraliser dans un même fichier la création et la description d'une base de données pour étudier l'impact de l'élevage sur la qualité des sols. Cette base contient trois types de données en lien avec les données pédologiques, les données associées à l'occupation du sol et enfin les données liées à l'élevage. Le document décrit dans un premier temps l'architecture choisie et présente les scripts et la description des données enregistrées dans la base pour les trois types de données. 
+L'objectif de ce document est de centraliser dans un même fichier la création et la description d'une base de données pour étudier l'impact de l'élevage sur la qualité des sols. Cette base contient plusieurs types de données en lien avec les données pédologiques, les données associées à l'occupation du sol et les données environnementales générales telles que le climat ou la topographie. Le document décrit dans un premier temps l'architecture choisie et l'organisation des données. Il présente dans un second temps les scripts d'intégration des données. 
 
-# Le type d'architecture
+# L'architecture et l'organisation de la base de données
+
+## Architecture technique
 
 L'ensemble des données est stocké dans une base de données type postgresql/postgis. Le serveur de la base est en local et des conversions seront réalisées régulièrement vers une base SQLite/Spatialite pour faciliter le partage des données. SQLite diffère de la plupart des systèmes de gestion de base de données par la gestion d'un fichier de base directement sur le disque dur. A la différence de postgresql/postgis, il ne nécessit pas la création d'un serveur, ce qui facilite les échanges. Plus d'infos, [ici](http://www.developpez.com/actu/94614/Un-developpeur-evoque-cinq-raisons-pour-vous-faire-utiliser-SQLite-en-2016-que-pensez-vous-de-ses-arguments/).
 
-## Description de l'arborescence de travail
+## Organisation de la base de données
 
-## Description de la base de données
+Deux types de données sont intégrées dans la base : les données brutes et les données élaborées
 
+### Les données brutes
+
+Elles proviennent de différentes sources et représentent des données qui ne sont pas directement exploitables pour des traitements statistiques ou de la cartographie. Elles sont stockées dans des schémas portant le nom de leur thématique associées (voir tableau ci-dessous). Ces données sont traitées et stockées dans des data marts.
+
+### les data marts
+
+Les data marts (magasins de données) sont les données qui sont directement utilisables dans des traitements. Ces data marts se présentent sous la forme d'une ou plusieurs tables classées dans des schémas distincts. Le nom de ces schémas est préfixé par « dm_». Le tableau suivant dresse la liste des data marts disponibles :
+
+## Documentation
+
+La documentation de cette base de données s'articule autours d'un document général et de plusieurs modes opératoires destinés aux différents types d'utilisateurs (administrateur, développeur et utilisateur). Ces documents sont présents sur la forge du projet à cette adresse.
 
 ## Création de la base
 
@@ -224,9 +237,6 @@ http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDB_data_1k_raster_intro/ESDB_1k_r
 
 
 ```
-
-
-
 ## Les données LUCAS soil Database
 
 Ici, on présente l'intégration des différentes données lucas.
@@ -346,6 +356,8 @@ metatable <- read.csv(paste(repagreste,"Catalogue_RA.csv",sep=""),sep=";")
 pander(metatable)
 ```
 
+Dans les tables de sorties de Disard, le numéro de canton et le nom du chef lieu sont enregistrés dans le même champs. Dans les commandes suivantes, le numéro de canton et le nom du chef lieu sont dissociés dans un champs qui leur est propre pour faciliter les jointures futures.  
+
 ```{r importagreste,eval=TRUE,warning=FALSE,}
 # data.table à voir 
 installXLSXsupport()
@@ -409,7 +421,13 @@ for(i in Liste_fichiers){
 
 # Les données climatiques
 
+Plusieurs sources de données climatiques sont disponibles.
+
+Pour le moment, seul le travail de Joly et al., 2010 est exploité. Les autres sources de données pourront être intégrées ultérieurement dans la base dans le schéma `climato`.
+
 ## Topologie du climat en France
+
+Les données climatiques utilisées proviennnent du travail de Joly et al., 2010 sur la typologie du climat en France (rajouter la référence) et un bref descriptif. Les commandes suivantes importent la table `table_commun.txt` disponible à cette adresse. Les données climatiques sont ensuite aggrégées par canton dans le fichier de suivie [Traitement_climato.Rmd](lien vers Disard). 
 
 ```{r importClimatL,eval=FALSE}
 ##Paramètres
@@ -434,7 +452,12 @@ Source : Base de données climatiques communales 2009. THEMA Université de Fran
 
 # Création d'une vue pour les métadonnées
 
+Pour faciliter la compréhension des données stockées dans la base de données, une vue des métadonnées est générées dans la commande suivante.
+
 ```{r,eval=FALSE}
+# Création d'une vue pour les métadonnées
+
+```{r importClimatL,eval=FALSE}
 CREATE OR REPLACE VIEW metadata AS
 SELECT
  schema_name,
@@ -464,7 +487,6 @@ UNION ALL
 'information_schema'::name AND c.relkind = 'r'::"char"
   ORDER BY 1, 2, 3
 ) AS ss;
-
 ```
 
 
