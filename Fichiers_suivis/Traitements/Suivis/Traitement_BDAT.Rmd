@@ -268,7 +268,6 @@ pander(c(tt[1],tt[2],tt[3]))
 
 ```{r,highlight=TRUE,eval=FALSE}
 pander(pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"]))
->>>>>>> 3dba389cfdbe7ab14a8d09146cfbd8cb38c6d43c
 ```
 ### Boxplot
 
