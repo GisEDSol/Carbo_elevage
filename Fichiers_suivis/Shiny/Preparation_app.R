@@ -5,15 +5,7 @@
 # Auteur: Paroissien Jean-Baptiste
 
 # Load the necessary packages
-library(shiny)
-library(plotly)
-library(RODBC)
-library(leafletR)
-library(dplyr)
-library(rgdal)
-library(leaflet)
-library(reshape2)
-
+library(shiny);library(plotly);library(RODBC);library(leafletR);library(dplyr);library(rgdal);library(leaflet);library(reshape2)
 
 # Paramètres #################
 tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
@@ -34,6 +26,38 @@ map <- readOGR(dsn = dsn, tablecarto)
 
 # Transformation pour leaflet
 map <- spTransform(map, CRS("+init=epsg:4326"))
+
+ui <- fluidPage(
+  leafletOutput("mymap"),
+  p(),
+  actionButton("recalc", "New points")
+)
+
+server <- function(input, output, session) {
+  leaflet() %>% 
+    addPolygons(data = map, 
+                #fillColor = ~palette(map@data$corgox_med9599),  ## we want the polygon filled with 
+                ## one of the palette-colors
+                ## according to the value in student1$Anteil
+                fillOpacity = 0.6,         ## how transparent do you want the polygon to be?
+                color = "darkgrey",       ## color of borders between districts
+                weight = 1.5)            ## width of borders
+}
+
+
+shinyApp(ui, server)
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Voir comment gérer les classes de valeurs
 
@@ -60,48 +84,6 @@ leaflet() %>%
   ## the group's name has to be the same as later in "baseGroups", where we define 
   ## the groups for the Layerscontrol. Because for this layer I wanted a specific 
   ## color and size, the group name includes some font arguments.  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Variables de travail
-rep_shiny <- "/media/sf_GIS_ED/Dev/test/"
-
-# Préparation des fichiers
-dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'"
-reg <- "54"
-
-# Lecture du postgis
-mapcanton <- readOGR(dsn = dsn, "canton")
-# Sélection de la zone d'étude
-mapcanton <- mapcanton[mapcanton@data$code_reg==reg,]
-
-# Sélection des variables d'intérêts
-
-variable.carto <- c("code_canton","corgox_med9094","corgox_med9599","corgox_med0004","corgox_med0509")
-mapcanton@data <- mapcanton@data[,variable.carto]
 
 ## Melt du fichier
 mapmelt <- melt(mapcanton@data,id="code_canton") # A partir de là, on pourrait créer une colonne année avec une expression régulière (voir préparation BDELEvage_sol)

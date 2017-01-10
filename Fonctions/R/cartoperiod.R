@@ -243,10 +243,21 @@ for(i in variablecarto){#CHANGER CETTE VARIABLE
 }
 
 lwidth = sum(plotLegend$width)
-combinedPlots <- arrangeGrob(p[[1]],p[[2]],p[[3]],p[[4]],nrow=2)
 
-tt <- grid.arrange(combinedPlots,plotLegend,nrow=2,heights=c(10, 1))
-ggsave(tt, file = paste(repsortie,nomfichier,".png",sep=""), width = 10, height = 10)  
+if(length(variablecarto)=="4"){
+  combinedPlots <- arrangeGrob(p[[1]],p[[2]],p[[3]],p[[4]],nrow=2)
+  tt <- grid.arrange(combinedPlots,plotLegend,nrow=2,heights=c(10, 1))
+  }else{}
+
+if(length(variablecarto)=="5"){
+
+  combinedPlots <- arrangeGrob(p[[1]],p[[2]],p[[3]],p[[4]],p[[5]],nrow=3)
+  tt <- grid.arrange(combinedPlots,plotLegend,ncol=1,heights=c(10, 1))
+
+  }else{}
+res <- 10
+ggsave(tt, file = paste(repsortie,nomfichier,".png",sep=""), width = res, height = res)  
+
 }else{}
 
 return(tt)

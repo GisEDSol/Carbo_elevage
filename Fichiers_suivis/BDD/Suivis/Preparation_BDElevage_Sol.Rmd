@@ -17,7 +17,7 @@ setwd("/media/sf_GIS_ED/Dev/")
 
 # Chargement des librairies
 library(RODBC);library(gdata);library(rgrass7);library(fields);library(geoR);library(stringr);library(ggplot2);library(plotly);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);
-library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(data.table);library(FactoMineR);library(knitr)
+library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(data.table);library(FactoMineR);library(knitr);library(pander)
 
 # Définition des principaux répertoires de travail
 masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
@@ -210,13 +210,15 @@ sqlQuery(loc,"update commune
 
 ## BDAT
 
+Deux types de données sont intégrées dans la base de données. Dans un premier temps, les données BDAT disponibles sur le XXX sont intégrées. Il s'agit de statistiques descriptives aggrégées à l'échelle du canton. Ces données ne sont pas exploitables dans le cadre d'une étude sur l'évolution temporelle car le nombre d'effectif n'est pas le même d'une année à l'autre. Le deuxième jeu de données intégrées prend en compte ce biais par un ré-échantillonnage artificiel des analyses afin d'assurer le calcul de statistiques descriptives basées sur un même nombre d'effectif.
+
+Les commandes suivantes importent les données de la BDAT non harmonisées :
 ```{r importBDAT, eval=FALSE}
 period <- c("9094","9599","0004","0509")
 # Selection des fichiers à importer
-ListBDAT <- gsub("\\.txt$","",list.files(repBDAT,pattern="\\.txt$"))
+ListBDAT <- gsub("\\.txt$","",list.files(paste(repBDAT,"BDAT_datapaper/",sep=""),pattern="\\.txt$"))
 #ListBDAT <- gsub("\\.txt$","",list.files(repBDAT,pattern="bdat_canton$"))#Voir pour sélectionner uniquement les fichiers bdat_canton
 
-# Pour chaque itération, il faudra faire une jointure pour associer une colonne géographique avec le num_canton (voir la pertinence, finalement, on peut travailler sur les données attributaires et ensuite passer au spatiale une fois le travail d'aanalyse fait)
 for(i in ListBDAT){
   print(i)
   # Lecture du fichier
@@ -227,6 +229,25 @@ for(i in ListBDAT){
   sqlQuery(loc,paste("drop table if exists bdat.",i,sep=""))
   sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
 }
+```
+
+la liste d'instructions suivante intègre les analyses de la BDAT ré-échantillonnées dans la base de données.
+
+```{r importBDAT, eval=FALSE}
+period <- c("9094","9599","0004","0509","1014")
+# Selection des fichiers à importer
+ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/",sep=""),pattern="\\.csv$"))
+
+for(i in ListBDAT){
+  print(i)
+  # Lecture du fichier
+  txtBDAT <- read.csv(paste(repBDAT,"BDAT_harmonisee/",i,".csv",sep=""),sep=";",header=TRUE,colClasses=c("canton"="character"))
+
+    # Intégration dans la bdd
+  sqlQuery(loc,paste("drop table if exists bdat.",i,sep=""))
+  sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
+}
+
 ```
 
 ## La BDGSF
@@ -348,7 +369,7 @@ for(i in CLC){
 
 ## Les données du recensement agricole
 
-Les données du recensement agricole ont été extraites de requêtes lancées sur [Disard](lien vers Disard). L'ensemble des tables intégrées dans la base de données sont présentées dans le tableau ci-dessous.
+Les données du recensement agricole ont été extraites de requêtes lancées sur [Disard](http://cybergeo.revues.org/23155). L'ensemble des tables intégrées dans la base de données est présenté dans le tableau ci-dessous.
 
 ```{r,eval=TRUE,warning=FALSE}
 # Description des tables (voir pour rajouter les métadonnées dans les commentaires de table)
@@ -419,15 +440,80 @@ for(i in Liste_fichiers){
 }
 ```
 
+## Les grandes régions d'élevae
+
+Ici, on importe le fichier excel fournit par Christophe Perrot
+
+```{r importRegionElevage,eval=FALSE}
+repRegionElevage <- "/media/sf_GIS_ED/Dev/Data/Regions_elevages/"
+regelevage <- read.csv(paste(repRegionElevage,"zonage_idele_13_modif.csv",sep=""),header=TRUE,sep=";")  
+schema <- "public" 
+
+# Voir pour supprimer les valeurs avec "." (les mettres en NA)
+sqlQuery(loc,paste("drop table if exists ",schema,".regelevage",sep=""))
+sqlSave(loc,regelevage,tablename=paste(schema,".regelevage",sep=""))
+
+# Jointure vers la table dm_vecteurs.commune
+table_dm <- "dm_vecteurs.commune"
+var <- "regelevage"
+
+for(i in c("zonage_simple","zonage_cplt")){
+  
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                      drop column if exists ",i,sep=""))
+  
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                      add column ",i," text;
+                      update ",table_dm,"
+                      SET ",i," = s1.",i," from(
+                      select ",i,",codecommune
+                      from ",schema,".regelevage) as s1
+                      where ",table_dm,".insee_com=s1.codecommune::text",sep=""))
+  
+  # Ajout d'un commentaire sur la nouvelle colonne créée
+  print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",table_dm,".",i," IS \'",i," des principales régions d élevage. La table ",schema,".regelevage présente la signification des codes utilisés pour le zonage. Source DG AGRI RICA UE 2012 - traitement IDELE\';",sep="")))
+}
+
+# Agrégation à l'échelle du canton (valeur majoritaire)
+table_dm <- "dm_vecteurs.canton"
+var <- "regelevage"
+
+for(i in c("zonage_simple","zonage_cplt")){
+
+  # Suppression de la colonne si déjà existante
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                    drop column if exists ",i,sep=""))
+  
+  # Création de la colonne, aggrégation par canton (valeur majoritaire, fonction mode()) et jointure vers la table canton 
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                    add column ",i," text;
+                    update ",table_dm,"
+                    SET ",i," = s1.",i," from(
+                    select (code_dept || code_cant) as num_canton,mode() within group (order by regelevage.",i,") as ",i,"
+                    from ",schema,".regelevage                  
+                    inner join dm_vecteurs.commune as c on c.insee_com=regelevage.codecommune
+                    group by code_dept || code_cant) as s1
+                    where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
+
+  #Ajout d'un commentaire sur la nouvelle colonne créée
+ print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",table_dm,".",i," IS \'",i," des principales régions d élevage par canton. La valeur est issue des données communales (",schema,".regelevage) et représente la valeur majoritaire par canton. La table ",schema,".regelevage présente la signification des codes utilisés pour le zonage. Source DG AGRI RICA UE 2012 - traitement IDELE\';",sep="")))
+}
+```
+
+
+
+
 # Les données climatiques
 
 Plusieurs sources de données climatiques sont disponibles.
 
-Pour le moment, seul le travail de Joly et al., 2010 est exploité. Les autres sources de données pourront être intégrées ultérieurement dans la base dans le schéma `climato`.
+Pour le moment, seul le travail de [Joly et al., 2010](http://cybergeo.revues.org/23155) est exploité. Les autres sources de données pourront être intégrées ultérieurement dans la base dans le schéma `climato`.
 
 ## Topologie du climat en France
 
-Les données climatiques utilisées proviennnent du travail de Joly et al., 2010 sur la typologie du climat en France (rajouter la référence) et un bref descriptif. Les commandes suivantes importent la table `table_commun.txt` disponible à cette adresse. Les données climatiques sont ensuite aggrégées par canton dans le fichier de suivie [Traitement_climato.Rmd](lien vers Disard). 
+Les données climatiques utilisées proviennnent du travail de Joly et al., 2010 sur la typologie du climat en France (rajouter la référence) et un bref descriptif. Les commandes suivantes importent la table `table_commun.txt` disponible à cette adresse. Les données climatiques sont ensuite aggrégées par canton dans le fichier de suivie [Traitement_climato.Rmd](https://github.com/Rosalien/GISEDSol/blob/master/Fichiers_suivis/Traitements/Suivis/Traitements_climato.Rmd). 
 
 ```{r importClimatL,eval=FALSE}
 ##Paramètres
@@ -456,8 +542,6 @@ Pour faciliter la compréhension des données stockées dans la base de données
 
 ```{r,eval=FALSE}
 # Création d'une vue pour les métadonnées
-
-```{r importClimatL,eval=FALSE}
 CREATE OR REPLACE VIEW metadata AS
 SELECT
  schema_name,

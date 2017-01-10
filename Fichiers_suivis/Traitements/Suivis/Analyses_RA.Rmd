@@ -38,7 +38,7 @@ gsub2 <- function(pattern, replacement, x, ...) {
 ```
 # Objectifs
 
-L'objectif de ce travail est d'analyser les principales tendances d'occupation du sol en lien avec les données du recencement agricole. Ces données ont été produites avec les scripts `Traitement_RA.Rmd`
+L'objectif de ce travail est d'analyser les principales tendances d'occupation du sol en lien avec les données du recencement agricole. Ces données ont été produites avec les scripts de préparation des données [Traitement_RA.Rmd](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Suivis/Traitement_RA.Rmd) et la fonction de cartographie [cartoperiod.R](https://github.com/Rosalien/GISEDSol/blob/master/Fonctions/R/cartoperiod.R).
 
 # Représentation cartographique de variables associées à l'activité de l'élevage
 

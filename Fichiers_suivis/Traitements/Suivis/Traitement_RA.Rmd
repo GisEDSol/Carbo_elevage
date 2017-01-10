@@ -1,8 +1,7 @@
 ---
-title: "Traitement des données du Recencement agricole"
+title: "Traitement des données du Recencement Agricole"
 author: "Jean-Baptiste Paroissien"
 date: "06/01/2017"
-date: "21/12/2016"
 output:
   html_notebook:
     toc: true
@@ -45,17 +44,10 @@ gsub2 <- function(pattern, replacement, x, ...) {
 
 L'objectif de ce fichier est de réaliser l'ensemble des traitements associés à la préparation des données du recencement agricole (RA). La préparation des données du RA comprend essentiellement le développement de tables directement exploitables pour de la cartographie ou des analyses statistiques, à savoir :
 
-- le calcul de statistiques simples et des jointures vers une table postGIS (`dm_vecteurs.canton`),
-- la préparation d'une table au format large pour différentes applications avec les fonctions du paquet `ggplot2.
+- le calcul de statistiques simples et des jointures vers une table postGIS,
+- la préparation d'une table au format large pour différentes applications avec les fonctions du paquet `ggplot2`.
 
-L'ensemble des variables calculées est résumé dans le tableau ci-dessous :
-
-| Nom_variable                          | Description                         | table                          | 
-|---------------------------------------|-------------------------------------|--------------------------------|
-| BDAT                                  | ShapeFiles (L93)                    | InfoSol                        |
-| LUCAS                                 | ShapeFiles (L93)                    | JRC                            |
-| Stock de carbone                      | Raster (L93)                        | Interne IDELE                  |
-| Biomasse microbienne                  | Raster (L93)                        | IGN + Agreste                  |
+Le résultat des traitements est accessible dans la table `dm_vecteurs.canton` et l'exploitation des traitements est réalisé dans le fichier [Analyses_RA.Rmd](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Suivis/Analyses_RA.Rmd)
 
 # Calcul de différentes statistiques et jointures vers la table `dm_vecteurs.canton`
 
@@ -71,9 +63,7 @@ Le code suivant calcul la proportion de la surface d'occupation du sol par rappo
 A chaque itération, un commentaire est ajouté à la colonne nouvellement créée.
 
 ```{r,highlight=TRUE,eval=FALSE}
-# Revoir le calcul de la SFP (on pourrait voir ce que donne la soustraction de fourragesth-sth)
-
-##Paramètres
+#Paramètres
 period <- c("1970","1979","1988","2000","2010") #périodes de temps analysées 
 dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" #paramètre de la base de données (en local)
 SAU <- "superficieagricoleutilisée1"#Nom du champs de la SAU
@@ -84,7 +74,7 @@ type_RA <- "S_cultures_canton"
 schema <- "ra"
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
 
-## Calcul de la proportion de suraface dans la SAU pour chaque période et type d'occupation du sol
+# Calcul de la proportion de suraface dans la SAU pour chaque période et type d'occupation du sol
 cpt <- 0
 for(v in variable){
   cpt <- cpt + 1
@@ -237,7 +227,7 @@ for(i in period){
 
 ## Données associées aux UGB
 
-Les données des UGB proviennent de la table accessible à cette [adresse](http://agreste.agriculture.gouv.fr/IMG/xls/Donnees_principales__canton_departement_.xls). A noter qu'il sagit uniquement des UGB tous aliments et que les données sont uniquement accessibles pour 1988, 2000 et 2010. Cette section présente le calcul de la densité d'UGB tous aliments (UGBTA/SAU)
+Les données des UGB proviennent de la table accessible à cette [adresse](http://agreste.agriculture.gouv.fr/IMG/xls/Donnees_principales__canton_departement_.xls). A noter qu'il sagit uniquement des UGB tous aliments et que les données sont uniquement accessibles pour 1988, 2000 et 2010. Cette section présente le calcul de la densité d'UGB tous aliments (UGBTA/SAU) pour les 3 périodes de temps disponibles.
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
@@ -405,9 +395,9 @@ sqlQuery(loc,paste("alter table ",table_dm,"
 	COMMENT ON COLUMN ",table_dm,".",variable," IS \'Evolution des UGB tous aliment entre 2010 et 1988 par rapport à la SAU de 1988 (%).\';",sep="")))
 ```
 
-### Calcul de divers indices
-
 # Création des métadonnées
+
+Les commentaires ajoutés lors du processus de création des statistiques peuvent être regroupés au sein du même table pour faciliter la compréhension du nom des champs présent dans les tables. La table ci-dessous présente les métadonnées de la table `dm_vecteurs.canton`.
 
 ```{r,highlight=TRUE,eval=TRUE}
 #meta_table <- paste("SELECT tablename, obj_description(
@@ -468,3 +458,5 @@ tablename <- paste("dm_traitements.","melted_RA",sep="")
 sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
 sqlSave(loc,melted.RA,tablename=tablename)
 ```
+
+A la suite de ce traitement, la table de travail enregistrée est stocké sous le nom de `r tablename`.
