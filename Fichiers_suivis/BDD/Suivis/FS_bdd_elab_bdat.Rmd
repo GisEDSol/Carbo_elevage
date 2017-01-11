@@ -1,0 +1,132 @@
+---
+title: "Traitement des données de la BDAT"
+author: "Jean-Baptiste Paroissien"
+date: "21/12/2016"
+output:
+  html_notebook:
+    toc: true
+    fig_caption: true
+    highlight: zenburn
+    number_sections: yes
+    theme: spacelab
+---
+
+
+```{r setup, include=TRUE,warning=FALSE,echo=FALSE,message=FALSE,eval=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("/media/sf_GIS_ED/Dev/")
+# Chargement des librairies
+library(RODBC);library(gdata);library(fields);library(stringr);library(ggplot2);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);library(reshape2)
+library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(FactoMineR);library(knitr);library(wesanderson);library(pander);library(GGally);library(factoextra);library(caret);library(plyr)
+
+# Définition des principaux répertoires de travail
+masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
+
+repfonctions <- paste(masterrep,"Scripts/master/Fonctions/R/",sep="")
+repagreste <- paste(masterrep,"Data/Vegetation_Occup/Agreste/Disar/",sep="")
+repsortie <- paste(masterrep,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
+# Mise en place de la connexion ODBC
+loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
+
+# Chargement de la fonction cartoperiod
+source(paste(repfonctions,"cartoperiod.R",sep=""))
+
+# Fonction très pratique pour remplacer une suite de charact?res par une autre
+gsub2 <- function(pattern, replacement, x, ...) {
+  for(i in 1:length(pattern))
+    x <- gsub(pattern[i], replacement[i], x, ...)
+  x
+}
+```
+
+```{r, tidy=FALSE,eval=TRUE}
+Sys.Date()
+sessionInfo()
+```
+
+# Objectifs
+
+Ce fichier de suivi a pour but de centraliser l'ensemble des analyses des teneurs en carbone organique de la BDAT. Ce travail est organisé de la façon suivante :
+
+- Analyse des histogrammes de fréquence et tests statistiques pour chacune des périodes de temps analysées,
+- Représentation cartographique par canton,
+- Analyse des facteurs explicatifs. 
+
+# Préparation des données et chargement de la table de travail
+
+## Préparation
+Les données de la BDAT sont ré-organisées pour faciliter les traitements statistiques et la production de graphiques. La fonction `melt` est utilisée pour transformer les données d'un format "large" à un format "long".
+
+```{r,highlight=TRUE,eval=FALSE}
+# Paramètres
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" # Configuration de la connexion vers le PostGIS
+table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+period <- c("9094","9599","0004","0509","1014")
+schema <- "bdat"
+
+for(i in period){
+  var_variable <- paste("corgox_medequi",i,sep="")
+  tableBDAT <- paste("bdat_canton_corgequiv",i,sep="")
+  
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                      drop column if exists ",var_variable,sep=""))
+  
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                      add column ",var_variable," numeric;
+                      update ",table_dm,"
+                      SET ",var_variable," = s1.med from(
+                      select med,canton
+                      from ",schema,".",tableBDAT,") as s1
+                      where ",table_dm,".code_canton=s1.canton::text",sep=""))
+  
+  # Ajout d'un commentaire sur la nouvelle colonne crée
+  print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Médiane des teneurs en carbone organique après ré-échantillonnage pour la période ",i,".\';",sep="")))
+}
+```
+
+Pour la création de cette table, prendre en compte le fait qu'il faille lancer d'autres scripts avant. Il faudra peut être revoir l'organisation des scripts pour éviter ce genre de désagrément.
+
+```{r,highlight=TRUE,eval=FALSE}
+# Paramètres
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" # Configuration de la connexion vers le PostGIS
+table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+varia <- c("corgox_medequi") # Variable à analyser 
+period <- c("9094","9599","0004","0509","1014")
+mapcanton <- readOGR(dsn = dsn, "dm_vecteurs.canton")
+id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt") #Nom de l'identifiant
+
+# Boucle pour séparer l'année du nom de la variable étudiée
+cpt <- 0
+for(i in varia){
+  print(i)
+  cpt <- cpt + 1
+  variaperiod <- paste(i,period,sep="")  
+  
+  stats.canton <- mapcanton[,c(id,variaperiod)]
+  # Modification de la structure de la table
+  stats.canton <- melt(data=stats.canton@data,id.vars=id)
+  # Extraction de l'année et renommage des colonnes
+  stats.canton[,"variable"] <- as.character(unlist(regmatches(stats.canton[,"variable"],gregexpr('[0-9]+.[0-9]+',stats.canton[,"variable"]))))
+  colnames(stats.canton)[(length(id)+1):(length(id)+2)] <- c("annees",i) #revoir la sélection de ces colonnes
+    
+  if(cpt==1){
+    # Construction de la première table
+    melt.canton <- stats.canton
+  }else{
+    # Ajout à chaque itération de la variable (i)
+    melt.canton <- merge(melt.canton,stats.canton, by.x=c(id,"annees"), by.y=c(id,"annees"),all.x=TRUE,all.y=TRUE)
+  }
+}
+
+# Création finale de la table
+melted.bdat <- melt(data=melt.canton,id.vars=c(id,"annees"))
+melted.bdat$annees <- as.character(melted.bdat$annees)
+melted.bdat$typo_clim <- as.factor(melted.bdat$typo_clim)
+
+# Enregistrement dans le schema dm_traitements
+tablename <- paste("dm_traitements.","melted_bdat",sep="")
+sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
+sqlSave(loc,melted.bdat,tablename=tablename)
+```
+

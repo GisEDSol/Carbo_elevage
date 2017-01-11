@@ -1,0 +1,580 @@
+---
+title: "BD Elevage-sol"
+author: "Jean-Baptiste Paroissien"
+date: "06/01/2017"
+output:
+  html_notebook:
+    toc: true
+    fig_caption: true
+    highlight: zenburn
+    number_sections: yes
+    theme: spacelab
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("/media/sf_GIS_ED/Dev/")
+
+# Chargement des librairies
+library(RODBC);library(gdata);library(rgrass7);library(fields);library(geoR);library(stringr);library(ggplot2);library(plotly);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);
+library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(data.table);library(FactoMineR);library(knitr);library(pander)
+
+# Définition des principaux répertoires de travail
+masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
+
+repLucas <- paste(masterrep,"Data/Lucas/",sep="")
+repCLC <- paste(masterrep,"Data/CLC/",sep="")
+repBDAT <- paste(masterrep,"Data/Sol/bdat/",sep="")
+repBase <- paste(masterrep,"Data/Base/",sep="")
+repagreste <- paste(masterrep,"Data/Vegetation_Occup/Agreste/Disar/",sep="")
+
+# Mise en place de la connexion ODBC
+loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
+
+# Fonction très pratique pour remplacer une suite de charact?res par une autre
+gsub2 <- function(pattern, replacement, x, ...) {
+  for(i in 1:length(pattern))
+    x <- gsub(pattern[i], replacement[i], x, ...)
+  x
+}
+```
+
+# Objectifs
+
+L'objectif de ce document est de centraliser dans un même fichier la création et la description d'une base de données pour étudier l'impact de l'élevage sur la qualité des sols. Cette base contient plusieurs types de données en lien avec les données pédologiques, les données associées à l'occupation du sol et les données environnementales générales telles que le climat ou la topographie. Le document décrit dans un premier temps l'architecture choisie et l'organisation des données. Il présente dans un second temps les scripts d'intégration des données. 
+
+# L'architecture et l'organisation de la base de données
+
+## Architecture technique
+
+L'ensemble des données est stocké dans une base de données type postgresql/postgis. Le serveur de la base est en local et des conversions seront réalisées régulièrement vers une base SQLite/Spatialite pour faciliter le partage des données. SQLite diffère de la plupart des systèmes de gestion de base de données par la gestion d'un fichier de base directement sur le disque dur. A la différence de postgresql/postgis, il ne nécessit pas la création d'un serveur, ce qui facilite les échanges. Plus d'infos, [ici](http://www.developpez.com/actu/94614/Un-developpeur-evoque-cinq-raisons-pour-vous-faire-utiliser-SQLite-en-2016-que-pensez-vous-de-ses-arguments/).
+
+## Organisation de la base de données
+
+Deux types de données sont intégrées dans la base : les données brutes et les données élaborées
+
+### Les données brutes
+
+Elles proviennent de différentes sources et représentent des données qui ne sont pas directement exploitables pour des traitements statistiques ou de la cartographie. Elles sont stockées dans des schémas portant le nom de leur thématique associées (voir tableau ci-dessous). Ces données sont traitées et stockées dans des data marts.
+
+### les data marts
+
+Les data marts (magasins de données) sont les données qui sont directement utilisables dans des traitements. Ces data marts se présentent sous la forme d'une ou plusieurs tables classées dans des schémas distincts. Le nom de ces schémas est préfixé par « dm_». Le tableau suivant dresse la liste des data marts disponibles :
+
+## Documentation
+
+La documentation de cette base de données s'articule autours d'un document général et de plusieurs modes opératoires destinés aux différents types d'utilisateurs (administrateur, développeur et utilisateur). Ces documents sont présents sur la forge du projet à cette adresse.
+
+## Création de la base
+
+La création de la base postgresql/postgis est réalisée selon la procédure suivante :
+
+```{r, engine='bash',highlight=TRUE,eval=FALSE}
+sudo -i -u postgres
+postgres=# CREATE USER jb;
+postgres-# ALTER ROLE jb WITH CREATEDB;
+postgres=# CREATE DATABASE SOL_ELEVAGE OWNER jb;
+postgres-# ALTER USER jb WITH ENCRYPTED PASSWORD '******';
+postgres=# CREATE DATABASE sol_elevage OWNER jb;
+--Installation de l'extension postgis--
+-- Enable PostGIS (includes raster)
+CREATE EXTENSION postgis;
+-- Enable Topology
+CREATE EXTENSION postgis_topology;
+-- Enable PostGIS Advanced 3D 
+-- and other geoprocessing algorithms
+-- sfcgal not available with all distributions
+CREATE EXTENSION postgis_sfcgal;
+-- fuzzy matching needed for Tiger
+CREATE EXTENSION fuzzystrmatch;
+-- rule based standardizer
+CREATE EXTENSION address_standardizer;
+-- example rule data set
+CREATE EXTENSION address_standardizer_data_us;
+-- Enable US Tiger Geocoder
+CREATE EXTENSION postgis_tiger_geocoder;
+CREATE EXTENSION postgis_sfcgal;
+```    
+Configuration du fichier `\etc\odbc.ini` pour se connecter à la base avec R grâce au paquet RODBC.
+
+```{r, engine='bash',highlight=TRUE,eval=FALSE}
+[ODBC]
+InstallDir = /usr/lib
+
+[solelevage]
+Driver = /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so
+Database = sol_elevage
+Servername = localhost
+Username = jb	
+Password = *******
+Port=5432
+Protocol = 8.1
+ReadOnly = 0
+```
+
+# Intégration des données de travail
+
+| Catégorie                             | Type de données                     | Source                         | Contacts                                     |
+|---------------------------------------|-------------------------------------|--------------------------------|----------------------------------------------|
+| Données sols                          | Raster et ShapeFiles (L93)          | InfoSol                        | infosol@inra.fr                              |
+| Données d'occupation du sol           | .xls, raster (L93)                  | RA, Corine Land Cover          | AGRESTE + christophe.perrot@idele.fr         |
+| Données MAFOR                         | ShapeFiles (L93)                    | Interne IDELE                  | chritophe.perrot@idele.fr                    |
+| Données administratives               | ShapeFiles (L93)                    | IGN + Agreste                  |                                              |
+
+## Caractéristiques techniques
+
+```{r, tidy=FALSE,eval=TRUE}
+Sys.Date()
+sessionInfo()
+```
+
+## Les données de bases
+
+Les données dîtes de "bases" correspondent aux contours des entités administratives utilisées pour agréger certaines variables environnementales. Dans ce travail, les contours des communes, des cantons et des petites régions agricoles sont les principales échelles de travail. Les surfaces de ces échelles sont récupérées de la manière suivante :
+
+- Communes et Canton : La version de 2011 de base de données [Geofla](http://professionnels.ign.fr/geofla) est utilisée. Cette version a été choisie pour être en accord avec les données du dernier recencement agricole (2010)
+- Petite région agricole : Les données associées aux petites régions agricoles proviennent de [l'agreste](http://agreste.agriculture.gouv.fr/IMG/zip/comm-ra-pra2007.zip) et sont jointes aux données Geofla.
+
+```{r, engine='bash',highlight=TRUE,eval=FALSE}
+# Intégration des données communales et cantonnales dans la base
+for(i in c("DEPARTEMENTS","CANTON","COMMUNE")){
+  # Téléchargement
+  URL <- paste("https://wxs-telechargement.ign.fr/oikr5jryiph0iwhw36053ptm/telechargement/inspire/GEOFLA_THEME-",i,"_2011_GEOFLA_1-1_SHP_LAMB93_FR-ED111/file/GEOFLA_1-1_SHP_LAMB93_FR-ED111.7z",sep="")
+  system(paste("wget -P ",repBase," ",URL,sep=""))  
+
+    # Décompression
+  system(paste("7z e ",repBase,"GEOFLA_1-1_SHP_LAMB93_FR-ED111.7z -o",repBase," -y",sep=""))
+  
+  # Intégration dans la BDD (suppression si le vecteur exsite déjà)
+  sqlQuery(loc,paste("drop table if exists public.",tolower(i),sep=""))
+  if(i=="DEPARTEMENTS"){i <- "DEPARTEMENT"}else{}
+  system(paste("shp2pgsql -s 2154 -c -D -W \"latin1\" -I ",repBase,i,".shp | psql -d sol_elevage -h localhost -U jb",sep=""))
+  
+  # Nettoyage
+  system(paste("rm -d ",repBase,"*",sep=""))
+}
+
+# Construction du code canton pour les jointures avec les données agreste >> "code_canton"
+sqlQuery(loc,"alter table canton
+              add column code_canton varchar(5);
+              UPDATE public.canton
+              SET code_canton = code_dept || code_cant")
+
+# Déplacement de la table canton ves le schema dm_vecteurs
+sqlQuery(loc,"alter table public.canton set schema dm_vecteurs;")
+
+# Déplacement de la table département
+sqlQuery(loc,"alter table public.departement set schema dm_vecteurs;")
+
+# Déplacement de la table département
+sqlQuery(loc,"alter table public.commune set schema dm_vecteurs;")
+```
+
+```{r,highlight=TRUE,eval=FALSE}
+# Intégration des petites régions agricoles
+
+# Téléchargement
+URL_pra <- "http://agreste.agriculture.gouv.fr/IMG/zip/comm-ra-pra2007.zip"
+system(paste("wget -P ",repBase," ",URL_pra,sep=""))  
+
+# Décompression
+system(paste("7z e ",repBase,"comm-ra-pra2007.zip -o",repBase," -y",sep=""))
+
+# Intégration dans la BDD (suppression si le vecteur exsite déjà)
+pra <- read.table(file=paste(repBase,"comm-ra-pra2007.txt",sep=""), header=TRUE,sep='\t',fileEncoding="latin1",quote="Na",fill=TRUE)
+pra <- pra[,1:10]
+
+sqlQuery(loc,paste("drop table if exists public.pra",sep=""))
+sqlSave(loc,pra,tablename="pra")
+
+# Nettoyage
+system(paste("rm -d ",repBase,"*.txt",sep=""))
+
+# Jointure de la table pra vers la table commune (ici, on ajoute le code pra à la couche commune)
+sqlQuery(loc,"alter table commune add column pra text")
+sqlQuery(loc,"update commune
+              set pra = petiterégionagricole from(
+              select pra.petiterégionagricole, pra.codecommune
+              from pra) as s1 where commune.INSEE_com=s1.codecommune")
+```
+
+# Les données sols
+ 
+| Catégorie                             | Type de données                     | Source                         | Contacts                                     |
+|---------------------------------------|-------------------------------------|--------------------------------|----------------------------------------------|
+| BDAT                                  | ShapeFiles (L93)                    | InfoSol                        | infosol@inra.fr                              |
+| LUCAS                                 | ShapeFiles (L93)                    | JRC                            |                                              |
+| BDGSF                                 | ShapeFiles (L93)                    | JRC                            |                                              |
+| Stock de carbone                      | Raster (L93)                        | Interne IDELE                  | infosol@inra.fr                              |
+| Biomasse microbienne                  | Raster (L93)                        | IGN + Agreste                  | infosol@inra.fr                              |
+
+## BDAT
+
+Deux types de données sont intégrées dans la base de données. Dans un premier temps, les données BDAT disponibles sur le XXX sont intégrées. Il s'agit de statistiques descriptives aggrégées à l'échelle du canton. Ces données ne sont pas exploitables dans le cadre d'une étude sur l'évolution temporelle car le nombre d'effectif n'est pas le même d'une année à l'autre. Le deuxième jeu de données intégrées prend en compte ce biais par un ré-échantillonnage artificiel des analyses afin d'assurer le calcul de statistiques descriptives basées sur un même nombre d'effectif.
+
+Les commandes suivantes importent les données de la BDAT non harmonisées :
+```{r importBDAT, eval=FALSE}
+period <- c("9094","9599","0004","0509")
+# Selection des fichiers à importer
+ListBDAT <- gsub("\\.txt$","",list.files(paste(repBDAT,"BDAT_datapaper/",sep=""),pattern="\\.txt$"))
+#ListBDAT <- gsub("\\.txt$","",list.files(repBDAT,pattern="bdat_canton$"))#Voir pour sélectionner uniquement les fichiers bdat_canton
+
+for(i in ListBDAT){
+  print(i)
+  # Lecture du fichier
+  txtBDAT <- read.table(paste(repBDAT,i,".txt",sep=""),sep="\t",header=TRUE)
+  txtBDAT[,2] <- as.character(txtBDAT[,2])
+  
+  # Intégration dans la bdd
+  sqlQuery(loc,paste("drop table if exists bdat.",i,sep=""))
+  sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
+}
+```
+
+la liste d'instructions suivante intègre les analyses de la BDAT ré-échantillonnées dans la base de données.
+
+```{r importBDAT_harmo, eval=FALSE}
+# Selection des fichiers à importer
+ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/",sep=""),pattern="\\.csv$"))
+
+for(i in ListBDAT){
+  print(i)
+  # Lecture du fichier
+  txtBDAT <- read.csv(paste(repBDAT,"BDAT_harmonisee/",i,".csv",sep=""),sep=";",header=TRUE,colClasses=c("canton"="character"))
+
+    # Intégration dans la bdd
+  sqlQuery(loc,paste("drop table if exists bdat.",i,sep=""))
+  sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
+}
+
+```
+
+## La BDGSF
+
+http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDB_data_1k_raster_intro/ESDB_1k_raster_data_intro.html
+
+```{r importBDGSF, eval=FALSE}
+
+
+```
+## Les données LUCAS soil Database
+
+Ici, on présente l'intégration des différentes données lucas.
+Il y a les données de bases lucas topsoil et également d'autres données élaborées en partie construite avec LucasTopsoil.
+
+
+```{r importLucas_topsoil, eval=FALSE}
+# Décompression de l'archive télécharger après une demande ici : http://eusoils.jrc.ec.europa.eu/content/lucas-2009-topsoil-data#tabs-0-description=1&tabs-0-description-2=
+system("unzip Data/Lucas/LUCAS_TOPSOIL_v1.zip -d Data/Lucas/Topsoil/.")
+
+# Conversion vers un fichier csv
+installXLSXsupport()
+Lucasdf <- read.xls(paste(repLucas,"Topsoil/LUCAS_TOPSOIL_v1.xlsx",sep=""),sheet="Sheet1")
+Lucasdf <- Lucasdf[complete.cases(Lucasdf[,c("GPS_LAT","GPS_LONG")]),]
+# Enregistrement dans la base locale
+sqlSave(loc,Lucasdf)
+
+# Conversion en postgis/définition du srid
+sqlQuery(loc,"ALTER TABLE Lucasdf ADD COLUMN geom geometry(Point,4326);
+              UPDATE Lucasdf SET geom = ST_SetSRID(ST_MakePoint(gps_long, gps_lat), 4326);")
+
+# Reprojection en L93
+sqlQuery(loc,"ALTER TABLE Lucasdf
+              ALTER COLUMN geom 
+              TYPE Geometry(Point, 2154) 
+              USING ST_Transform(geom, 2154);")
+ 
+# Sélection spatiale des points Lucas pour la France
+sqlQuery(loc,"CREATE table public.test AS
+              SELECT *
+              FROM Lucasdf
+              WHERE ST_Contains(Lucasdf.the_geom,commune.the_geom")
+
+SELECT "KDhh_survey".* 
+FROM
+public."KDhh_survey",
+public."ur_pilot_survey"
+WHERE
+ST_contains(public."ur_pilot_survey".the_geom, public."KDhh_survey".the_geom);
+
+
+
+system("v.select --overwrite ainput=lucasref_L93 atype=point binput=franceL93 output=lucasref_L93_fr")
+
+# Exportation vers un shapefile
+system("v.out.ogr input=lucasref_L93_fr type=point dsn=/home/jb/Bureau/PrLucas/")
+
+# Exportation vers PostGis
+sqlQuery(databaracoa,"drop table if exists data.lucastopsoil_fr")
+system("shp2pgsql -c -s 2154 /home/jb/Bureau/PrLucas/lucasref_L93_fr.shp data.lucastopsoil_fr| psql -h baracoa.orleans.inra.fr -p 5434 -U jbparoissien jbparoissien")
+
+# Préparation finale
+#Ajout d'une colonne geom pour le système de coodonnées lambert2etendue
+
+# Reprojection de la table en lambert9
+# Ajout des colonnes
+
+sqlQuery(databaracoa,paste("select addgeometrycolumn('data','lucastopsoil_fr', 'the_geom_l2e',27582,'POINT',2)",sep=""))
+sqlQuery(databaracoa,paste("select addgeometrycolumn('data','lucastopsoil_fr', 'the_geom_l93',2154,'POINT',2)",sep=""))
+sqlQuery(databaracoa,paste("update lucastopsoil_fr set the_geom_l93 = geom",sep=""))
+sqlQuery(databaracoa,paste("select DropGeometryColumn('data','lucastopsoil_fr','geom')",sep=""))
+
+# Reprojection
+sqlQuery(databaracoa,paste("update lucastopsoil_fr set the_geom_l2e = st_setsrid(st_transform(st_setsrid(the_geom_l93,2154),27582),27582);",sep=""))
+
+# Pour connaître les coordonnées géographiques
+sqlQuery(databaracoa,"alter table lucastopsoil_fr
+	 add column x_l93 double precision;
+	 alter table lucastopsoil_fr
+	 add column y_l93 double precision;
+	 alter table lucastopsoil_fr
+	 add column x_l2e double precision;
+ 	 alter table lucastopsoil_fr
+	 add column y_l2e double precision;")
+
+
+sqlQuery(databaracoa,"update lucastopsoil_fr set x_l93 = ST_X(ST_SetSRID(the_geom_l93, 2154));
+	 update lucastopsoil_fr set y_l93 = ST_Y(ST_SetSRID(the_geom_l93, 2154));")
+
+sqlQuery(databaracoa,"update lucastopsoil_fr set x_l2e = ST_X(ST_SetSRID(the_geom_l2e, 27582));
+	 update lucastopsoil_fr set y_l2e = ST_Y(ST_SetSRID(the_geom_l2e, 27582));")
+
+
+```
+
+```{r importLucas, eval=FALSE}
+# Décompression des différentes archives vers le réperoire 'Elaborees'
+LucasData <- c("AWC_EU23","BulkDensity_EU23","Clay_EU23","CoarseFragments_EU23","ER100mFinal","ESDB_soil_compaction_pack")
+for(i in LucasData){
+  system(paste("unzip ",repLucas,i,".zip -d ",repLucas,"Elaborees/.",sep=""))
+}
+
+```
+
+# Les données d'occupation du sol
+
+## Corine Land Cover (CLC)
+
+Les données CLC ont été téléchargé à cette adresse [http://www.statistiques.developpement-durable.gouv.fr/clc/fichiers/](http://www.statistiques.developpement-durable.gouv.fr/clc/fichiers/)
+Ici, petit texte explicatif 
+
+```{r importCLC,eval=FALSE}
+CLC <- c("CLC90R_FR_RGF_TIF","CLC00R_FR_RGF_TIF","CLC06R_FR_RGF_TIF","CLC12R_FR_RGF_TIF")
+# Décompression des différentes archives téléchargé à cette adresse : 
+for(i in CLC){
+  system(paste("unzip Data/CLC/",i,".zip -d.",sep=""))
+}
+```
+
+## Les données du recensement agricole
+
+Les données du recensement agricole ont été extraites de requêtes lancées sur [Disard](http://cybergeo.revues.org/23155). L'ensemble des tables intégrées dans la base de données est présenté dans le tableau ci-dessous.
+
+```{r,eval=TRUE,warning=FALSE}
+# Description des tables (voir pour rajouter les métadonnées dans les commentaires de table)
+metatable <- read.csv(paste(repagreste,"Catalogue_RA.csv",sep=""),sep=";")
+pander(metatable)
+```
+
+Dans les tables de sorties de Disard, le numéro de canton et le nom du chef lieu sont enregistrés dans le même champs. Dans les commandes suivantes, le numéro de canton et le nom du chef lieu sont dissociés dans un champs qui leur est propre pour faciliter les jointures futures.  
+
+```{r importagreste,eval=TRUE,warning=FALSE,}
+# data.table à voir 
+installXLSXsupport()
+
+catalogue <- read.csv(paste(repagreste,"Catalogue_RA.csv",sep=""),sep=";")
+Liste_fichiers <- catalogue[,2]
+Commentaires <- catalogue[,3]
+#Liste_fichiers <- gsub("\\.xls$","",list.files(repagreste,pattern="\\.xls$"))# Liste des xls présent dans le répertoire de travail (repagreste)
+schema <- "ra" #Nom du schema de stockage des données
+
+cpt <- 0
+for(i in Liste_fichiers){
+  
+  if(i=="UGBTA_canton880010"){
+  # Intégration spéciale pour la table UGBTA_canton880010.csv" (Téléchargé http://agreste.agriculture.gouv.fr/IMG/xls/Donnees_principales__canton_departement_.xls)
+  tablecsv <- read.csv(paste(repagreste,"UGBTA_canton880010.csv",sep=""),header=TRUE,sep=";",colClasses=c("num_canton"="character"))
+  
+  # Configuration des types de champs
+  tablecsv[,-1] <- data.frame(lapply(tablecsv[,-1], function(v) {
+    as.numeric(as.character(v))}))
+
+  # Suppression des lignes avec une SAU=0
+  tablecsv <- tablecsv[tablecsv$SAU2000>0 & tablecsv$SAU2010>0 & tablecsv$SAU1988>0,]
+
+  sqlQuery(loc,paste("drop table if exists ",schema,".UGBTA_canton880010",sep=""))
+  sqlSave(loc,tablecsv,tablename = paste(schema,".UGBTA_canton880010",sep=""))
+  
+  # Ajout d'un commentaire
+  print(sqlQuery(loc,paste("
+	    COMMENT ON TABLE ",schema,".",i," IS \'",Comment,".\';",sep="")))
+  next
+  }else{}
+  
+  cpt <- cpt + 1 
+  # Lecture du fichier
+  xlsfiles <- read.xls(paste(repagreste,i,".xls",sep=""),sheet="Feuille1",header=TRUE,fileEncoding="latin1",sep=",")  
+  Comment <- Commentaires[cpt]
+
+  # Configuration des types de champs
+  xlsfiles[,-1] <- data.frame(lapply(xlsfiles[,-1], function(v) {
+    as.numeric(as.character(v))}))
+  
+  # Extraction du code canton  
+  toto <- as.character(xlsfiles[[1]])
+  numcanton <- regmatches(toto,gregexpr('[0-9]+.[0-9]+',toto))
+  xlsfiles["Num_canton"] <- as.character(unlist(numcanton))
+  
+  # Extraction du nom du chef lieu (tout ce qu'il y a après le tiret)
+  #regmatches(popo2,gregexpr('^[a-zA-Z]+$',popo2))
+  xlsfiles["nom_chflieu"] <- gsub2(".*- ", "", as.character(unlist(toto)))
+   
+  # Enregistrement dans la base locale
+  sqlQuery(loc,paste("drop table if exists ",schema,".",i,sep=""))
+  sqlSave(loc,xlsfiles,tablename = paste(schema,".",i,sep=""))
+  
+  # Ajout d'un commentaire
+  print(sqlQuery(loc,paste("
+	    COMMENT ON TABLE ",schema,".",i," IS \'",Comment,".\';",sep="")))
+}
+```
+
+## Les grandes régions d'élevage
+
+Ici, on importe le fichier excel fournit par Christophe Perrot
+
+```{r importRegionElevage,eval=FALSE}
+repRegionElevage <- "/media/sf_GIS_ED/Dev/Data/Regions_elevages/"
+regelevage <- read.csv(paste(repRegionElevage,"zonage_idele_13_modif.csv",sep=""),header=TRUE,sep=";")  
+schema <- "public" 
+
+# Voir pour supprimer les valeurs avec "." (les mettres en NA)
+sqlQuery(loc,paste("drop table if exists ",schema,".regelevage",sep=""))
+sqlSave(loc,regelevage,tablename=paste(schema,".regelevage",sep=""))
+
+# Jointure vers la table dm_vecteurs.commune
+table_dm <- "dm_vecteurs.commune"
+var <- "regelevage"
+
+for(i in c("zonage_simple","zonage_cplt")){
+  
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                      drop column if exists ",i,sep=""))
+  
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                      add column ",i," text;
+                      update ",table_dm,"
+                      SET ",i," = s1.",i," from(
+                      select ",i,",codecommune
+                      from ",schema,".regelevage) as s1
+                      where ",table_dm,".insee_com=s1.codecommune::text",sep=""))
+  
+  # Ajout d'un commentaire sur la nouvelle colonne créée
+  print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",table_dm,".",i," IS \'",i," des principales régions d élevage. La table ",schema,".regelevage présente la signification des codes utilisés pour le zonage. Source DG AGRI RICA UE 2012 - traitement IDELE\';",sep="")))
+}
+
+# Agrégation à l'échelle du canton (valeur majoritaire)
+table_dm <- "dm_vecteurs.canton"
+var <- "regelevage"
+
+for(i in c("zonage_simple","zonage_cplt")){
+
+  # Suppression de la colonne si déjà existante
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                    drop column if exists ",i,sep=""))
+  
+  # Création de la colonne, aggrégation par canton (valeur majoritaire, fonction mode()) et jointure vers la table canton 
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                    add column ",i," text;
+                    update ",table_dm,"
+                    SET ",i," = s1.",i," from(
+                    select (code_dept || code_cant) as num_canton,mode() within group (order by regelevage.",i,") as ",i,"
+                    from ",schema,".regelevage                  
+                    inner join dm_vecteurs.commune as c on c.insee_com=regelevage.codecommune
+                    group by code_dept || code_cant) as s1
+                    where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
+
+  #Ajout d'un commentaire sur la nouvelle colonne créée
+ print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",table_dm,".",i," IS \'",i," des principales régions d élevage par canton. La valeur est issue des données communales (",schema,".regelevage) et représente la valeur majoritaire par canton. La table ",schema,".regelevage présente la signification des codes utilisés pour le zonage. Source DG AGRI RICA UE 2012 - traitement IDELE\';",sep="")))
+}
+```
+
+
+
+
+# Les données climatiques
+
+Plusieurs sources de données climatiques sont disponibles.
+
+Pour le moment, seul le travail de [Joly et al., 2010](http://cybergeo.revues.org/23155) est exploité. Les autres sources de données pourront être intégrées ultérieurement dans la base dans le schéma `climato`.
+
+## Topologie du climat en France
+
+Les données climatiques utilisées proviennnent du travail de Joly et al., 2010 sur la typologie du climat en France (rajouter la référence) et un bref descriptif. Les commandes suivantes importent la table `table_commun.txt` disponible à cette adresse. Les données climatiques sont ensuite aggrégées par canton dans le fichier de suivie [Traitement_climato.Rmd](https://github.com/Rosalien/GISEDSol/blob/master/Fichiers_suivis/Traitements/Suivis/Traitements_climato.Rmd). 
+
+```{r importClimatL,eval=FALSE}
+##Paramètres
+rep_climato <- paste(masterrep,"Data/Climato/Joly2010",sep="")#Répertoire des données climatiques à intégrer
+
+#Lecture de la table
+jolytable <- read.csv(paste(rep_climato,"/tableau_commun.txt",sep=""),sep="\t",header=TRUE,colClasses=c("DC"="character"),na.strings = c("-9999","2999.9"))#Dans la lecture, on spécifie le type de colonne pour DC (text) afin d'assurer les jointures. Les valeurs -9999 sont considérées comme NA. Les valeurs 2999.9 sont a priori des erreurs (valeurs abérantes)
+jolytable$HPLUIE_AN <- as.numeric(as.character(jolytable$HPLUIE_AN))
+
+# Les valeurs 9 et 0 pour la colonne typo_clim sont considérées comme NA
+jolytable$TYPO_CLIM[jolytable$TYPO_CLIM==9 | jolytable$TYPO_CLIM==0] <- NA
+
+#Enregistrement vers la base, schéma climatot
+sqlQuery(loc,"drop table if exists climato.climatjoly")
+sqlSave(loc,jolytable,tablename="climato.climatjoly")
+
+#Ajout d'un commentaire pour décrire la table
+sqlQuery(loc,"COMMENT ON TABLE climato.climatjoly IS 'Table importée à cette adresse : http://cybergeo.revues.org/26894?file=1. Le fichier initial est au format TXT, comporte 36267 lignes (une par commune) et 16 colonnes, soit respectivement, l’identifiant communal INSEE (DC) les 14 variables climatiques traitées et une variable définissant le type climatique où se range la commune. La valeur codant l’absence de données est -9999. Plus infos : http://cybergeo.revues.org/23155 
+L’usage de ces fichiers est strictement limité au domaine des services publics. Toute exploitation de la base climatique, totale ou partielle (cartes, tableaux, etc.), doit être accompagnée de la mention de la source décrite ainsi :
+Source : Base de données climatiques communales 2009. THEMA Université de Franche-Comté, CNRS UMR6049 (F-25000 Besançon) /CESAER INRA UMR1041 (F-21000 Dijon) ; d’après Météo France 1971-2000.';")
+```
+
+# Création d'une vue pour les métadonnées
+
+Pour faciliter la compréhension des données stockées dans la base de données, une vue des métadonnées est générées dans la commande suivante.
+
+```{r,eval=FALSE}
+# Création d'une vue pour les métadonnées
+CREATE OR REPLACE VIEW metadata AS
+SELECT
+ schema_name,
+ table_name,
+ column_name,
+ comment
+FROM
+(
+         SELECT n.nspname AS schema_name,
+            c.relname AS table_name,
+            a.attname AS column_name,
+            col_description(c.oid, a.attnum::integer) AS comment
+           FROM pg_class c
+      JOIN pg_attribute a ON a.attrelid = c.oid
+   JOIN pg_namespace n ON n.oid = c.relnamespace
+  WHERE NOT n.nspname ~~ 'pg\_%'::text AND NOT n.nspname =
+'information_schema'::name AND NOT a.attisdropped AND a.attnum > 0 AND
+c.relkind = 'r'::"char"
+UNION ALL
+         SELECT n.nspname AS schema_name,
+            c.relname AS table_name,
+            '<table>'::name AS column_name,
+            obj_description(c.oid) AS comment
+           FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+     WHERE NOT n.nspname ~~ 'pg\_%'::text AND NOT n.nspname =
+'information_schema'::name AND c.relkind = 'r'::"char"
+  ORDER BY 1, 2, 3
+) AS ss;
+```
+
+
+
+
+
+
+

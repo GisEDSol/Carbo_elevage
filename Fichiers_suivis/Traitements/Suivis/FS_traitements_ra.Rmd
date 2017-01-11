@@ -1,0 +1,198 @@
+---
+title: "Analyse des données du recencement agricole"
+author: "Jean-Baptiste Paroissien"
+date: "21/12/2016"
+output:
+  html_notebook:
+    toc: true
+    fig_caption: true
+    highlight: zenburn
+    number_sections: yes
+    theme: spacelab
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("/media/sf_GIS_ED/Dev/")
+# Chargement des librairies
+library(RODBC);library(gdata);library(rgrass7);library(fields);library(geoR);library(stringr);library(ggplot2);library(plotly);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);
+library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(data.table);library(FactoMineR);library(knitr)
+
+# Définition des principaux répertoires de travail
+masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
+repfonctions <- paste(masterrep,"Scripts/master/Fonctions/R/",sep="")
+repagreste <- paste(masterrep,"Data/Vegetation_Occup/Agreste/Disar/",sep="")
+repsortie <- paste(masterrep,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
+# Mise en place de la connexion ODBC
+loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
+
+# Chargement de la fonction cartoperiod
+source(paste(repfonctions,"cartoperiod.R",sep=""))
+
+# Fonction très pratique pour remplacer une suite de charact?res par une autre
+gsub2 <- function(pattern, replacement, x, ...) {
+  for(i in 1:length(pattern))
+    x <- gsub(pattern[i], replacement[i], x, ...)
+  x
+}
+```
+# Objectifs
+
+L'objectif de ce travail est d'analyser les principales tendances d'occupation du sol en lien avec les données du recencement agricole. Ces données ont été produites avec les scripts de préparation des données [Traitement_RA.Rmd](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Suivis/Traitement_RA.Rmd) et la fonction de cartographie [cartoperiod.R](https://github.com/Rosalien/GISEDSol/blob/master/Fonctions/R/cartoperiod.R).
+
+# Représentation cartographique de variables associées à l'activité de l'élevage
+
+Ici, prendre du recul sur l'occupation du sol et son évolution. On pourra s'appuyer sur d'autres types de graphiques, comme les boxplots avec des stats du type (% de prairies retournées...?) 
+
+## L'occupation du sol
+
+### A l'échelle de la france
+```{r,highlight=TRUE,eval=TRUE}
+# Paramètres ###########################
+tablecarto <- "dm_vecteurs.canton" 
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
+variablecarto <- "var_sth7910" #variable à spatialiser
+l_legend <- "Evolution de la STH 1979-2010 (%) "#label de la variable
+nclasse <- 5 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "quantile" #"pretty"#"jenks"
+couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+nomfichier="test"
+
+# Lancement
+cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,dept=FALSE,reg=54)
+```
+
+```{r,highlight=TRUE,eval=FALSE}
+# Paramètres ###########################
+tablecarto <- "dm_vecteurs.canton" 
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
+period <- c("1979","1988","2000","2010") #
+variable <- c("p_prairie","p_sth","p_sfp","p_mf","p_c")#variable(s) à cartographier
+l_legend <- c("Pourcentage Prairie","Pourcentage STH/SAU", "Pourcentage SFP/SAU", "Pourcentage MFL/SAU","Pourcentage C/SAU")# Nom des labels associés aux variables à cartographier. Vecteur utilisé pour les titres des cartes
+#variable <- "p_prairie"
+nclasse <- 5 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "quantile" #"pretty"#"jenks"
+couleur <- "YlGnBu" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+
+# Boucles pour cartographier chaque variable à chaque période de temps étudiée
+cpt <- 0
+for(v in variable){
+  cpt <- cpt + 1
+  nomfichier <- v
+  l_legendvaria <- l_legend[cpt]
+  variablecarto <- paste(v,period,sep="")
+  
+  cartoperiod(dsn,tablecarto,variablecarto=variablecarto,nclasse,style_classe,couleur,l_legend=l_legendvaria,repsortie,nomfichier,dept="37",reg=FALSE)
+}
+```
+
+
+```{r,highlight=TRUE,eval=FALSE}
+# Lecture de la table de travail
+reg <- "54|23|83|25"
+
+reg <- "26|23|83|54|74|52|53|25|74"
+
+period <- c("1970","1979","1988","2000","2010") # Années des différents recencements agricoles
+
+#melted.RA <- sqlQuery(loc,paste("select * from ra.melted_RA where code_reg similar to '",reg,"'",sep=""))
+melted.RA <- sqlQuery(loc,paste("select * from ra.melted_RA where code_reg similar to '",reg,"'",sep=""))
+
+melted.RA <- melted.RA[complete.cases(melted.RA),]
+
+
+p_variable <- cbind("p_prairie","p_sth","p_sfp")#,"p_mf")#,"p_c")
+
+cpt <- 0
+for(i in p_variable){
+  cpt <- cpt + 1
+  melted.RAsth <- melted.RA[melted.RA["variable"] == i,]
+  melted.RAsth[,"annees"] <- as.factor(melted.RAsth[,"annees"])
+  #melted.RAsth[,"code_reg"] <- as.factor(melted.RAsth[,"code_reg"])
+  melted.RAsth[,"nom_region"] <- as.factor(melted.RAsth[,"nom_region"])
+  
+  p <- ggplot(melted.RAsth) +
+            geom_boxplot(aes(x=annees,y=value,col=nom_region))+
+            geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
+            scale_x_discrete("Années")+scale_y_continuous("Pourcentage")+labs(title=i)+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+                  text = element_text(size = 12),
+                  axis.title = element_text(face="bold"),
+                  axis.text.x=element_text(size = 11))
+  
+  ggsave(p,file = paste("evolregion",i,".png",sep=""), width = 15, height = 10)  
+  }
+  
+  #tt <- do.call("grid.arrange",p)
+  #ggsave(tt, file = paste("map_",reg,"_",v,".png",sep=""), width = 10, height = 10)  
+```
+
+```{r,highlight=TRUE,eval=FALSE}
+##################Autre méthode#######################
+
+sth <- c("p_sth1979","p_sth1988","p_sth2000","p_sth2010")
+sfp <- c("p_sfp1979","p_sfp1988","p_sfp2000","p_sfp2010")
+
+pdf(paste("STH_SFP.pdf",sep=""),width=7, height=7)
+boxplot(mapcanton@data[,sth],at = 1:4 - 0.15,col = "white",xlab="Années",ylab="% de SAU",boxwex = 0.15,xaxt = "n",ylim=c(0,100))
+axis(1, at = 1:4, labels=c("1979","1988","2000","2010"))
+boxplot(mapcanton@data[,sfp],boxwex = 0.15,at = 1:4 + 0.15,col = "grey",xaxt = "n",outline=FALSE,add=TRUE,axes=FALSE)
+box()
+legend("bottomleft",c("sth", "sfp"),fill = c("white", "grey"),bty="n")
+dev.off()
+
+summary(mapcanton@data$p_sth1979)
+summary(mapcanton@data$p_sth1988)
+summary(mapcanton@data$p_sth2000)
+summary(mapcanton@data$p_sth2010)
+```
+
+
+
+Boxplot pour le poitou charentes
+```{r,highlight=TRUE,eval=FALSE}
+# Lecture de la table de travail
+reg <- "54" # Nom de la région à sélectionner
+melted.RAreg <- sqlQuery(loc,paste("select * from ra.melted_RA where code_reg like '",reg,"'",sep=""))
+melted.RAreg <- melted.RA[complete.cases(melted.RAreg),]
+
+p1 <- ggplot(melted.RAreg, aes(x=as.factor(annees), y=value, col=variable))+
+              geom_boxplot(alpha=0.7)+
+              scale_x_discrete("Années")+scale_y_continuous("Pourcentage")+
+              theme(plot.title = element_text(size = 14, face = "bold"), 
+                    text = element_text(size = 12),
+                    axis.title = element_text(face="bold"),
+                    axis.text.x=element_text(size = 11))+
+              scale_fill_brewer(palette = "Dark2")
+p1
+ggsave(p1, file = paste("boxplot_",reg,".png",sep=""), width = 10, height = 10)  
+```
+
+
+
+## Exploration et fouille de données
+
+```{r,highlight=TRUE,eval=FALSE}
+# Pour l'exploration, on se basera sur les fichiers sources du RA (différent melted)
+
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" # Configuration de la connexion vers le PostGIS
+varia <- c("p_sth","p_sfp","p_prairie") # Variable à analyser 
+period <- c("1979","1988","2000","2010") #Période de temps
+id <- c("code_canton","code_reg") #Nom de l'identifiant
+
+variable <- paste()
+
+# Lecture du postgis
+mapcanton <- readOGR(dsn = dsn, "canton")
+
+sth <- c("p_sth1979","p_sth1988","p_sth2000","p_sth2010")
+sfp <- c("p_sfp1979","p_sfp1988","p_sfp2000","p_sfp2010")
+
+mapcanton.active <- mapcanton@data[,c("corgox_med9094","corgox_med9599","corgox_med0004","corgox_med0509",sth,sfp)]
+res.pca <- PCA(mapcanton.active, graph = FALSE)
+fviz_pca_var(res.pca)
+
+#fviz_pca_var(res.pca, col.var="cos2") +
+#scale_color_gradient2(low="white", mid="blue", 
+                    #high="red", midpoint=0.5) + theme_minimal()
+```

@@ -1,0 +1,462 @@
+---
+title: "Traitement des données du Recencement Agricole"
+author: "Jean-Baptiste Paroissien"
+date: "06/01/2017"
+output:
+  html_notebook:
+    toc: true
+    fig_caption: true
+    highlight: zenburn
+    number_sections: yes
+    theme: spacelab
+---
+
+```{r setup, include=FALSE,eval=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("/media/sf_GIS_ED/Dev/")
+
+# Chargement des librairies
+library(RODBC);library(gdata);library(rgrass7);library(fields);library(geoR);library(stringr);library(ggplot2);library(plotly);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);
+library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(data.table);library(FactoMineR);library(knitr)
+
+# Définition des principaux répertoires de travail
+masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
+
+rep_climato <- paste(masterrep,"Data/Climato/Joly2010",sep="")
+repLucas <- paste(masterrep,"Data/Lucas/",sep="")
+repCLC <- paste(masterrep,"Data/CLC/",sep="")
+repBDAT <- paste(masterrep,"Data/Sol/bdat/",sep="")
+repBase <- paste(masterrep,"Data/Base/",sep="")
+repagreste <- paste(masterrep,"Data/Vegetation_Occup/Agreste/Disar/",sep="")
+
+# Mise en place de la connexion ODBC
+loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
+
+# Fonction très pratique pour remplacer une suite de charact?res par une autre
+gsub2 <- function(pattern, replacement, x, ...) {
+  for(i in 1:length(pattern))
+    x <- gsub(pattern[i], replacement[i], x, ...)
+  x
+}
+```
+
+# Objectifs et résumé
+
+L'objectif de ce fichier est de réaliser l'ensemble des traitements associés à la préparation des données du recencement agricole (RA). La préparation des données du RA comprend essentiellement le développement de tables directement exploitables pour de la cartographie ou des analyses statistiques, à savoir :
+
+- le calcul de statistiques simples et des jointures vers une table postGIS,
+- la préparation d'une table au format large pour différentes applications avec les fonctions du paquet `ggplot2`.
+
+Le résultat des traitements est accessible dans la table `dm_vecteurs.canton` et l'exploitation des traitements est réalisé dans le fichier [Analyses_RA.Rmd](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Suivis/Analyses_RA.Rmd)
+
+# Calcul de différentes statistiques et jointures vers la table `dm_vecteurs.canton`
+
+## Calcul de la proportion d'occupation du sol par SAU
+
+Le code suivant calcul la proportion de la surface d'occupation du sol par rapport à la SAU pour différentes périodes de temps étudiées. Les occupations du sol pris en compte sont les suivantes :
+
+- Superficie Toujours en Herbe (STH),
+- Surface fourragère princiaple (SFP),
+- Maïs fourrage ensilage (MFE),
+- Céréales.
+
+A chaque itération, un commentaire est ajouté à la colonne nouvellement créée.
+
+```{r,highlight=TRUE,eval=FALSE}
+#Paramètres
+period <- c("1970","1979","1988","2000","2010") #périodes de temps analysées 
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" #paramètre de la base de données (en local)
+SAU <- "superficieagricoleutilisée1"#Nom du champs de la SAU
+variable <- cbind("superficietoujoursenherbesth","fourragesetsuperficiestoujoursenherbe","maïsfourrageetensilage","céréales") #Nom du champs des tables brutes extaites de disar
+p_variable <- cbind("p_sth","p_sfp","p_mf","p_c") #Nom du champs nouvellement calculé (pourcentage de XX dans la SAU)
+signification <- cbind("surface toujours en herbe","surface fourragère principale","maîs fourrage ensilage","céréales") #variable descriptive pour la construction de la métadonnée
+type_RA <- "S_cultures_canton"
+schema <- "ra"
+table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+
+# Calcul de la proportion de suraface dans la SAU pour chaque période et type d'occupation du sol
+cpt <- 0
+for(v in variable){
+  cpt <- cpt + 1
+  variableRA <- v
+  print(variableRA)
+  sign_varia <- signification[cpt]
+  
+  for(i in period){
+
+    p_variableRA <- paste(p_variable[cpt],i,sep="")
+    print(p_variableRA)
+    tableRA <- paste(type_RA,i,sep="")
+    
+    # Suppression de la colonne si déjà existante
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        drop column if exists ",p_variableRA,sep=""))
+  
+    # Création de la colonne et calcul du ratio occup/SAU
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        add column ",p_variableRA," numeric;
+                        update ",table_dm,"
+                        SET ",p_variableRA," = s1.",p_variableRA," from(
+                        select (",variableRA,"/",SAU,")*100 as ",p_variableRA,",num_canton
+                        from ",schema,".",tableRA,") as s1
+                        where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
+    
+      # Ajout d'un commentaire sur la nouvelle colonne créée
+    	print(sqlQuery(loc,paste("
+	    COMMENT ON COLUMN ",table_dm,".",p_variableRA," IS \'Pourcentage de ",sign_varia," par rapport à la SAU pour ",i,".\';",sep="")))
+  }
+}
+```
+
+## Calcul de la surface des prairies et de la part d'occupation dans la SAU
+
+Le type d'occupation nommé `prairie` correspond à la somme des surfaces toujours en herbe et de la surface des prairies temporaires et artificielles. Le code ci-dessous calcul la proportion de prairie pour les 5 périodes du recencement agricole.
+
+```{r,highlight=TRUE,eval=FALSE}
+# Calcul de statistiques pour les prairies (prairies artificielles, prairies temporaires)
+
+p_variable <- "p_prairie"
+type_RA <- "S_cultures_canton"
+SAU <- "superficieagricoleutilisée1"
+period <- c("1970","1979","1988","2000","2010")
+schema <- "ra"
+table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+
+for(i in period){
+    
+    p_variableRA <- paste(p_variable,i,sep="")
+    print(p_variableRA)
+    tableRA <- paste(type_RA,i,sep="")
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        drop column if exists ",p_variableRA,sep=""))
+  
+    if(i=="1970"){
+      sqlQuery(loc,paste("alter table ",table_dm,"
+                        add column ",p_variableRA," numeric;
+                        update ",table_dm,"
+                        SET ",p_variableRA," = s1.",p_variableRA," from(
+                        select ((COALESCE(prairiestemporaires,0) + COALESCE(superficietoujoursenherbesth,0))/",SAU,")*100 as ",p_variableRA,",num_canton
+                        from ",schema,".",tableRA,") as s1
+                        where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
+      
+      print(sqlQuery(loc,paste("
+	      COMMENT ON COLUMN ",table_dm,".",p_variableRA," IS \'Pourcentage des prairies (sommes des prairies temporaires et des surfaces toujours en herbe) en fonction de la SAU pour ",i,".\';",sep="")))
+      
+    }else{
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        add column ",p_variableRA," numeric;
+                        update ",table_dm,"
+                        SET ",p_variableRA," = s1.",p_variableRA," from(
+                        select ((COALESCE(prairiesartificielles,0) + COALESCE(prairiestemporaires,0) + COALESCE(superficietoujoursenherbesth,0))/",SAU,")*100 as ",p_variableRA,",num_canton
+                        from ",schema,".",tableRA,"
+                        where ",SAU," > 0) as s1
+                        where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
+      
+      print(sqlQuery(loc,paste("
+	    COMMENT ON COLUMN ",table_dm,".",p_variableRA," IS \'Pourcentage des prairies (sommes des prairies temporaires, artificielles et des surfaces toujours en herbe) en fonction de la SAU pour ",i,".\';",sep="")))
+    }
+}
+```
+
+## Orientation technico-économiques des exploitation 
+
+```{r,highlight=TRUE,eval=FALSE}
+# Calcul de statistiques pour les OTEX
+variable <- cbind("polyculturepolyélevageautresotex6173838490","grandesculturesotex1516","elevageshorssolotex51525374")
+p_variable <- cbind("polyelevage","grdcultures","elevagehorsol")
+type_RA <- "otex_canton"
+period <- c("1988","2000","2010")
+signification <- cbind("polyculture-elevage (otex 61,73,83,84,90)","grandes cultures (otex 15,16)","elevage hors sol (otex 51,52,53,74)")
+table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+
+# Calcul du pourcentage des otex des exploitations pour l'ensemble des exploitations d'un canton
+cpt <- 0
+for(v in variable){
+  cpt <- cpt + 1
+  variableRA <- paste(variable[cpt],sep="")
+  print(variableRA)
+  sign_varia <- signification[cpt]
+
+  for(i in period){
+    
+    p_variableRA <- paste(p_variable[cpt],i,sep="")
+    print(p_variableRA)
+    tableRA <- paste(type_RA,i,sep="")
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        drop column if exists ",p_variableRA,sep=""))
+  
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        add column ",p_variableRA," numeric;
+                        update ",table_dm,"
+                        SET ",p_variableRA," = s1.",p_variableRA," from(
+                        select (",variableRA,"/ensemble)*100 as ",p_variableRA,",num_canton
+                        from ",schema,".",tableRA,") as s1
+                        where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
+    
+    print(sqlQuery(loc,paste("
+	    COMMENT ON COLUMN ",table_dm,".",p_variableRA," IS \'Pourcentage exploitation ayant une orientation technico-economique de type ",sign_varia," en ",i,".\';",sep="")))
+    
+    }
+}
+
+# Calcul de l'ensemble du pourcentage d'OTEX elevage pour l'ensemble des exploitations d'un canton
+p_variable <- "elevage"
+type_RA <- "otex_canton"
+
+cpt <- 0
+for(i in period){
+    
+    p_variableRA <- paste(p_variable,i,sep="")
+    print(p_variableRA)
+    tableRA <- paste(type_RA,i,sep="")
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        drop column if exists ",p_variableRA,sep=""))
+  
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        add column ",p_variableRA," numeric;
+                        update ",table_dm,"
+                        SET ",p_variableRA," = s1.",p_variableRA," from(
+                        select ((COALESCE(bovinslaitotex45,0) + COALESCE(bovinsviandeotex46,0) + COALESCE(ovinscaprinsetautresherbivoresotex48,0) + COALESCE(bovinsmixteotex47,0))/ensemble)*100 as ",p_variableRA,",num_canton
+                        from ",schema,".",tableRA,") as s1
+                        where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
+    
+    print(sqlQuery(loc,paste("
+	    COMMENT ON COLUMN ",table_dm,".",p_variableRA," IS \'Pourcentage de la somme des OTEX de type elevage (otex 45,46,47,48) pour ",i,".\';",sep="")))
+}
+```
+
+## Données associées aux UGB
+
+Les données des UGB proviennent de la table accessible à cette [adresse](http://agreste.agriculture.gouv.fr/IMG/xls/Donnees_principales__canton_departement_.xls). A noter qu'il sagit uniquement des UGB tous aliments et que les données sont uniquement accessibles pour 1988, 2000 et 2010. Cette section présente le calcul de la densité d'UGB tous aliments (UGBTA/SAU) pour les 3 périodes de temps disponibles.
+
+```{r,highlight=TRUE,eval=FALSE}
+# Paramètres
+SAU <- "sau"
+UGB  <- "ugbta"
+tableRA <- "ugbta_canton880010"
+periodUGB <- c("1988","2000","2010")
+table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+
+# Calcul chargement
+for(i in periodUGB){
+    
+    UGBperiod <- paste(UGB,i,sep="")
+    SAUperiod <- paste(SAU,i,sep="")
+    
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        drop column if exists ",UGBperiod,sep=""))
+
+    #Vérifier la jointure et l'unité de la SAU (m2 ou ha?)
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        add column ",UGBperiod," numeric;
+                        update ",table_dm,"
+                        SET ",UGBperiod," = s1.",UGBperiod," from(
+                        select (",UGBperiod,"/",SAUperiod,") as ",UGBperiod,",num_canton
+                        from ",schema,".",tableRA,") as s1
+                        where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
+    
+    print(sqlQuery(loc,paste("
+	    COMMENT ON COLUMN ",table_dm,".",UGBperiod," IS \'Densité UGBTA/SAU pour ",i,".\';",sep="")))
+}
+
+# Calcul densité des autres UGB
+variableUGB <- "ensembledesexploitations"
+p_variable <- c("ugbh_sau","ugbgrani_sau")
+table_RA <- c("ugbherbi_canton","ugbgrani_canton")
+period <- c("2000","2010")
+SAU <- "superficieagricoleutilisée1"
+
+signification <- cbind("herbivores","granivores")
+
+cpt <- 0
+for(v in table_RA){
+  cpt <- cpt + 1
+  print(v)
+  sign_varia <- signification[cpt]
+  
+  for(i in periodUGB){
+    
+      p_variableRA <- paste(p_variable[cpt],i,sep="")
+      print(p_variableRA)
+      tableRA <- paste(v,i,sep="")
+      sqlQuery(loc,paste("alter table ",table_dm,"
+                          drop column if exists ",p_variableRA,sep=""))
+
+      #Vérifier la jointure et l'unité de la SAU (m2 ou ha?)
+      sqlQuery(loc,paste("alter table ",table_dm,"
+                          add column ",p_variableRA," numeric;
+                          update ",table_dm,"
+                          SET ",p_variableRA," = s1.",p_variableRA," from(
+                          select (",variableUGB,"/cc.",SAU,") as ",p_variableRA,",cc.num_canton
+                          from ",schema,".",tableRA,"
+                          right join ",schema,".S_cultures_canton2000 as cc on cc.num_canton=",tableRA,".num_canton::text) as s1
+                          where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
+      
+      print(sqlQuery(loc,paste("
+	    COMMENT ON COLUMN ",table_dm,".",p_variableRA," IS \'Pourcentage des UGB ",sign_varia," en fonction de la surface agricole utile en ",i,".\';",sep="")))
+  }
+}
+```
+
+# Calcul des évolutions et jointure vers la table `dm_vecteurs.canton`
+
+Les évolutions d'occupation du sol et de la densité d'UGB sont calculées entre 1970-1979; 1970-2010 et 1979-2010. Le calcul de l'évolution se base sur la relation suivante  : (OccupA- OccupB)/(SAU B) avec A l'année la plus récente et B l'année la plus ancienne.
+
+## Evolution de la superficie d'occupation du sol
+
+```{r,highlight=TRUE,eval=FALSE}
+# Calcul de l'évolution des superficies pour 1979-2010
+
+# Paramètres
+SAU <- "superficieagricoleutilisée1"
+p_variable <- c("var_sth7910","var_cereale7910","var_sfp7910","var_mf7910")
+variable <- c("superficietoujoursenherbesth","céréales","fourragesetsuperficiestoujoursenherbe","maïsfourrageetensilage")
+signification <- cbind("de la surface toujours en herbe","de la surface en céréales"," de la surface fourragère principale","de la surface en maîs fourrage ensilage")
+type_RA <- "s_cultures_canton"
+table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+
+# Calcul de statistiques pour les cultures
+cpt <- 0
+for(v in variable){
+  cpt <- cpt + 1
+  #sign_varia <- signification[cpt]
+  p_variableRA <- p_variable[cpt]
+  
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                      drop column if exists ",p_variableRA,sep=""))
+  
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                      add column ",p_variableRA," numeric;
+                      update ",table_dm,"
+                      SET ",p_variableRA," = s1.",p_variableRA," from(
+                      select ((cc.",v," - tt.",v,")/tt.",SAU,")*100 as ",p_variableRA,",tt.num_canton
+                      from ",schema,".",type_RA,"1979 as tt
+                      right join ",schema,".",type_RA,"2010 as cc on cc.num_canton=tt.num_canton::text) as s1
+                      where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
+    
+  # Ajout d'un commentaire sur la nouvelle colonne crée
+	print(sqlQuery(loc,paste("
+	COMMENT ON COLUMN ",table_dm,".",p_variableRA," IS \'Evolution ",signification[cpt]," entre 2010 et 1979 par rapport à la SAU de 1979.\';",sep="")))
+}
+
+## Evolution pour 1970-1979
+p_variable <- c("var_sth7079","var_cereale7079","var_sfp7079","var_mf7079")
+variable <- c("superficietoujoursenherbesth","céréales","fourragesetsuperficiestoujoursenherbe","maïsfourrageetensilage")
+signification <- cbind("de la surface toujours en herbe","de la surface en céréales"," de la surface fourragère principale","de la surface en maîs fourrage ensilage")
+type_RA <- "s_cultures_canton"
+
+# Calcul de statistiques pour les cultures
+cpt <- 0
+for(v in variable){
+  cpt <- cpt + 1
+  #sign_varia <- signification[cpt]
+  p_variableRA <- p_variable[cpt]
+  
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                      drop column if exists ",p_variableRA,sep=""))
+  
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                      add column ",p_variableRA," numeric;
+                      update ",table_dm,"
+                      SET ",p_variableRA," = s1.",p_variableRA," from(
+                      select ((cc.",v," - tt.",v,")/tt.",SAU,")*100 as ",p_variableRA,",tt.num_canton
+                      from ",schema,".",type_RA,"1970 as tt
+                      right join ",schema,".",type_RA,"1979 as cc on cc.num_canton=tt.num_canton::text) as s1
+                      where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
+    
+  # Ajout d'un commentaire sur la nouvelle colonne crée
+	print(sqlQuery(loc,paste("
+	COMMENT ON COLUMN ",table_dm,".",p_variableRA," IS \'Evolution ",signification[cpt]," entre 1979 et 1970 par rapport à la SAU de 1979.\';",sep="")))
+}
+```
+
+## Evolution des UGB tous aliments pour 1988-2010
+
+```{r,highlight=TRUE,eval=FALSE}
+# Paramètres
+SAU <- "sau"
+variable <- "var_ugb8810"
+tableRA <- "ugbta_canton880010"
+table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+
+sqlQuery(loc,paste("alter table ",table_dm,"
+                    drop column if exists ",variable,sep=""))
+  
+sqlQuery(loc,paste("alter table ",table_dm,"
+                      add column ",variable," numeric;
+                      update ",table_dm,"
+                      SET ",variable," = s1.",variable," from(
+                      select ((ugbta2010- ugbta1988)/",SAU,"1988)*100 as ",variable,",num_canton
+                      from ",schema,".",tableRA,") as s1
+                      where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
+    
+  # Ajout d'un commentaire sur la nouvelle colonne crée
+	print(sqlQuery(loc,paste("
+	COMMENT ON COLUMN ",table_dm,".",variable," IS \'Evolution des UGB tous aliment entre 2010 et 1988 par rapport à la SAU de 1988 (%).\';",sep="")))
+```
+
+# Création des métadonnées
+
+Les commentaires ajoutés lors du processus de création des statistiques peuvent être regroupés au sein du même table pour faciliter la compréhension du nom des champs présent dans les tables. La table ci-dessous présente les métadonnées de la table `dm_vecteurs.canton`.
+
+```{r,highlight=TRUE,eval=TRUE}
+#meta_table <- paste("SELECT tablename, obj_description(
+                    #(SELECT c.oid FROM pg_catalog.pg_class c WHERE c.relname=tablename), 'pg_class') AS comment
+                    #FROM pg_tables
+                    #WHERE schemaname != 'ra'
+                    #-- schemaname != 'information_schema AND schemaname != 'pg_catalog'",sep="")
+
+#tablecomment <- kable(sqlQuery(loc,meta_table))
+tablecomment <- sqlQuery(loc,"select column_name,comment from public.metadata2 where schema_name='dm_vecteurs' and comment is not null")
+test <- kable(tablecomment)
+
+knitr::kable(tablecomment, caption = "Table with kable",format="markdown")
+```
+
+## Préparation des données et statistiques
+
+Les données du recencement (pourcentage de prairie par SAU par exemple) sont ré-organisées pour faciliter les traitements statistiques et la production de graphique. La fonction `melt` est utilisée pour transformer les données d'un format "large" à un format "long".
+
+```{r,highlight=TRUE,eval=TRUE}
+# Paramètres
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" # Configuration de la connexion vers le PostGIS
+varia <- c("p_sth","p_sfp","p_prairie") # Variable à analyser 
+period <- c("1970","1979","1988","2000","2010") #Période de temps
+id <- c("code_canton","code_reg","nom_region") #Nom de l'identifiant
+
+# Lecture du postgis
+mapcanton <- readOGR(dsn = dsn, "dm_vecteurs.canton")
+
+# Boucle pour séparer l'année du nom de la variable étudiée
+cpt <- 0
+for(i in varia){
+  print(i)
+  cpt <- cpt + 1
+  variaperiod <- paste(i,period,sep="")  
+  
+  stats.canton <- mapcanton[,c(id,variaperiod)]
+  # Modification de la structure de la table
+  stats.canton <- melt(data=stats.canton@data,id.vars=id)
+  # Extraction de l'année et renommage des colonnes
+  stats.canton[,"variable"] <- as.character(unlist(regmatches(stats.canton[,"variable"],gregexpr('[0-9]+.[0-9]+',stats.canton[,"variable"]))))
+  colnames(stats.canton)[4:5] <- c("annees",i) #revoir la sélection de ces colonnes
+    
+  if(cpt==1){
+    # Construction de la première table
+    melt.canton <- stats.canton
+  }else{
+    # Ajout à chaque itération de la variable (i)
+    melt.canton <- merge(melt.canton,stats.canton, by.x=c(id,"annees"), by.y=c(id,"annees"),all.x=TRUE,all.y=TRUE)
+  }
+}
+
+# Création finale de la table
+melted.RA <- melt(data=melt.canton,id.vars=c(id,"annees"))
+
+# Enregistrement dans le schema RA
+tablename <- paste("dm_traitements.","melted_RA",sep="")
+sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
+sqlSave(loc,melted.RA,tablename=tablename)
+```
+
+A la suite de ce traitement, la table de travail enregistrée est stocké sous le nom de `r tablename`.

@@ -205,26 +205,55 @@ if(length(variablecarto)>1){
 # Extraction de toutes les valeurs à cartographier pour établir des classes de valeurs à cartographier
 melt.map <- melt(map@data[,variablecarto])[,2]
 
-# Classement (voir pour round)
-classe_valeur <- classIntervals(melt.map,n=nclasse,style=style_classe,digits=2,na.rm=TRUE)[[2]]
 
 cpt <- 0
 p <- list()
 for(i in variablecarto){#CHANGER CETTE VARIABLE
   cpt <- cpt + 1
  
-  # Jointure et changement de nom
-  carto <- merge(cartofor, map@data[,c("id_geofla",i)], by.x="id", by.y="id_geofla")
-  colnames(carto)[8] <- "fill"
+  if(style_classe=="fixed"){
+  	carto <- merge(cartofor, map@data[,c("id_geofla",i)], by.x="id", by.y="id_geofla")
+  	colnames(carto)[8] <- "fill"
+  	carto$fill <- as.factor(carto$fill)
 
-    if(cpt==1){
-      # Extraction de la légende (en horizontal)
-      carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
-      p1 <- ggplot(carto, aes(x=long, y=lat)) +  geom_polygon(data=carto, aes(group=group, fill=fill)) + scale_fill_brewer(palette = couleur,name=l_legend,guide = guide_legend(reverse=FALSE,nrow=1))+theme(legend.position="bottom")#+guides(colour = guide_legend(nrow = 1))
-      plotLegend = g_legend(p1)  
-    }else{
-      carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
-    }
+  	if(cpt==1){
+  		# Extraction de la légende (en horizontal)
+	    p1 <- ggplot(carto, aes(x=long, y=lat)) +  geom_polygon(data=carto, aes(group=group, fill=fill)) + scale_fill_brewer(palette = couleur,name=l_legend,guide = guide_legend(reverse=FALSE,nrow=1))+theme(legend.position="bottom")#+guides(colour = guide_legend(nrow = 1))
+	    plotLegend = g_legend(p1)
+	    }else{}
+
+
+    # Création de la carte
+    p[[i]] <- ggplot(carto, aes(x=long, y=lat)) +
+              geom_polygon(data=carto, aes(group=group, fill=fill),size=0.1) +
+              geom_path(data=carto, aes(x=long,y=lat,group=group),color="white",size=0.1)+# Représenter les cantons
+              geom_path(data=cartodep, aes(x=long,y=lat,group=group),color="black",size=0.1)+# Représenter les contours des départements
+              scale_fill_brewer(type=qual,palette = couleur,name=l_legend,guide = guide_legend(reverse=FALSE))+
+              theme(plot.title = element_text(size=14,face="bold"),
+                    text = element_text(size=12),
+                    axis.text =element_blank(),# change the theme options
+                    axis.title =element_blank(),# remove axis titles
+                    axis.ticks =element_blank())+
+              guides(fill=FALSE)+
+              coord_equal()+
+              labs(title=i)
+	}else{
+
+		# Classement (voir pour round)
+		classe_valeur <- classIntervals(melt.map,n=nclasse,style=style_classe,digits=2,na.rm=TRUE)[[2]]
+	
+		# Jointure et changement de nom
+		carto <- merge(cartofor, map@data[,c("id_geofla",i)], by.x="id", by.y="id_geofla")
+  		colnames(carto)[8] <- "fill"
+
+    	if(cpt==1){
+    		# Extraction de la légende (en horizontal)
+      		carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
+      		p1 <- ggplot(carto, aes(x=long, y=lat)) +  geom_polygon(data=carto, aes(group=group, fill=fill)) + scale_fill_brewer(palette = couleur,name=l_legend,guide = guide_legend(reverse=FALSE,nrow=1))+theme(legend.position="bottom")#+guides(colour = guide_legend(nrow = 1))
+      		plotLegend = g_legend(p1)
+      		}else{
+      			carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
+    	}
 
     # Création de la carte
     p[[i]] <- ggplot(carto, aes(x=long, y=lat)) +
@@ -240,7 +269,8 @@ for(i in variablecarto){#CHANGER CETTE VARIABLE
               guides(fill=FALSE)+
               coord_equal()+
               labs(title=i)
-}
+	}
+}#fin boucle 
 
 lwidth = sum(plotLegend$width)
 

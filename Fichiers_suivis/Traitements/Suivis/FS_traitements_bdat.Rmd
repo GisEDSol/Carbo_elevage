@@ -1,0 +1,412 @@
+---
+title: "Traitement des données de la BDAT"
+author: "Jean-Baptiste Paroissien"
+output: github_document
+---
+
+```{r setup, include=FALSE,warning=FALSE,echo=FALSE,message=FALSE,eval=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("/media/sf_GIS_ED/Dev/")
+# Chargement des librairies
+library(RODBC);library(gdata);library(fields);library(stringr);library(ggplot2);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);library(reshape2)
+library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(FactoMineR);library(knitr);library(wesanderson);library(pander);library(GGally);library(factoextra);library(caret);library(plyr)
+
+# Définition des principaux répertoires de travail
+masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
+
+repfonctions <- paste(masterrep,"Scripts/master/Fonctions/R/",sep="")
+repagreste <- paste(masterrep,"Data/Vegetation_Occup/Agreste/Disar/",sep="")
+repsortie <- paste(masterrep,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
+# Mise en place de la connexion ODBC
+loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
+
+# Chargement de la fonction cartoperiod
+source(paste(repfonctions,"cartoperiod.R",sep=""))
+
+# Fonction très pratique pour remplacer une suite de charact?res par une autre
+gsub2 <- function(pattern, replacement, x, ...) {
+  for(i in 1:length(pattern))
+    x <- gsub(pattern[i], replacement[i], x, ...)
+  x
+}
+```
+
+```{r, tidy=FALSE,eval=TRUE}
+Sys.Date()
+sessionInfo()
+```
+
+# Objectifs
+
+Ce fichier de suivi a pour but de centraliser l'ensemble des analyses des teneurs en carbone organique de la BDAT. Ce travail est organisé de la façon suivante :
+
+- Analyse des histogrammes de fréquence et tests statistiques pour chacune des périodes de temps analysées,
+- Représentation cartographique par canton,
+- Analyse des facteurs explicatifs. 
+
+## Chargement des données et des principaux paramètres d'étude
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+# Chargement des paramètres
+period <- c("9094","9599","0004","0509","1014")
+variable <- "corgox_medequi"
+xlabel <- "Carbone organique (g/kg)"
+ylabel <- "Fréquence"
+nperiod <- length(period)
+colors <- wes_palette("Rushmore",nperiod,type="continuous")
+
+melted.bdat <- sqlQuery(loc,paste("select value,variable,annees,code_reg,nom_region,typo_clim,zonage_cplt,zonage_simple from dm_traitements.melted_bdat",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE))
+dcast.bdat <- sqlQuery(loc,paste("select * from dm_vecteurs.canton",sep=""))
+
+melted.bdat <- melted.bdat[complete.cases(melted.bdat$typo_clim),]
+melted.bdat$annees <- factor(melted.bdat$annees,levels=period)
+```
+
+# Analyse des teneurs en carbone organique par période
+
+Cette première étape a pour but d'analyser les différences des teneurs en carbone organique pour chacune des périodes de temps analysées. Celles-ci comportent les années 1990-1994;1995-1999;2000-2004 et 2005-2009. Les statistiques descriptives et les courbes de fréquences cumulées sont présentées dans un premier temps. Dans un second temps, des boxplots accompagnés de tests de « significacité » des différences entre les périodes sont mis en oeuvre. Au cours de ces travaux, le regard est porté sur l'emprise nationale mais avec plusieurs niveaux de stratification (région, zonage climatique, principales région d'élevage).
+
+## Statistiques descriptives et courbes de fréquences cumulées
+
+### France entière et par type de climat
+
+La figure ci-dessous présente les courbes de fréquences cumulées pour la france entière. La figure montre un décalage des courbes des périodes 2000-2004 et 2005-2009 vers des valeurs plus faibles. Ces deux périodes se distinguent clairement des périodes de 1990-1994 et 1995-1999 qui sont plus rapprochées. Ces observations mettent en évidence une diminution des teneurs en carbone entre les périodes 1990-1999 et les périodes de 2000-2009. D'après la figure, ce sont les teneurs médianes les plus concernées par cette baisse de teneur.
+
+[comment]: <> (Voir également http://elcep.legtux.org/?cat=2 pour une autre représentation graphique)
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
+cdf <- ggplot(melted.bdat, aes(x=value))+
+       stat_ecdf(aes(colour=annees))+
+       scale_color_manual(values=colors, 
+                          name="Années")+
+       scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+       theme(plot.title = element_text(size = 14, face = "bold"), 
+             text = element_text(size = 12),
+             axis.title = element_text(face="bold"),
+             axis.text.x=element_text(size = 11))
+cdf
+```
+
+Faire un commentaire par type de climat
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
+cdf <- ggplot(melted.bdat, aes(x=value))+
+       facet_wrap(~typo_clim)+
+       stat_ecdf(aes(colour=annees))+
+       scale_color_manual(values=colors, 
+                          name="Années")+
+       scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+       theme(plot.title = element_text(size = 14, face = "bold"), 
+             text = element_text(size = 12),
+             axis.title = element_text(face="bold"),
+             axis.text.x=element_text(size = 11))
+cdf
+```
+
+Test également en fonction des différentes régions d'élevage
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
+cdf <- ggplot(melted.bdat, aes(x=value))+
+       facet_wrap(~zonage_simple)+
+       stat_ecdf(aes(colour=annees))+
+       scale_color_manual(values=colors, 
+                          name="Années")+
+       scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+       theme(plot.title = element_text(size = 14, face = "bold"), 
+             text = element_text(size = 12),
+             axis.title = element_text(face="bold"),
+             axis.text.x=element_text(size = 11))
+cdf
+```
+
+## Statistiques descriptives
+
+### Tableaux
+
+Les statistiques par années sont présentées dans le tableau ci-dessous 
+
+```{r summarybdatfrance,highlight=TRUE,eval=TRUE, eval=TRUE, message=FALSE, warning=FALSE, highlight=TRUE}
+# Résumé des statistiques 
+bdatsummary <- apply(melted.bdat["value"],2, function(x) tapply(x, melted.bdat[,"annees"],summary))
+bdatsummary <- lapply(bdatsummary, do.call, what = rbind)
+
+pander(bdatsummary[[1]],caption = "Statistiques descriptives par période des teneurs en CO pour la France entière")
+```
+
+[comment]: <> voir, selon http://stackoverflow.com/questions/38861041/knitr-rmarkdown-latex-how-to-cross-reference-figures-and-tables {r fig1, echo=FALSE, fig.cap="\\label{fig:fig1}This is a caption"}
+
+
+
+# Résumé des statistiques 
+
+```{r,highlight=TRUE,eval=TRUE, eval=TRUE, message=FALSE, warning=FALSE, highlight=TRUE}
+# Ici, voir pour rajouter année+zonage_simple ou année+climato ou année+région
+bdatsummary_regelevage <- apply(melted.bdat["value"],2, function(x) tapply(x, list(melted.bdat[,"zonage_simple"],melted.bdat[,"annees"]),summary))
+bdatsummary_regelevage <- data.frame(bdatsummary_regelevage[[1]])
+bdatsummary_regelevage <- lapply(bdatsummary_regelevage, do.call, what = rbind)
+names(bdatsummary_regelevage) <- period
+
+# Revoir pour construire une table plus lisible
+pander(bdatsummary_regelevage,caption = "Statistiques descriptives par période des teneurs en CO pour les principales régions d'élevage")
+
+
+# Ici, voir pour rajouter année+zonage_simple ou année+climato ou année+région
+bdatsummary_regadmin<- apply(melted.bdat["value"],2, function(x) tapply(x, list(melted.bdat[,"nom_region"],melted.bdat[,"annees"]),summary))
+bdatsummary_regadmin <- data.frame(bdatsummary_regadmin[[1]])
+bdatsummary_regadmin <- lapply(bdatsummary_regadmin, do.call, what = rbind)
+names(bdatsummary_regadmin) <- period
+
+# Revoir pour construire une table plus lisible
+pander(bdatsummary_regadmin,caption = "Statistiques descriptives par période des teneurs en CO pour les différentes régions administratives")
+
+```
+
+### Tests statistiques
+
+```{r,highlight=TRUE,eval=FALSE}
+tt <- pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"])
+pander(c(tt[1],tt[2],tt[3]))
+=======
+
+### Tests statistiques
+
+```{r,highlight=TRUE,eval=FALSE}
+pander(pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"]))
+```
+
+### Boxplot
+
+Pour les boxplot, présenter les différents niveaux de stratification possibles.
+Egalement, faire une cartographie des données climato
+
+#### France 
+```{r,highlight=TRUE,eval=TRUE}
+p <- ggplot(melted.bdat, aes(x=annees,y=value,col=annees)) + 
+  geom_violin(trim=FALSE)+
+  geom_boxplot(width=0.1, fill="white")+
+  scale_color_manual(values=colors,name="Années")+
+  scale_x_discrete("Années")+scale_y_continuous("Teneur en carbone (g/kg)")+
+  theme(plot.title = element_text(size = 14, face = "bold"), 
+        text = element_text(size = 12),
+        axis.title = element_text(face="bold"),
+        axis.text.x=element_text(size = 11))
+p  
+ggsave(p,file = paste(repsortie,"boxplotbdat.png",sep=""), width = 10, height = 10)  
+```
+
+
+#### Stratification par type de climat
+
+```{r,highlight=TRUE,eval=TRUE}
+p <- ggplot(melted.bdat) +
+            geom_boxplot(aes(x=annees,y=value,col=typo_clim))+
+            #scale_color_manual(name="Années")+
+            scale_x_discrete("Années")+scale_y_continuous("Teneur en carbone (g/kg)")+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+                  text = element_text(size = 12),
+                  axis.title = element_text(face="bold"),
+                  axis.text.x=element_text(size = 11))
+p  
+ggsave(p,file = paste(repsortie,"boxplotbdat_typoclim.png",sep=""), width = 15, height = 10)  
+```
+
+```{r,highlight=TRUE,eval=TRUE}
+ylim1 <- boxplot.stats(melted.bdat$value)$stats[c(1, 5)]
+
+p <- ggplot(melted.bdat) +
+            geom_boxplot(aes(x=annees,y=value,col=annees),outlier.shape = NA,outlier.size=NA)+
+            facet_wrap(~typo_clim,scales="free")+
+            scale_color_manual(values=colors,name="Années")+
+            #geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
+            scale_x_discrete("Années")+scale_y_continuous("Teneur en carbone (g/kg)")+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+                  text = element_text(size = 12),
+                  axis.title = element_text(face="bold"),
+                  axis.text.x=element_text(size = 11))+
+            coord_cartesian(ylim = ylim1*1.05)
+p  
+ggsave(p,file = paste(repsortie,"boxplotbdat_typoclim2.png",sep=""), width = 10, height = 10)  
+```
+
+Boxplots avec une stratification sur les principales régions d'élevage.
+
+```{r,highlight=TRUE,eval=TRUE}
+p <- ggplot(melted.bdat) +
+            geom_boxplot(aes(x=annees,y=value,col=zonage_simple))+
+            #scale_color_manual(name="Années")+
+            scale_x_discrete("Années")+scale_y_continuous("Teneur en carbone (g/kg)")+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+                  text = element_text(size = 12),
+                  axis.title = element_text(face="bold"),
+                  axis.text.x=element_text(size = 11))
+p  
+ggsave(p,file = paste(repsortie,"boxplotbdat_regelevage.png",sep=""), width = 15, height = 10)  
+```
+
+```{r,highlight=TRUE,eval=TRUE}
+#ylim1 <- boxplot.stats(melted.bdat$value)$stats[c(1,5)]
+ylim1 <- c(min(melted.bdat$value,na.rm=TRUE),quantile(melted.bdat$value,0.99,na.rm=TRUE))
+
+p <- ggplot(melted.bdat) +
+            geom_boxplot(aes(x=annees,y=value,col=annees),outlier.shape = NA,outlier.size=NA)+
+            facet_wrap(~zonage_simple,scales="free")+
+            scale_color_manual(values=colors,name="Années")+
+            #geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
+            scale_x_discrete("Années")+scale_y_continuous("Teneur en carbone (g/kg)")+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+                  text = element_text(size = 12),
+                  axis.title = element_text(face="bold"),
+                  axis.text.x=element_text(size = 11))+
+            coord_cartesian(ylim = ylim1*1.05)
+p  
+ggsave(p,file = paste(repsortie,"boxplotbdat_typoclim2.png",sep=""), width = 10, height = 10)  
+```
+
+### Graphique de correlation
+
+```{r,highlight=TRUE,eval=FALSE}
+# Voir les graphiques de "différence" réalisés durant le M1
+# Rajouter les types de climat ou autre niveau de stratification pour voir l'influence de ces régions sur les pertes 
+# Voir également pour rajouter ces données sur une table au format melt
+plot(dcast.bdat$corgox_med9599,dcast.bdat$varcorgox_med0004_9599)
+
+plot(dcast.bdat$corgox_med9599,dcast.bdat$diffcorgox_med0004_9599)
+
+# Calculer les évolutions
+varcorgox_med0004_9599 
+varcorgox_med0509_9599
+varcorgox_med0509_9094
+varcorgox_med0004_9094
+diffcorgox_med0004_9599
+diffcorgox_med0509_9599
+diffcorgox_med0509_9094
+diffcorgox_med0004_9094
+
+test <- dcast.bdat[,c("corgox_med9094","corgox_med9599","corgox_med0004","corgox_med0509")]
+ggpairs(test)
+```
+
+## Cartographie
+
+Dans cette partie, des cartes peuvent être produites selon plusieurs arguments (reste à définir) :
+
+- stratification spatiale (région ou autre entités spatiales),
+- stratification temporelle (groupe de plusieurs années).
+
+```{r,highlight=TRUE,eval=FALSE}
+# En cours
+repfonctions <- paste(masterrep,"Scripts/master/Fonctions/R/",sep="")
+# Chargement de la fonction cartoperiod
+source(paste(repfonctions,"cartoperiod.R",sep=""))
+
+# Paramètres #################
+tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" #Paramètres de connexion de la base de données
+period <- c("9094","9599","0004","0509","1014") #
+variable <- "corgox_medequi"
+variablecarto <- paste(variable,period,sep="")#variables à cartographier
+nclasse <- 5 
+style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
+couleur <- "Spectral" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
+nomfichier <- "corgoxmed_period" #Nom du fichier
+
+cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept="37",reg=FALSE)
+
+```
+
+# test avec les différences
+
+```{r,highlight=TRUE,eval=FALSE}
+# Paramètres #################
+tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" #Paramètres de connexion de la base de données
+period <- c("14","15","24","25")#
+variable <- "diff"
+variablecarto <- paste(variable,period,sep="")#variables à cartographier
+nclasse <- 5 
+style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
+couleur <- "Spectral" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
+nomfichier <- "corgoxmed_period" #Nom du fichier de sortie (.png)
+
+cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept="37",reg=FALSE)
+```
+
+
+
+
+# Analyse des facteurs explicatifs
+
+```{r,highlight=TRUE,eval=TRUE}
+# Sélection des variables de travail
+Rcovar <- c("ugbgrani_sau2010","ttemp_an","jfroids_an","jchauds_an","hpluie_an","ugbta1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sth1970","p_sth1979","p_sth1988","p_sfp1970","p_sfp1979","p_sfp1988","p_mf1970","p_mf1979","p_mf1988","p_c1970","p_c1979","p_c1988")
+vNames <- c("corgox_medequi9094",Rcovar)
+
+dcast.bdat_variables <- dcast.bdat[,vNames]
+
+res.pca <- PCA(dcast.bdat_variables, graph = FALSE)
+eigenvalues <- res.pca$eig
+head(eigenvalues[, 1:2])
+fviz_screeplot(res.pca, ncp=10)
+
+fviz_pca_var(res.pca, col.var="contrib") +
+scale_color_gradient2(low="white", mid="blue", 
+                  high="red", midpoint=50) + theme_minimal()
+```
+Environ `r round(res.pca$eig[1,2]+res.pca$eig[2,2])` pourcent de l'information est contenu dans les deux premiers axes.
+
+
+
+# Modélisation avec GBM
+
+L'application de ces modèles demande une bonne configuration de leurs paramètres. Pour déterminer la meilleur combinaison de paramètres, la fonction *train* du package *caret* est utilisée.
+
+1. Boosted regression tree (BRT)
+Les modèles d'arbres de régression boostés sont connus pour améliorer la précision de prédiction par rapport aux simples arbres de régression.
+L'algo permet d'ajuster un modèle en fonction d'un processus itératif. A chaque itération, les arbres de régresssions sont ajustés et montés sur une fraction de l'ensemble des données échantillongées. Les principaux paramètres d'un modèle sont :
+	1. le taux d'apprentissage *(skrinkage)* qui correspond à une constante déterminant l'influence de la combinaison individuelle des arbres qui forme le forme le modèle final. Lorsque ce coefficient est le faible, le modèle est très spécialisé et est difficilement applicable sur un autre jeu de données.
+	2. la taille des arbres *(interaction depth)* correspond à la taille des arbres de régression. Lorsque la taille est égale à 1, chaque arbre est constitué d'un seul noeud, on modélise l'effet d'une seule variable prédictive. Ainsi, le modèle final additionne séparément l'effet prédictif des variables et les intéractions des variables ne sont pas explicitement prise en compte. Lorsque la taille des arbres est supérieur à 1, chaque arbre de régression individuelle modélise l'interaction d'au moins deux variables prédictives. Celà permet de l'utilisation de modèle prenant en compte les intéractions d'ordre i entre les variables prédictives. La capacité de représenter les interactions entre les variables prédictives sans connaissance a priori est l'un des avantages de la BRT et plus généralement des arbres de régression.
+	3. le nombre d'arbre *(n.tree)*correspond au nombre d'arbre pour l'ajustement. C'est l'équivalent du nombre d'itérations.
+
+```{r,highlight=TRUE,eval=FALSE}
+dcast.bdat_variables <- dcast.bdat_variables[complete.cases(dcast.bdat_variables),] # Pour supprimer les NA
+datax <- dcast.bdat_variables[, vNames[-1]]
+datay <- dcast.bdat_variables[, vNames[1]]
+
+tuneGrid <- expand.grid(interaction.depth = c(13),n.trees = c(150),shrinkage = 0.05,n.minobsinnode=10)
+fitControl <- trainControl(method = "repeatedcv",p=0.8,number=10,repeats=10)
+
+# Utilisation de caret, car plus rapide qu'une simple fonction gbm
+mgbm <- train(x = datax , y = datay,method="gbm",tuneGrid = tuneGrid,trControl = fitControl,verbose = F,keep.data = T)
+
+#best.iter <- gbm.perf(mgbm,method="cv")
+save(mgbm,file=paste(repsortie,"mgbm_1.RData",sep=""))
+
+plot(varImp(mgbm), top = 5)
+
+#f.predict <- predict(mgbm, learningx , neighbors = mgbm$bestTune$.n.trees)
+			
+### GBM Model parameters ###
+
+# interaction.depth : The maximum depth of variable interactions. 1 implies an additive model, 2 implies a model with up to 2-way interactions, etc
+# .n.trees : The total number of trees to fit. This is equivalent to the number of iterations and  the number of basis functions in the additive expansion.
+# shrinkage : a shrinkage parameter applied to each tree in the expansion. Also known as the learning rate or step-size reduction.
+
+
+### Cubist Model parameters ###
+
+#.committees : an integer: how many committee models (e.g.. boosting iterations) should be used
+
+#.neighbors : an integer from 0 to 9: how many instances to use to correct the rule-based prediction? if neighbors is greater than zero, these predictions are adjusted by training set instances nearby using the approach of Qunilan (1993)
+
+# Test des différents combinaison de paramètres
+model <- c("gbm","cubist")
+idField <- "id"
+titre <- "test"
+
+tuneGrid <- list(gbm=expand.grid(.interaction.depth = c(1,5,9,13),.n.trees = c(150,500,1000,1500),.shrinkage = 0.05),cubist=expand.grid(.committees = c(10,50,100),.neighbors = c(1,5,9)))
+trControl <- list(gbm=trainControl(method = "cv",p=0.8),cubist=trControl <- trainControl(method = "cv",p=0.8))
+
+crossValidateMachineLearning(titre = titre,fold = fold,model = model,data = "bdatigcs_ponct",transfParam ="log",vNames = vNames,coords = coords,tuneGrid=tuneGrid,trControl=trControl,distance = 0,probs = 0.8,nbl = 1,idField = idField)
+```
+
