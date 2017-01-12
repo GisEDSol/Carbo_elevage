@@ -12,31 +12,12 @@ output:
 ---
 
 
-```{r setup, include=TRUE,warning=FALSE,echo=FALSE,message=FALSE,eval=TRUE}
-knitr::opts_chunk$set(echo = TRUE)
-setwd("/media/sf_GIS_ED/Dev/")
-# Chargement des librairies
-library(RODBC);library(gdata);library(fields);library(stringr);library(ggplot2);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);library(reshape2)
-library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(FactoMineR);library(knitr);library(wesanderson);library(pander);library(GGally);library(factoextra);library(caret);library(plyr)
-
-# Définition des principaux répertoires de travail
-masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
-
-repfonctions <- paste(masterrep,"Scripts/master/Fonctions/R/",sep="")
-repagreste <- paste(masterrep,"Data/Vegetation_Occup/Agreste/Disar/",sep="")
-repsortie <- paste(masterrep,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
-# Mise en place de la connexion ODBC
-loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
-
-# Chargement de la fonction cartoperiod
-source(paste(repfonctions,"cartoperiod.R",sep=""))
-
-# Fonction très pratique pour remplacer une suite de charact?res par une autre
-gsub2 <- function(pattern, replacement, x, ...) {
-  for(i in 1:length(pattern))
-    x <- gsub(pattern[i], replacement[i], x, ...)
-  x
-}
+```{r setup, include=FALSE,eval=TRUE}
+# Importation des paramètres de travail
+source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
+repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
+importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
+repsortie <- paste(repmaster,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
 ```
 
 ```{r, tidy=FALSE,eval=TRUE}
@@ -47,123 +28,45 @@ sessionInfo()
 # Analyse de l'évolution des teneurs en carbone organique 
 
 On devrait peut être créer une table type melt avec le nombre de valeur significative (augm, diminu) en fonction de plusieurs paramètres géographique (type stratification)
-
-```{r,highlight=TRUE,eval=FALSE}
-# Même démarche pour les résultats sur les différences entre années
-
-dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" # Configuration de la connexion vers le PostGIS
-table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
-period <- c("12","13","14","15","23","24","25","34","35","45")
-schema <- "bdat"
-
-for(i in period){
-  for(v in c("diff","diffmedian")){
-  
-  var_variable <- paste(v,i,sep="")
-  
-  tableBDAT <- paste("bdat_canton_corgequiv_comp_",i,sep="")
-  
-  sqlQuery(loc,paste("alter table ",table_dm,"
-                      drop column if exists ",var_variable,sep=""))
-  
-  if(v=="diff"){
-  sqlQuery(loc,paste("alter table ",table_dm,"
-                      add column ",var_variable," text;
-                      update ",table_dm,"
-                      SET ",var_variable," = s1.diff from(
-                      select diff,canton
-                      from ",schema,".",tableBDAT,") as s1
-                      where ",table_dm,".code_canton=s1.canton::text",sep=""))
-    
-      # Ajout d'un commentaire sur la nouvelle colonne crée
-      print(sqlQuery(loc,paste("
-      COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Résultat du test de significacité de la différence de la médiane des teneurs en carbone organique au niveau du canton.\';",sep="")))
-    
-  }else{
-    sqlQuery(loc,paste("alter table ",table_dm,"
-                      add column ",var_variable," numeric;
-                      update ",table_dm,"
-                      SET ",var_variable," = s1.",var_variable," from(
-                      select ",var_variable,",canton
-                      from ",schema,".",tableBDAT,") as s1
-                      where ",table_dm,".code_canton=s1.canton::text",sep=""))
-    
-      # Ajout d'un commentaire sur la nouvelle colonne crée
-      print(sqlQuery(loc,paste("
-      COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Pourcentage d évolution de la médiane des teneurs en carbone organique par canton ((medA-medB)/medB))*100 avec B une période antérieure à A.\';",sep="")))
-    }
-  }
-}
-
-```
-
-
 Pour la création de cette table, prendre en compte le fait qu'il faille lancer d'autres scripts avant. Il faudra peut être revoir l'organisation des scripts pour éviter ce genre de désagrément.
 
 
-```{r,highlight=TRUE,eval=FALSE}
-# Paramètres
-dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" # Configuration de la connexion vers le PostGIS
-table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
-varia <- c("diffmedian","diff") # Préfixe de la variable à intégrer (varia+period)
-period <- c("12","13","14","15","23","24","25","34","35","45")
-mapcanton <- readOGR(dsn = dsn, "dm_vecteurs.canton")
-id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt") #Nom des identifiants
-
-# Boucle pour séparer les périodes analysées du nom de la variable étudiée
-cpt <- 0
-for(i in varia){
-  print(i)
-  cpt <- cpt + 1
-  variaperiod <- paste(i,period,sep="")  
-  stats.canton <- mapcanton[,c(id,variaperiod)]
- 
-   # Modification de la structure de la table
-  stats.canton <- melt(data=stats.canton@data,id.vars=id)
-
-  # Extraction de l'année et renommage des colonnes
-  stats.canton[,"variable"] <- as.character(unlist(regmatches(stats.canton[,"variable"],gregexpr('[0-9]+.',stats.canton[,"variable"]))))
-  colnames(stats.canton)[(length(id)+1):(length(id)+2)] <- c("period",i) #revoir la sélection de ces colonnes
-    
-  if(cpt==1){
-    # Construction de la première table
-    melt.canton <- stats.canton
-  }else{
-    # Ajout à chaque itération de la variable (i)
-    melt.canton <- merge(melt.canton,stats.canton, by.x=c(id,"period"), by.y=c(id,"period"),all.x=TRUE,all.y=TRUE)
-  }
-}
-
-# Création finale de la table
-#melted.bdat_harmo <- melt(data=melt.canton,id.vars=c(id,"period"))
-melted.bdatharmo <- melt.canton
-melted.bdatharmo$typo_clim <- as.factor(melted.bdatharmo$typo_clim)
-
-# Enregistrement dans le schema dm_traitements
-tablename <- paste("dm_traitements.","melted_bdatharmo",sep="")
-sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
-sqlSave(loc,melted.bdatharmo,tablename=tablename)
-```
 
 # Analyse des résultats d'évolution des teneurs en carbone organique
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
-# Chargement des paramètres
-period <- c("9094","9599","0004","0509","1014")
-variable <- "corgox_medequi"
-nperiod <- length(period)
-colors <- wes_palette("Rushmore",nperiod,type="continuous")
-
-melted.bdatharmo <- sqlQuery(loc,paste("select diffmedian,diff,period,code_reg,nom_region,typo_clim,zonage_cplt,zonage_simple from dm_traitements.melted_bdatharmo",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE))
+# Chargement des tables de travail
+melted.bdatdiff <- sqlQuery(loc,paste("select diffmedian,diff,period,code_reg,nom_region,typo_clim,zonage_cplt,zonage_simple from dm_traitements.melted_bdatdiff",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE))
+melted.bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$typo_clim),]
 dcast.bdat <- sqlQuery(loc,paste("select * from dm_vecteurs.canton",sep=""))
-
-melted.bdatharmo <- melted.bdatharmo[complete.cases(melted.bdatharmo$typo_clim),]
 ```
 
 Pour cette partie, on se base sur les résultats fournis par InfoSol...Plusieurs analyses sont proposées en lien avec les objectifs suivants :
 
 - Identifier la distribution spatiale de l'évolution à l'échelle de la france : Cartographie, boxplot du nombre de canton qui évolue par différents niveaux de stratification
 - Analyse de la distribution. Quelle sont les principaux facteurs qui expliquent ces évolutions ?
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+# Histogramme des valeurs 
+
+# Sélection des cantons aux diminutions significatives
+bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff),]
+
+# Sélection des 
+bdatdiff <- subset(melted.bdatdiff,diff!="Non significatif")
+periodetud <- c("14","24","15","25")
+bdatdiff <- bdatdiff[bdatdiff$period %in% periodetud, ]
+bdatdiff$diff <- as.factor(bdatdiff$diff)
+
+ggplot(bdatdiff,aes(diff,fill=zonage_simple)) + geom_bar() + facet_wrap(~ period)
+
+# Sélection de la zone d'élevage B
+
+bdatdiff_B <- bdatdiff[bdatdiff$zonage_simple %in% "B",]
+ggplot(bdatdiff_B,aes(diff,fill=nom_region)) + geom_bar(position="dodge") + facet_wrap(~ period)
+```
+
+
 
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}

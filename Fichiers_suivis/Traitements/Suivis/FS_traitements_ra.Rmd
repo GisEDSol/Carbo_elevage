@@ -11,42 +11,23 @@ output:
     theme: spacelab
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-setwd("/media/sf_GIS_ED/Dev/")
-# Chargement des librairies
-library(RODBC);library(gdata);library(rgrass7);library(fields);library(geoR);library(stringr);library(ggplot2);library(plotly);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);
-library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(data.table);library(FactoMineR);library(knitr)
-
-# Définition des principaux répertoires de travail
-masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
-repfonctions <- paste(masterrep,"Scripts/master/Fonctions/R/",sep="")
-repagreste <- paste(masterrep,"Data/Vegetation_Occup/Agreste/Disar/",sep="")
-repsortie <- paste(masterrep,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
-# Mise en place de la connexion ODBC
-loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
-
-# Chargement de la fonction cartoperiod
-source(paste(repfonctions,"cartoperiod.R",sep=""))
-
-# Fonction très pratique pour remplacer une suite de charact?res par une autre
-gsub2 <- function(pattern, replacement, x, ...) {
-  for(i in 1:length(pattern))
-    x <- gsub(pattern[i], replacement[i], x, ...)
-  x
-}
+```{r setup, include=FALSE,eval=TRUE}
+# Importation des paramètres de travail
+source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
+repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
+importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
+repsortie <- paste(repmaster,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
 ```
 # Objectifs
 
-L'objectif de ce travail est d'analyser les principales tendances d'occupation du sol en lien avec les données du recencement agricole. Ces données ont été produites avec les scripts de préparation des données [Traitement_RA.Rmd](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Suivis/Traitement_RA.Rmd) et la fonction de cartographie [cartoperiod.R](https://github.com/Rosalien/GISEDSol/blob/master/Fonctions/R/cartoperiod.R).
+L'objectif de ce travail est d'analyser les principales tendances d'occupation du sol en lien avec les données du recencement agricole. Ces données ont été produites avec les scripts de préparation des données [FS_bdd_elab_ra.Rmd](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/BDD/Suivis/FS_bdd_elab_ra.Rmd) et la fonction de génération de cartes [cartoperiod.R](https://github.com/Rosalien/GISEDSol/blob/master/Fonctions/R/cartoperiod.R).
 
-# Représentation cartographique de variables associées à l'activité de l'élevage
+# Représentation cartographique des variables associées à l'activité de l'élevage
 
 Ici, prendre du recul sur l'occupation du sol et son évolution. On pourra s'appuyer sur d'autres types de graphiques, comme les boxplots avec des stats du type (% de prairies retournées...?) 
 
 ## L'occupation du sol
 
-### A l'échelle de la france
 ```{r,highlight=TRUE,eval=TRUE}
 # Paramètres ###########################
 tablecarto <- "dm_vecteurs.canton" 
@@ -62,30 +43,29 @@ nomfichier="test"
 cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,dept=FALSE,reg=54)
 ```
 
+
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres ###########################
 tablecarto <- "dm_vecteurs.canton" 
-dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
-period <- c("1979","1988","2000","2010") #
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" #Paramètres de connexion
+period <- c("1979","1988","2000","2010") #Période de temps prise en compte
 variable <- c("p_prairie","p_sth","p_sfp","p_mf","p_c")#variable(s) à cartographier
 l_legend <- c("Pourcentage Prairie","Pourcentage STH/SAU", "Pourcentage SFP/SAU", "Pourcentage MFL/SAU","Pourcentage C/SAU")# Nom des labels associés aux variables à cartographier. Vecteur utilisé pour les titres des cartes
-#variable <- "p_prairie"
 nclasse <- 5 #Nombre de classes de valeurs pour la cartographie
-style_classe <- "quantile" #"pretty"#"jenks"
-couleur <- "YlGnBu" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+style_classe <- "pretty" #"pretty"#"jenks"
+couleur <- "RdYlGn" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
 
 # Boucles pour cartographier chaque variable à chaque période de temps étudiée
 cpt <- 0
 for(v in variable){
   cpt <- cpt + 1
-  nomfichier <- v
+  nomfichier <- paste(v,"pretty",sep="")
   l_legendvaria <- l_legend[cpt]
   variablecarto <- paste(v,period,sep="")
   
   cartoperiod(dsn,tablecarto,variablecarto=variablecarto,nclasse,style_classe,couleur,l_legend=l_legendvaria,repsortie,nomfichier,dept="37",reg=FALSE)
 }
 ```
-
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Lecture de la table de travail

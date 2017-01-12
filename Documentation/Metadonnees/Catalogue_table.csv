@@ -1,0 +1,35 @@
+Schéma;Table;Description
+ra;MethodeCulture_canton2010;Méthodes de cultures en nombre d’exploitation par canton pour le ra 2010
+ra;Otex_canton1988;Orientation technico-économique des exploitations par canton pour le ra 1988
+ra;Otex_canton2000;Orientation technico-économique des exploitations par canton pour le ra 2000
+ra;Otex_canton2010;Orientation technico-économique des exploitations par canton pour le ra 2010
+ra;Cultures_canton1979;Nombre d’exploitation par canton classées par type de culture pour le ra 1979
+ra;Cultures_canton1988;Nombre d’exploitation par canton classées par type de culture pour le ra 1988
+ra;Cultures_canton2000;Nombre d’exploitation par canton classées par type de culture pour le ra 2000
+ra;Cultures_canton2010;Nombre d’exploitation par canton classées par type de culture pour le ra 2010
+ra;S_cultures_canton1970;Surfaces des cultures par canton pour le ra 1970
+ra;S_cultures_canton1979;Surfaces des cultures par canton pour le ra 1979
+ra;S_cultures_canton1988;Surfaces des cultures par canton pour le ra 1988
+ra;S_cultures_canton2000;Surfaces des cultures par canton pour le ra 2000
+ra;S_cultures_canton2010;Surfaces des cultures par canton pour le ra 2010
+ra;UGBGrani_canton2000;Unité gros bétail tous aliments des granivores par canton pour le ra 2000
+ra;UGBGrani_canton2010;Unité gros bétail tous aliments des granivores par canton pour le ra 2010
+ra;UGBHerbi_canton2000;Unité gros bétail tous aliments des herbivores par canton pour le ra 2000
+ra;UGBHerbi_canton2010;Unité gros bétail tous aliments des herbivores par canton pour le ra 2010
+ra;UGBTA_canton2000;Unité gros bétail tous aliments par canton pour le ra 2000
+ra;UGBTA_canton2010;Unité gros bétail tous aliments par canton pour le ra 2010
+ra;UGBTA_canton880010;Unité gros bétail tous aliments par canton pour les ra 1988,2000,2010
+clc;changements00_06;
+clc;changements06_12;
+clc;changements90_00;
+clc;clc00_revisee;
+clc;clc06_revisee;
+clc;clc12;
+clc;clc90;
+climat;climatjoly;
+dm_vecteurs;canton;
+dm_vecteurs;commune;
+dm_vecteurs;departement;
+dm_traitements;melted_bdat;
+dm_traitements;melted_bdatdiff;
+dm_traitements;melted_ra;

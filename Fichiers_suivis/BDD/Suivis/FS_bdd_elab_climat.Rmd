@@ -11,31 +11,11 @@ output:
     theme: spacelab
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-setwd("/media/sf_GIS_ED/Dev/")
-# Chargement des librairies
-library(RODBC);library(gdata);library(rgrass7);library(fields);library(geoR);library(stringr);library(ggplot2);library(plotly);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);
-library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(data.table);library(FactoMineR);library(knitr)
-
-# Définition des principaux répertoires de travail
-masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
-repfonctions <- paste(masterrep,"Scripts/master/Fonctions/R/",sep="")
-rep_climato <- paste(masterrep,"Data/Climato/Joly2010",sep="") #répertoire des données du travail de Joly et al., 2010
-repsortie <- paste(masterrep,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
-
-# Mise en place de la connexion ODBC
-loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
-
-# Chargement de la fonction cartoperiod
-source(paste(repfonctions,"cartoperiod.R",sep=""))
-
-# Fonction très pratique pour remplacer une suite de charactères par une autre
-gsub2 <- function(pattern, replacement, x, ...) {
-  for(i in 1:length(pattern))
-    x <- gsub(pattern[i], replacement[i], x, ...)
-  x
-}
+```{r setup, include=FALSE,eval=TRUE}
+# Importation des paramètres de travail
+source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
+repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
+importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
 ```
 
 ```{r, tidy=FALSE,eval=TRUE}
@@ -60,7 +40,7 @@ L'objectif de ce fichier de suivi est de stocker l'ensemble des traitements asso
 variable <- c("TTEMP_AN","JFROIDS_AN","JCHAUDS_AN","AMPLI_T_JUIL_JANV","STD_TEMP_JANV","STD_TEMP_JUIL","HPLUIE_AN","PLUIE_ECART_JANV","PLUIE_ECART_JUIL","JPLUIE_JANV","JPLUIE_JUIL","STD_PLUIE_JANV","STD_PLUIE_JUIL")
 signification <- cbind("Température moyenne annuelle","Jours/an de minimum inférieur à -5°C","Jours/an de maximum supérieur à + 30°C","Amplitude thermique (°C) (juillet-janvier)","Variabilité 1971-2000 en janvier (°C)","Variabilité 1971-2000 en juillet (°C)","Cumul annuel (mm)","Ecart à la moyenne en janvier (mm)","Ecart à la moyenne en juillet (mm)","Jours de précipitation en janvier","Jours de précipitation en juillet","Variabilité 1971-2000 en janvier (mm)","Variabilité 1971-2000 en juillet (mm)")#,"Rapport (sep. + oct.) / juillet")
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
-tableclimat <- "climato.climatjoly"
+tableclimat <- "climat.climatjoly"
 
 ## Calcul de la moyenne par canton
 cpt <- 0
@@ -95,7 +75,7 @@ for(i in variable){
 #Paramètres
 variable <- "TYPO_CLIM"
 signification <- "Type de climat"
-tableclimat <- "climato.climatjoly" # Nom de la table 
+tableclimat <- "climat.climatjoly" # Nom de la table 
 signification <- "Type de climat"
 
 # Calcul de la valeur majoritaire par canton

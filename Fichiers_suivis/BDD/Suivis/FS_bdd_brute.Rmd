@@ -12,31 +12,10 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-setwd("/media/sf_GIS_ED/Dev/")
-
-# Chargement des librairies
-library(RODBC);library(gdata);library(rgrass7);library(fields);library(geoR);library(stringr);library(ggplot2);library(plotly);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);
-library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(data.table);library(FactoMineR);library(knitr);library(pander)
-
-# Définition des principaux répertoires de travail
-masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
-
-repLucas <- paste(masterrep,"Data/Lucas/",sep="")
-repCLC <- paste(masterrep,"Data/CLC/",sep="")
-repBDAT <- paste(masterrep,"Data/Sol/bdat/",sep="")
-repBase <- paste(masterrep,"Data/Base/",sep="")
-repagreste <- paste(masterrep,"Data/Vegetation_Occup/Agreste/Disar/",sep="")
-
-# Mise en place de la connexion ODBC
-loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
-
-# Fonction très pratique pour remplacer une suite de charact?res par une autre
-gsub2 <- function(pattern, replacement, x, ...) {
-  for(i in 1:length(pattern))
-    x <- gsub(pattern[i], replacement[i], x, ...)
-  x
-}
+# Importation des paramètres de travail
+source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
+repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
+importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
 ```
 
 # Objectifs
@@ -130,7 +109,7 @@ sessionInfo()
 
 ## Les données de bases
 
-Les données dîtes de "bases" correspondent aux contours des entités administratives utilisées pour agréger certaines variables environnementales. Dans ce travail, les contours des communes, des cantons et des petites régions agricoles sont les principales échelles de travail. Les surfaces de ces échelles sont récupérées de la manière suivante :
+Les données dites de "bases" correspondent aux contours des entités administratives utilisées pour agréger certaines variables environnementales. Dans ce travail, les contours des communes, des cantons et des petites régions agricoles sont les principales échelles de travail. Les surfaces de ces échelles sont récupérées de la manière suivante :
 
 - Communes et Canton : La version de 2011 de base de données [Geofla](http://professionnels.ign.fr/geofla) est utilisée. Cette version a été choisie pour être en accord avec les données du dernier recencement agricole (2010)
 - Petite région agricole : Les données associées aux petites régions agricoles proviennent de [l'agreste](http://agreste.agriculture.gouv.fr/IMG/zip/comm-ra-pra2007.zip) et sont jointes aux données Geofla.
@@ -355,34 +334,39 @@ for(i in LucasData){
 
 ## Corine Land Cover (CLC)
 
-Les données CLC ont été téléchargé à cette adresse [http://www.statistiques.developpement-durable.gouv.fr/clc/fichiers/](http://www.statistiques.developpement-durable.gouv.fr/clc/fichiers/)
-Ici, petit texte explicatif 
+L'ensemble des feuilles excel du fichier stats_clc_commune_niveau_2.xls téléchargé à cette [adresse](http://www.statistiques.developpement-durable.gouv.fr/clc/fichiers/) sont introduites dans la base de données dans le schéma `clc`. Les données représentent la surface des occupations du sol clc de niveau 2 par canton.
 
 ```{r importCLC,eval=FALSE}
-CLC <- c("CLC90R_FR_RGF_TIF","CLC00R_FR_RGF_TIF","CLC06R_FR_RGF_TIF","CLC12R_FR_RGF_TIF")
-# Décompression des différentes archives téléchargé à cette adresse : 
-for(i in CLC){
-  system(paste("unzip Data/CLC/",i,".zip -d.",sep=""))
+# Intégration du fichier excel stats_clc_commune_niveau_2.xls
+installXLSXsupport()
+fichier <- paste(repCLC,"stats-clc-2012-commune-niveau-2/stats_clc_commune_niveau_2.xls",sep="")
+feuilles <- c("CLC90","CHANGEMENTS90_00","CLC00_REVISEE","CHANGEMENTS00_06","CLC06_REVISEE","CLC12","CHANGEMENTS06_12")
+schema <- "clc"
+for(i in feuilles ){
+  xlsfiles <- read.xls(fichier,sheet=i,header=TRUE,fileEncoding="latin1",sep=",")
+
+  # Enregistrement dans la base locale
+  sqlQuery(loc,paste("drop table if exists ",schema,".",i,sep=""))
+  sqlSave(loc,xlsfiles,tablename = paste(schema,".",i,sep=""))
 }
 ```
 
-## Les données du recensement agricole
+## Les données du recensement agricole (RA)
 
 Les données du recensement agricole ont été extraites de requêtes lancées sur [Disard](http://cybergeo.revues.org/23155). L'ensemble des tables intégrées dans la base de données est présenté dans le tableau ci-dessous.
 
 ```{r,eval=TRUE,warning=FALSE}
 # Description des tables (voir pour rajouter les métadonnées dans les commentaires de table)
-metatable <- read.csv(paste(repagreste,"Catalogue_RA.csv",sep=""),sep=";")
+metatable <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=";")
 pander(metatable)
 ```
 
 Dans les tables de sorties de Disard, le numéro de canton et le nom du chef lieu sont enregistrés dans le même champs. Dans les commandes suivantes, le numéro de canton et le nom du chef lieu sont dissociés dans un champs qui leur est propre pour faciliter les jointures futures.  
 
 ```{r importagreste,eval=TRUE,warning=FALSE,}
-# data.table à voir 
 installXLSXsupport()
 
-catalogue <- read.csv(paste(repagreste,"Catalogue_RA.csv",sep=""),sep=";")
+catalogue <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=";")
 Liste_fichiers <- catalogue[,2]
 Commentaires <- catalogue[,3]
 #Liste_fichiers <- gsub("\\.xls$","",list.files(repagreste,pattern="\\.xls$"))# Liste des xls présent dans le répertoire de travail (repagreste)
@@ -535,41 +519,27 @@ L’usage de ces fichiers est strictement limité au domaine des services public
 Source : Base de données climatiques communales 2009. THEMA Université de Franche-Comté, CNRS UMR6049 (F-25000 Besançon) /CESAER INRA UMR1041 (F-21000 Dijon) ; d’après Météo France 1971-2000.';")
 ```
 
-# Création d'une vue pour les métadonnées
 
-Pour faciliter la compréhension des données stockées dans la base de données, une vue des métadonnées est générées dans la commande suivante.
+# Les métadonnées
+
+## Création de métadonnées pour les schémas
+
+La description des schémas de la base de données est stockés dans le fichier [Catalogue_schema.csv](https://github.com/Rosalien/GISEDSol/tree/master/Documentation/Metadonnees/Catalogue_schema.csv) et ces commentaires sont intégrés dans la base de données avec la commande suivante :
 
 ```{r,eval=FALSE}
-# Création d'une vue pour les métadonnées
-CREATE OR REPLACE VIEW metadata AS
-SELECT
- schema_name,
- table_name,
- column_name,
- comment
-FROM
-(
-         SELECT n.nspname AS schema_name,
-            c.relname AS table_name,
-            a.attname AS column_name,
-            col_description(c.oid, a.attnum::integer) AS comment
-           FROM pg_class c
-      JOIN pg_attribute a ON a.attrelid = c.oid
-   JOIN pg_namespace n ON n.oid = c.relnamespace
-  WHERE NOT n.nspname ~~ 'pg\_%'::text AND NOT n.nspname =
-'information_schema'::name AND NOT a.attisdropped AND a.attnum > 0 AND
-c.relkind = 'r'::"char"
-UNION ALL
-         SELECT n.nspname AS schema_name,
-            c.relname AS table_name,
-            '<table>'::name AS column_name,
-            obj_description(c.oid) AS comment
-           FROM pg_class c
-      JOIN pg_namespace n ON n.oid = c.relnamespace
-     WHERE NOT n.nspname ~~ 'pg\_%'::text AND NOT n.nspname =
-'information_schema'::name AND c.relkind = 'r'::"char"
-  ORDER BY 1, 2, 3
-) AS ss;
+meta_schema <- read.csv(paste(masterrep,"Scripts/master/Documentation/Metadonnees/Catalogue_schema.csv",sep=""),sep=";",header=TRUE)
+for(i in 1:nrow(meta_schema)){
+  sqlQuery(loc,paste("COMMENT ON SCHEMA ",meta_schema[i,1]," IS '",meta_schema[i,2],"'",sep=""))
+}
+```
+
+## Création d'une vue pour les métadonnées
+
+Pour faciliter la compréhension des données stockées dans la base de données, une vue des métadonnées est générée à travers la commande suivante. Celle-ci est accessible sur `public.metadata`
+
+```{r,eval=FALSE}
+# Lancement du script sql pour créer une vue sur les métadonnées (accessible sur public.metadata)
+system(paste("sh ",repfonctions,"bash/create_view_metada.sh",sep=""))
 ```
 
 

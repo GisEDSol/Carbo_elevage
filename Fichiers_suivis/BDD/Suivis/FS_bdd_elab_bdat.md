@@ -1,32 +1,81 @@
----
-title: "Traitement des données de la BDAT"
-author: "Jean-Baptiste Paroissien"
-output: github_document
----
+Traitement des données de la BDAT
+================
+Jean-Baptiste Paroissien
 
-```{r setup, include=FALSE,eval=TRUE}
-# Importation des paramètres de travail
-source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
-repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
-importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
+``` r
+Sys.Date()
 ```
 
-```{r, tidy=FALSE,eval=TRUE}
-Sys.Date()
+    ## [1] "2017-01-11"
+
+``` r
 sessionInfo()
 ```
 
-# Objectifs
+    ## R version 3.3.2 (2016-10-31)
+    ## Platform: x86_64-pc-linux-gnu (64-bit)
+    ## Running under: Ubuntu 16.04.1 LTS
+    ## 
+    ## locale:
+    ##  [1] LC_CTYPE=fr_FR.UTF-8       LC_NUMERIC=C              
+    ##  [3] LC_TIME=fr_FR.UTF-8        LC_COLLATE=fr_FR.UTF-8    
+    ##  [5] LC_MONETARY=fr_FR.UTF-8    LC_MESSAGES=fr_FR.UTF-8   
+    ##  [7] LC_PAPER=fr_FR.UTF-8       LC_NAME=C                 
+    ##  [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+    ## [11] LC_MEASUREMENT=fr_FR.UTF-8 LC_IDENTIFICATION=C       
+    ## 
+    ## attached base packages:
+    ## [1] grid      stats     graphics  grDevices utils     datasets  methods  
+    ## [8] base     
+    ## 
+    ## other attached packages:
+    ##  [1] plyr_1.8.4         caret_6.0-73       factoextra_1.0.3  
+    ##  [4] GGally_1.3.0       pander_0.6.0       knitr_1.15.1      
+    ##  [7] FactoMineR_1.34    wesanderson_0.3.2  mapproj_1.2-4     
+    ## [10] gridExtra_2.2.1    Hmisc_4.0-0        Formula_1.2-1     
+    ## [13] survival_2.40-1    lattice_0.20-34    reshape2_1.4.2    
+    ## [16] devtools_1.12.0    classInt_0.1-23    RColorBrewer_1.1-2
+    ## [19] maptools_0.8-40    rgdal_1.2-4        sp_1.2-3          
+    ## [22] ggplot2_2.2.0      stringr_1.1.0      fields_8.4-1      
+    ## [25] maps_3.1.1         spam_1.4-0         gdata_2.17.0      
+    ## [28] RODBC_1.3-14      
+    ## 
+    ## loaded via a namespace (and not attached):
+    ##  [1] ggrepel_0.6.5        Rcpp_0.12.7          class_7.3-14        
+    ##  [4] gtools_3.5.0         assertthat_0.1       rprojroot_1.1       
+    ##  [7] digest_0.6.10        foreach_1.4.3        MatrixModels_0.4-1  
+    ## [10] backports_1.0.4      acepack_1.4.1        stats4_3.3.2        
+    ## [13] evaluate_0.10        e1071_1.6-7          lazyeval_0.2.0      
+    ## [16] SparseM_1.74         minqa_1.2.4          data.table_1.10.0   
+    ## [19] nloptr_1.0.4         car_2.1-4            rpart_4.1-10        
+    ## [22] Matrix_1.2-7.1       rmarkdown_1.3        splines_3.3.2       
+    ## [25] lme4_1.1-12          foreign_0.8-67       munsell_0.4.3       
+    ## [28] mgcv_1.8-16          htmltools_0.3.5      nnet_7.3-12         
+    ## [31] flashClust_1.01-2    tibble_1.2           htmlTable_1.7       
+    ## [34] codetools_0.2-15     reshape_0.8.6        withr_1.0.2         
+    ## [37] MASS_7.3-45          leaps_2.9            ModelMetrics_1.1.0  
+    ## [40] nlme_3.1-128         gtable_0.2.0         magrittr_1.5        
+    ## [43] scales_0.4.1         stringi_1.1.2        scatterplot3d_0.3-37
+    ## [46] latticeExtra_0.6-28  iterators_1.0.8      tools_3.3.2         
+    ## [49] parallel_3.3.2       pbkrtest_0.4-6       yaml_2.1.14         
+    ## [52] colorspace_1.2-7     cluster_2.0.5        memoise_1.0.0       
+    ## [55] quantreg_5.29
+
+Objectifs
+=========
 
 Ce fichier permet de créer les tables de données de la BDAT utilisables pour le traitement statistique. Deux étapes sont réalisées :
 
-- Les teneurs en carbone organique et les calculs d'évolution de ces teneurs sont jointes dans la table de travail `dm_vecteurs.canton` pour faciliter la cartographie et l'analyse spatiale des données,
-- Une table de travail appelée `` est également créée pour les différents travaux demandand un format de table "long".
+-   Les teneurs en carbone organique et les calculs d'évolution de ces teneurs sont jointes dans la table de travail `dm_vecteurs.canton` pour faciliter la cartographie et l'analyse spatiale des données,
+-   Une table de travail appelée \`\` est également créée pour les différents travaux demandand un format de table "long".
 
-# Intégration des données de la BDAT vers la table `dm_vecteurs.canton`
+Intégration des données de la BDAT vers la table `dm_vecteurs.canton`
+=====================================================================
 
-## Intégration de la médiane des teneurs en carbone organique par canton
-```{r,highlight=TRUE,eval=FALSE}
+Intégration de la médiane des teneurs en carbone organique par canton
+---------------------------------------------------------------------
+
+``` r
 # Paramètres
 dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" # Configuration de la connexion vers le PostGIS
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
@@ -54,9 +103,10 @@ for(i in period){
 }
 ```
 
-## Intégration des résultats des tests statistiques des différences de teneur en carbone organique
+Intégration des résultats des tests statistiques des différences de teneur en carbone organique
+-----------------------------------------------------------------------------------------------
 
-```{r,highlight=TRUE,eval=FALSE}
+``` r
 dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" # Configuration de la connexion vers le PostGIS
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
 period <- c("12","13","14","15","23","24","25","34","35","45")
@@ -102,16 +152,17 @@ for(i in period){
 }
 ```
 
-# Création des tables de travail au format "long" 
+Création des tables de travail au format "long"
+===============================================
 
-Les données de la BDAT sont ré-organisées pour faciliter les traitements statistiques et la production de graphiques. La fonction `melt` est utilisée pour transformer les données d'un format "large" à un format "long". Deux tables sont créées : 
+Les données de la BDAT sont ré-organisées pour faciliter les traitements statistiques et la production de graphiques. La fonction `melt` est utilisée pour transformer les données d'un format "large" à un format "long". Deux tables sont créées :
 
-- `dm_traitements.melted.bdat` : table des valeurs des médianes teneurs en carbone organique
-- `dm_traitements.melted.bdat` : table des valeurs de différences des teneurs en carbone organique entre plusieurs périodes.
+-   `dm_traitements.melted.bdat` : table des valeurs des médianes teneurs en carbone organique
+-   `dm_traitements.melted.bdat` : table des valeurs de différences des teneurs en carbone organique entre plusieurs périodes.
 
 **Important :** La création de ces tables nécessite le lancement de plusieurs scripts au préalable : `FS_bdd_brute.Rmd`,`FS_bdd_elab_climat.Rmd` et `FS_bdd_elab_ra.Rmd`.
 
-```{r,highlight=TRUE,eval=FALSE}
+``` r
 # Paramètres
 dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" # Configuration de la connexion vers le PostGIS
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
@@ -154,7 +205,7 @@ sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
 sqlSave(loc,melted.bdat,tablename=tablename)
 ```
 
-```{r,highlight=TRUE,eval=FALSE}
+``` r
 # Paramètres
 dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" # Configuration de la connexion vers le PostGIS
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
@@ -197,4 +248,3 @@ tablename <- paste("dm_traitements.","melted_bdatdiff",sep="")
 sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
 sqlSave(loc,melted.bdatdiff,tablename=tablename)
 ```
-

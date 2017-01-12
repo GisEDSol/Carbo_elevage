@@ -5,30 +5,11 @@ output: github_document
 ---
 
 ```{r setup, include=FALSE,warning=FALSE,echo=FALSE,message=FALSE,eval=TRUE}
-knitr::opts_chunk$set(echo = TRUE)
-setwd("/media/sf_GIS_ED/Dev/")
-# Chargement des librairies
-library(RODBC);library(gdata);library(fields);library(stringr);library(ggplot2);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);library(reshape2)
-library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(FactoMineR);library(knitr);library(wesanderson);library(pander);library(GGally);library(factoextra);library(caret);library(plyr)
-
-# Définition des principaux répertoires de travail
-masterrep <- "/media/sf_GIS_ED/Dev/"#Chemin initial vers le répertoire de travail (à changer si changement d'arborescence)
-
-repfonctions <- paste(masterrep,"Scripts/master/Fonctions/R/",sep="")
-repagreste <- paste(masterrep,"Data/Vegetation_Occup/Agreste/Disar/",sep="")
-repsortie <- paste(masterrep,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
-# Mise en place de la connexion ODBC
-loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
-
-# Chargement de la fonction cartoperiod
-source(paste(repfonctions,"cartoperiod.R",sep=""))
-
-# Fonction très pratique pour remplacer une suite de charact?res par une autre
-gsub2 <- function(pattern, replacement, x, ...) {
-  for(i in 1:length(pattern))
-    x <- gsub(pattern[i], replacement[i], x, ...)
-  x
-}
+# Importation des paramètres de travail
+source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
+repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
+importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
+repsortie <- paste(repmaster,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
 ```
 
 ```{r, tidy=FALSE,eval=TRUE}
