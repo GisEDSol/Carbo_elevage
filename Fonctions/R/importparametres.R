@@ -25,6 +25,8 @@ knitr::opts_chunk$set(echo = TRUE)
 # Chargement des librairies
 library(RODBC);library(gdata);library(fields);library(stringr);library(ggplot2);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);library(reshape2)
 library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(FactoMineR);library(knitr);library(wesanderson);library(pander);library(GGally);library(factoextra);library(caret);library(plyr)
+library(doMC)
+
 
 # Définition des principaux répertoires de travail
 
@@ -42,10 +44,10 @@ assign("repagreste",paste(repdata,"Vegetation_Occup/Agreste/Disar/",sep=""),.Glo
 #########################################
 
 # Mise en place de la connexion ODBC
-loc <- odbcConnect("solelevage",case="postgresql", believeNRows=FALSE)
+assign("loc",odbcConnect("solelevage",case="postgresql", believeNRows=FALSE),.GlobalEnv)
 
 # Paramètres de connexion de la BDD
-dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'"
+assign("dsn",dsn,.GlobalEnv)
 
 # Chargement des fonction
 source(paste(repfonctions,"R/cartoperiod.R",sep=""))

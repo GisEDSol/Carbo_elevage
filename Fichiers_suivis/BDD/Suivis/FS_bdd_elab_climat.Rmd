@@ -30,6 +30,8 @@ L'objectif de ce fichier de suivi est de stocker l'ensemble des traitements asso
 - moyenne dans le cas de variables continues,
 - valeur majoritaire (surface la plus importante) si la variable est qualitative (comme le type de climat par exemple).
 
+**Important** Rajouter une fiche nomenclature pour le climat afin de faciliter la création des métadonnées dans la base.
+
 # Calcul de différentes statistiques jointes vers la table `dm_vecteurs.canton`
 
 ## Aggrégation par la moyenne à l'échelle du canton
@@ -61,12 +63,13 @@ for(i in variable){
                       from ",tableclimat," as climat
                       inner join dm_vecteurs.commune as c on c.insee_com=climat.dc
                       group by code_dept || code_cant) as s1
-                      where ",table_dm,"=s1.num_canton::text",sep="")))
+                      where ",table_dm,".code_canton=s1.num_canton::text",sep="")))
   
   #Ajout d'un commentaire sur la nouvelle colonne crée
   print(sqlQuery(loc,paste("
 	   COMMENT ON COLUMN ",table_dm,".",i," IS \'",signification[cpt],"\';",sep="")))
 }
+
 ```
 
 ## Calcul de la valeur majoritaire par canton

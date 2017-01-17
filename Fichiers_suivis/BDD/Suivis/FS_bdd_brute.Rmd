@@ -15,7 +15,8 @@ output:
 # Importation des paramètres de travail
 source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
 repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
-importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
+repdata <- "/media/sf_GIS_ED/Dev/Data/"
+importparametres(repmaster=repmaster,repdata=repdata,dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
 ```
 
 # Objectifs
@@ -334,7 +335,7 @@ for(i in LucasData){
 
 ## Corine Land Cover (CLC)
 
-L'ensemble des feuilles excel du fichier stats_clc_commune_niveau_2.xls téléchargé à cette [adresse](http://www.statistiques.developpement-durable.gouv.fr/clc/fichiers/) sont introduites dans la base de données dans le schéma `clc`. Les données représentent la surface des occupations du sol clc de niveau 2 par canton.
+L'ensemble des feuilles excel du fichier stats_clc_commune_niveau_2.xls téléchargé à cette [adresse](http://www.statistiques.developpement-durable.gouv.fr/fileadmin/documents/Produits_editoriaux/Donnees_en_ligne/Territoires/clc-2012/stats-clc-2012-commune-niveau-2.zip) sont introduites dans la base de données dans le schéma `clc`. Les données représentent la surface des occupations du sol clc de niveau 2 par canton.
 
 ```{r importCLC,eval=FALSE}
 # Intégration du fichier excel stats_clc_commune_niveau_2.xls
@@ -492,7 +493,7 @@ for(i in c("zonage_simple","zonage_cplt")){
 
 Plusieurs sources de données climatiques sont disponibles.
 
-Pour le moment, seul le travail de [Joly et al., 2010](http://cybergeo.revues.org/23155) est exploité. Les autres sources de données pourront être intégrées ultérieurement dans la base dans le schéma `climato`.
+Pour le moment, seul le travail de [Joly et al., 2010](http://cybergeo.revues.org/23155) est exploité. Les autres sources de données pourront être intégrées ultérieurement dans la base de données, dans le schéma `climato`.
 
 ## Topologie du climat en France
 
@@ -500,7 +501,7 @@ Les données climatiques utilisées proviennnent du travail de Joly et al., 2010
 
 ```{r importClimatL,eval=FALSE}
 ##Paramètres
-rep_climato <- paste(masterrep,"Data/Climato/Joly2010",sep="")#Répertoire des données climatiques à intégrer
+rep_climato <- paste(repdata,"Climato/Joly2010",sep="") #Répertoire des données climatiques à intégrer
 
 #Lecture de la table
 jolytable <- read.csv(paste(rep_climato,"/tableau_commun.txt",sep=""),sep="\t",header=TRUE,colClasses=c("DC"="character"),na.strings = c("-9999","2999.9"))#Dans la lecture, on spécifie le type de colonne pour DC (text) afin d'assurer les jointures. Les valeurs -9999 sont considérées comme NA. Les valeurs 2999.9 sont a priori des erreurs (valeurs abérantes)
@@ -509,12 +510,15 @@ jolytable$HPLUIE_AN <- as.numeric(as.character(jolytable$HPLUIE_AN))
 # Les valeurs 9 et 0 pour la colonne typo_clim sont considérées comme NA
 jolytable$TYPO_CLIM[jolytable$TYPO_CLIM==9 | jolytable$TYPO_CLIM==0] <- NA
 
+# Correction de la valeur abérante en hauteur de pluie annuelle sur le canton 5814. Le problème vient d'une valeur extrème sur la commune 58125. La valeur est remplacée par la valeur de la commune voisine
+jolytable[jolytable$DC %in% "58125","HPLUIE_AN"] <- jolytable[jolytable$DC %in% "58185","HPLUIE_AN"]
+
 #Enregistrement vers la base, schéma climatot
-sqlQuery(loc,"drop table if exists climato.climatjoly")
-sqlSave(loc,jolytable,tablename="climato.climatjoly")
+sqlQuery(loc,"drop table if exists climat.climatjoly")
+sqlSave(loc,jolytable,tablename="climat.climatjoly")
 
 #Ajout d'un commentaire pour décrire la table
-sqlQuery(loc,"COMMENT ON TABLE climato.climatjoly IS 'Table importée à cette adresse : http://cybergeo.revues.org/26894?file=1. Le fichier initial est au format TXT, comporte 36267 lignes (une par commune) et 16 colonnes, soit respectivement, l’identifiant communal INSEE (DC) les 14 variables climatiques traitées et une variable définissant le type climatique où se range la commune. La valeur codant l’absence de données est -9999. Plus infos : http://cybergeo.revues.org/23155 
+sqlQuery(loc,"COMMENT ON TABLE climat.climatjoly IS 'Table importée à cette adresse : http://cybergeo.revues.org/26894?file=1. Le fichier initial est au format TXT, comporte 36267 lignes (une par commune) et 16 colonnes, soit respectivement, l’identifiant communal INSEE (DC) les 14 variables climatiques traitées et une variable définissant le type climatique où se range la commune. La valeur codant l’absence de données est -9999. Plus infos : http://cybergeo.revues.org/23155 
 L’usage de ces fichiers est strictement limité au domaine des services publics. Toute exploitation de la base climatique, totale ou partielle (cartes, tableaux, etc.), doit être accompagnée de la mention de la source décrite ainsi :
 Source : Base de données climatiques communales 2009. THEMA Université de Franche-Comté, CNRS UMR6049 (F-25000 Besançon) /CESAER INRA UMR1041 (F-21000 Dijon) ; d’après Météo France 1971-2000.';")
 ```

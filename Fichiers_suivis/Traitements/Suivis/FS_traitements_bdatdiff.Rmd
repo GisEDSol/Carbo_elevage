@@ -25,26 +25,36 @@ Sys.Date()
 sessionInfo()
 ```
 
-# Analyse de l'évolution des teneurs en carbone organique 
-
-On devrait peut être créer une table type melt avec le nombre de valeur significative (augm, diminu) en fonction de plusieurs paramètres géographique (type stratification)
-Pour la création de cette table, prendre en compte le fait qu'il faille lancer d'autres scripts avant. Il faudra peut être revoir l'organisation des scripts pour éviter ce genre de désagrément.
-
-
-
-# Analyse des résultats d'évolution des teneurs en carbone organique
-
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
 # Chargement des tables de travail
-melted.bdatdiff <- sqlQuery(loc,paste("select diffmedian,diff,period,code_reg,nom_region,typo_clim,zonage_cplt,zonage_simple from dm_traitements.melted_bdatdiff",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE))
-melted.bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$typo_clim),]
+variaoccup <- c("p_sth","p_sfp","p_prairie")
+periodoccup <- c("1970","1979","1988","2000","2010")
+id_class <- apply(expand.grid(variaoccup,periodoccup),1, function(x){paste("classe_",x[1],x[2],sep="")})
+id_variaoccup <- c("classe_var_sth7910","classe_var_cereale7910","classe_var_sfp7910")
+id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt",id_class,id_variaoccup) #Nom des identifiants
+variafactor <- paste(id,collapse=",")
+
+# Lecture des tables de travail
+melted.bdatdiff <- sqlQuery(loc,paste("select diffmedian,diff,period,",variafactor," from dm_traitements.melted_bdatdiff",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE))
 dcast.bdat <- sqlQuery(loc,paste("select * from dm_vecteurs.canton",sep=""))
+
+melted.bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff),]
 ```
+
+
+# Analyse de l'évolution des teneurs en carbone organique 
 
 Pour cette partie, on se base sur les résultats fournis par InfoSol...Plusieurs analyses sont proposées en lien avec les objectifs suivants :
 
 - Identifier la distribution spatiale de l'évolution à l'échelle de la france : Cartographie, boxplot du nombre de canton qui évolue par différents niveaux de stratification
 - Analyse de la distribution. Quelle sont les principaux facteurs qui expliquent ces évolutions ?
+
+## Analyse du nombre d'évolution significative par canton
+
+Dans la figure ci-dessous,
+
+Analyser la figure en la confrontant avec des graphiques similaires basés sur les données du RA et de CLC.
+Ce serait intéressant de développer un indice de changement d'occupation du sol pour faciliter les analyses.
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
 # Histogramme des valeurs 
@@ -52,19 +62,41 @@ Pour cette partie, on se base sur les résultats fournis par InfoSol...Plusieurs
 # Sélection des cantons aux diminutions significatives
 bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff),]
 
-# Sélection des 
+# Sélection
 bdatdiff <- subset(melted.bdatdiff,diff!="Non significatif")
 periodetud <- c("14","24","15","25")
-bdatdiff <- bdatdiff[bdatdiff$period %in% periodetud, ]
+bdatdiff <- bdatdiff[(bdatdiff$period %in% periodetud) & bdatdiff$zonage_simple != "H" & bdatdiff$zonage_simple != "G" & bdatdiff$zonage_simple != "F", ]
 bdatdiff$diff <- as.factor(bdatdiff$diff)
+```
 
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
 ggplot(bdatdiff,aes(diff,fill=zonage_simple)) + geom_bar() + facet_wrap(~ period)
 
 # Sélection de la zone d'élevage B
-
 bdatdiff_B <- bdatdiff[bdatdiff$zonage_simple %in% "B",]
 ggplot(bdatdiff_B,aes(diff,fill=nom_region)) + geom_bar(position="dodge") + facet_wrap(~ period)
 ```
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+# Histogramme des valeurs 
+
+# Sélection des cantons aux diminutions significatives
+bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff) & complete.cases(melted.bdatdiff$classe_var_sth7910),]
+
+# Sélection
+bdatdiff <- subset(melted.bdatdiff,diff!="Non significatif")
+periodetud <- c("14","24","15","25")
+bdatdiff <- bdatdiff[(bdatdiff$period %in% periodetud), ]
+bdatdiff$diff <- as.factor(bdatdiff$diff)
+
+ggplot(bdatdiff,aes(diff,fill=classe_var_sth7910)) + geom_bar(position="dodge") + facet_wrap(~ period)
+
+# Sélection de la zone d'élevage B
+bdatdiff_B <- bdatdiff[bdatdiff$zonage_simple %in% "B",]
+ggplot(bdatdiff_B,aes(diff,fill=nom_region)) + geom_bar(position="dodge") + facet_wrap(~ period)
+
+```
+
 
 
 

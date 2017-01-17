@@ -13,6 +13,10 @@
 #' @param nomfichier Répertoire de sortie pour le fichier (XXX/XXX/)
 #' @param dept FALSE pour une cartographie france entière, dept <- "17|18"
 #' @param reg FALSE pour une cartographie france entière, reg <- "26|23|83|54|74|52|53|25|74"
+#' @param nrowlayout nombre de rang pour la mise en page
+#' @param ncollayout nombre de colonne pour la mise en page
+#' @param position position de la légende ("right" ou "bottom")
+
 #'
 #' @author Jean-Baptiste Paroissien
 #' @keywords cartographie
@@ -42,7 +46,10 @@ cartoperiod <- function(
        repsortie,
        nomfichier,
        dept,
-       reg
+       reg,
+       nrowlayout,
+       ncollayout,
+       position
        )
 {
 
@@ -55,6 +62,33 @@ g_legend<-function(a.gplot){
   leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
   legend <- tmp$grobs[[leg]]
 return(legend)
+}
+
+# Fonction pour partager une même légende pour plusieurs plots (https://github.com/tidyverse/ggplot2/wiki/Share-a-legend-between-two-ggplot2-graphs)
+# http://stackoverflow.com/questions/13649473/add-a-common-legend-for-combined-ggplots
+grid_arrange_shared_legend <- function(..., nrow = 1, ncol = length(list(...)), position = c("bottom", "right")) {
+
+  plots <- list(...)
+  position <- match.arg(position)
+  g <- ggplotGrob(plots[[1]] + theme(legend.position = position))$grobs
+  legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
+  lheight <- sum(legend$height)
+  lwidth <- sum(legend$width)
+  gl <- lapply(plots, function(x) x + theme(legend.position = "none"))
+  gl <- c(gl, nrow = nrow, ncol = ncol)
+
+  combined <- switch(position,
+                     "bottom" = arrangeGrob(do.call(arrangeGrob, gl),
+                                            legend,
+                                            ncol = 1,
+                                            heights = unit.c(unit(1, "npc") - lheight, lheight)),
+                     "right" = arrangeGrob(do.call(arrangeGrob, gl),
+                                           legend,
+                                           ncol = 2,
+                                           widths = unit.c(unit(1, "npc") - lwidth, lwidth)))
+  grid.newpage()
+  grid.draw(combined)
+  return(combined)
 }
 
 # Fonction pour effectuer une requête sql avant d'importer un postgis (https://geospatial.commons.gc.cuny.edu/2013/12/31/subsetting-in-readogr/)
@@ -152,59 +186,38 @@ if(length(variablecarto)==1){
   melt.map <- melt(map@data[,variablecarto])[,1]
 
   if(style_classe=="fixed"){
-  	#print(paste("Classe par ",style_classe,sep=""))
-	# Jointure et changement de nom
+    # Jointure et changement de nom
   	carto <- merge(cartofor, map@data[,c("id_geofla",variablecarto)], by.x="id", by.y="id_geofla")
   	colnames(carto)[8] <- "fill"
   	carto$fill <- as.factor(carto$fill)
+    }else{
+      classe_valeur <- classIntervals(melt.map,n=nclasse,style=style_classe,digits=2,na.rm=TRUE)[[2]]
+      # Jointure et changement de nom
+      carto <- merge(cartofor, map@data[,c("id_geofla",variablecarto)], by.x="id", by.y="id_geofla")
+      colnames(carto)[8] <- "fill"
+      carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
+    }
 
 	tt <- ggplot(carto, aes(x=long, y=lat)) +
     	                geom_polygon(data=carto, aes(group=group, fill=fill),size=0.1) +
-                      	geom_path(data=carto, aes(x=long,y=lat,group=group),color="white",size=0.1)+# Représenter les cantons
-                      	geom_path(data=cartodep, aes(x=long,y=lat,group=group),color="black",size=0.1)+# Représenter les contours des départements
-                    	scale_fill_brewer(type=qual,palette = couleur,name=l_legend,guide = guide_legend(reverse=TRUE,nrow=1))+theme(legend.position="bottom")+
-                      	theme(plot.title = element_text(size=14,face="bold"),
-                            	text = element_text(size=12),
-                            	axis.text =element_blank(),# change the theme options
-                            	axis.title =element_blank(),# remove axis titles
-                            	axis.ticks =element_blank())+
-                      	#guides(fill=FALSE)+
-                      	coord_equal()
-	}else{
-
-	#	print(paste("Classe par ",style_classe,sep=""))
-		classe_valeur <- classIntervals(melt.map,n=nclasse,style=style_classe,digits=2,na.rm=TRUE)[[2]]
-
-		# Jointure et changement de nom
-  		carto <- merge(cartofor, map@data[,c("id_geofla",variablecarto)], by.x="id", by.y="id_geofla")
-  		colnames(carto)[8] <- "fill"
-
-  		carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
-
-  		tt <- ggplot(carto, aes(x=long, y=lat)) +
-                     geom_polygon(data=carto, aes(group=group, fill=fill),size=0.1) +
-                     geom_path(data=carto, aes(x=long,y=lat,group=group),color="white",size=0.1)+# Représenter les cantons
-                     geom_path(data=cartodep, aes(x=long,y=lat,group=group),color="black",size=0.1)+# Représenter les contours des départements
-                     scale_fill_brewer(palette = couleur,name=l_legend,guide = guide_legend(reverse=TRUE,nrow=1))+theme(legend.position="bottom")+
-                     theme(plot.title = element_text(size=14,face="bold"),
-                           text = element_text(size=12),
-                           axis.text =element_blank(),# change the theme options
-                           axis.title =element_blank(),# remove axis titles
-                           axis.ticks =element_blank())+
-                     #guides(fill=FALSE)+
-                     coord_equal()
-    }
-  
-  # Sortie du fichier
+                     	geom_path(data=carto, aes(x=long,y=lat,group=group),color="white",size=0.1)+# Représenter les cantons
+                     	geom_path(data=cartodep, aes(x=long,y=lat,group=group),color="black",size=0.1)+# Représenter les contours des départements
+                     	scale_fill_brewer(type=qual,palette = couleur,name=l_legend,guide = guide_legend(reverse=TRUE,nrow=1))+theme(legend.position="bottom")+
+                     	theme(plot.title = element_text(size=12,face="bold"),
+                           	text = element_text(size=12),
+                           	axis.text =element_blank(),# change the theme options
+                           	axis.title =element_blank(),# remove axis titles
+                           	axis.ticks =element_blank())+
+                     	#guides(fill=FALSE)+
+                     	coord_equal()
+	# Sortie du fichier
   ggsave(tt, file = paste(repsortie,nomfichier,".png",sep=""), width = 7, height = 7)  
 }else{}
 
-# Voir pour cartographier en fonction du nombre de carte?
 if(length(variablecarto)>1){
 
 # Extraction de toutes les valeurs à cartographier pour établir des classes de valeurs à cartographier
 melt.map <- melt(map@data[,variablecarto])[,2]
-
 
 cpt <- 0
 p <- list()
@@ -212,81 +225,44 @@ for(i in variablecarto){#CHANGER CETTE VARIABLE
   cpt <- cpt + 1
  
   if(style_classe=="fixed"){
-  	carto <- merge(cartofor, map@data[,c("id_geofla",i)], by.x="id", by.y="id_geofla")
+    carto <- merge(cartofor, map@data[,c("id_geofla",i)], by.x="id", by.y="id_geofla")
   	colnames(carto)[8] <- "fill"
   	carto$fill <- as.factor(carto$fill)
-
-  	if(cpt==1){
-  		# Extraction de la légende (en horizontal)
-	    p1 <- ggplot(carto, aes(x=long, y=lat)) +  geom_polygon(data=carto, aes(group=group, fill=fill)) + scale_fill_brewer(palette = couleur,name=l_legend,guide = guide_legend(reverse=FALSE,nrow=1))+theme(legend.position="bottom")#+guides(colour = guide_legend(nrow = 1))
-	    plotLegend = g_legend(p1)
-	    }else{}
-
-
-    # Création de la carte
-    p[[i]] <- ggplot(carto, aes(x=long, y=lat)) +
-              geom_polygon(data=carto, aes(group=group, fill=fill),size=0.1) +
-              geom_path(data=carto, aes(x=long,y=lat,group=group),color="white",size=0.1)+# Représenter les cantons
-              geom_path(data=cartodep, aes(x=long,y=lat,group=group),color="black",size=0.1)+# Représenter les contours des départements
-              scale_fill_brewer(type=qual,palette = couleur,name=l_legend,guide = guide_legend(reverse=FALSE))+
-              theme(plot.title = element_text(size=14,face="bold"),
-                    text = element_text(size=12),
-                    axis.text =element_blank(),# change the theme options
-                    axis.title =element_blank(),# remove axis titles
-                    axis.ticks =element_blank())+
-              guides(fill=FALSE)+
-              coord_equal()+
-              labs(title=i)
-	}else{
-
-		# Classement (voir pour round)
-		classe_valeur <- classIntervals(melt.map,n=nclasse,style=style_classe,digits=2,na.rm=TRUE)[[2]]
-	
-		# Jointure et changement de nom
-		carto <- merge(cartofor, map@data[,c("id_geofla",i)], by.x="id", by.y="id_geofla")
-  		colnames(carto)[8] <- "fill"
-
-    	if(cpt==1){
-    		# Extraction de la légende (en horizontal)
-      		carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
-      		p1 <- ggplot(carto, aes(x=long, y=lat)) +  geom_polygon(data=carto, aes(group=group, fill=fill)) + scale_fill_brewer(palette = couleur,name=l_legend,guide = guide_legend(reverse=FALSE,nrow=1))+theme(legend.position="bottom")#+guides(colour = guide_legend(nrow = 1))
-      		plotLegend = g_legend(p1)
-      		}else{
-      			carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
-    	}
+    }else{
+      # Classement (voir pour round)
+      classe_valeur <- classIntervals(melt.map,n=nclasse,style=style_classe,digits=2,na.rm=TRUE)[[2]]
+  
+      # Jointure et changement de nom
+      carto <- merge(cartofor, map@data[,c("id_geofla",i)], by.x="id", by.y="id_geofla")
+      colnames(carto)[8] <- "fill"
+      carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)
+      }
 
     # Création de la carte
     p[[i]] <- ggplot(carto, aes(x=long, y=lat)) +
               geom_polygon(data=carto, aes(group=group, fill=fill),size=0.1) +
-              geom_path(data=carto, aes(x=long,y=lat,group=group),color="white",size=0.1)+# Représenter les cantons
-              geom_path(data=cartodep, aes(x=long,y=lat,group=group),color="black",size=0.1)+# Représenter les contours des départements
-              scale_fill_brewer(palette = couleur,name=l_legend,guide = guide_legend(reverse=FALSE))+
-              theme(plot.title = element_text(size=14,face="bold"),
-                    text = element_text(size=12),
+              geom_path(data=carto, aes(x=long,y=lat,group=group),color="white",size=0.1)+# Représente les cantons
+              geom_path(data=cartodep, aes(x=long,y=lat,group=group),color="black",size=0.1)+# Représente les contours des départements
+              scale_fill_brewer(palette = couleur,name=l_legend)+
+              theme(plot.title = element_text(size=10,face="bold"),
+                    text = element_text(size=10),
                     axis.text =element_blank(),# change the theme options
                     axis.title =element_blank(),# remove axis titles
                     axis.ticks =element_blank())+
-              guides(fill=FALSE)+
               coord_equal()+
               labs(title=i)
-	}
-}#fin boucle 
+	}#fin boucle 
 
-lwidth = sum(plotLegend$width)
+# Provisoire/temporaire
+save(p,file="p.RData")
+#save(plotLegend,file="plotLegend.RData")
 
-if(length(variablecarto)=="4"){
-  combinedPlots <- arrangeGrob(p[[1]],p[[2]],p[[3]],p[[4]],nrow=2)
-  tt <- grid.arrange(combinedPlots,plotLegend,nrow=2,heights=c(10, 1))
-  }else{}
+#png(paste(repsortie,nomfichier,".png",sep=""),width=res, height=res)#,pointsize=10)
+tt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=nrowlayout,ncol=ncollayout,position=position)))
+#dev.off()
 
-if(length(variablecarto)=="5"){
-
-  combinedPlots <- arrangeGrob(p[[1]],p[[2]],p[[3]],p[[4]],p[[5]],nrow=3)
-  tt <- grid.arrange(combinedPlots,plotLegend,ncol=1,heights=c(10, 1))
-
-  }else{}
-res <- 10
-ggsave(tt, file = paste(repsortie,nomfichier,".png",sep=""), width = res, height = res)  
+#save(tt,file="tt.RData")
+ggsave(tt, file = paste(repsortie,nomfichier,".png",sep=""))#, width = res, height = res)  
 
 }else{}
 

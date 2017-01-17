@@ -16,7 +16,7 @@ output:
 source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
 repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
 importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
-repsortie <- paste(repmaster,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
+repsortie <- paste(repmaster,"Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
 ```
 # Objectifs
 
@@ -40,14 +40,13 @@ couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brew
 nomfichier="test"
 
 # Lancement
-cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,dept=FALSE,reg=54)
+cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=3,position="right")
 ```
 
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres ###########################
 tablecarto <- "dm_vecteurs.canton" 
-dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" #Paramètres de connexion
 period <- c("1979","1988","2000","2010") #Période de temps prise en compte
 variable <- c("p_prairie","p_sth","p_sfp","p_mf","p_c")#variable(s) à cartographier
 l_legend <- c("Pourcentage Prairie","Pourcentage STH/SAU", "Pourcentage SFP/SAU", "Pourcentage MFL/SAU","Pourcentage C/SAU")# Nom des labels associés aux variables à cartographier. Vecteur utilisé pour les titres des cartes
