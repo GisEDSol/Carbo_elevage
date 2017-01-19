@@ -23,6 +23,9 @@ importparametres <- function(dsn,
 knitr::opts_chunk$set(echo = TRUE)
 
 # Chargement des librairies
+# Rajouter cette option
+# if (!require("pacman")) install.packages("pacman")
+
 library(RODBC);library(gdata);library(fields);library(stringr);library(ggplot2);library(rgdal);library(maptools);library(RColorBrewer);library(classInt);library(devtools);library(reshape2)
 library(Hmisc);library(gridExtra);library(mapproj);library(wesanderson);library(FactoMineR);library(knitr);library(wesanderson);library(pander);library(GGally);library(factoextra);library(caret);library(plyr)
 library(doMC)
@@ -50,7 +53,7 @@ assign("loc",odbcConnect("solelevage",case="postgresql", believeNRows=FALSE),.Gl
 assign("dsn",dsn,.GlobalEnv)
 
 # Chargement des fonction
-source(paste(repfonctions,"R/cartoperiod.R",sep=""))
+source(paste(repfonctions,"R/F_carto.R",sep=""))
 
 # Fonction très pratique pour remplacer une suite de charact?res par une autre
 gsub2 <- function(pattern, replacement, x, ...) {

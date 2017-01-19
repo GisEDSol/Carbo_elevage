@@ -210,7 +210,6 @@ cdf
 ```
 
 ```{r boxplot_reg_elevage,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
-
 p <- ggplot(melted.bdat_regelevage) +
             geom_boxplot(aes(x=annees,y=value,col=zonage_simple),notch=TRUE)+
             #scale_color_manual(values=colors,name="Années")
@@ -220,8 +219,32 @@ p <- ggplot(melted.bdat_regelevage) +
                   axis.title = element_text(face="bold"),
                   axis.text.x=element_text(size = 11))
 p  
-#ggsave(p,file = paste(repsortie,"boxplotbdat_typoclim.png",sep=""), width = 15, height = 10)  
+ggsave(p,file = paste(repsortie,"boxplotbdat_zonage_simple.png",sep=""), width = 15, height = 10)  
 ```
+
+### Zoom sur les 3 régions d'élevage affectées par la baisse du pourcentage de STH, prairies et surface fourragères
+
+```{r boxplot_reg_elevagezoom,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
+melted.bdat_regBCD <- melted.bdat[melted.bdat$zonage_simple %in% c("B","C","D"),]
+
+p <- ggplot(melted.bdat_regBCD) +
+            geom_boxplot(aes(x=annees,y=value,col=zonage_simple),notch=TRUE)+
+            #geom_smooth(aes(x=as.integer(annees),y=value,color=zonage_simple,fill=zonage_simple),method=loess)+
+            #scale_color_manual(values=colors,name="Années")
+            scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone (g/kg)")+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+                  text = element_text(size = 12),
+                  axis.title = element_text(face="bold"),
+                  axis.text.x=element_text(size = 11))
+p  
+ggsave(p,file = paste(repsortie,"boxplotbdat_zonage_simple.png",sep=""), width = 15, height = 10)  
+```
+
+
+
+
+
+
 
 ```{r,highlight=TRUE,eval=FALSE}
 #ylim1 <- boxplot.stats(melted.bdat$value)$stats[c(1,5)]
@@ -330,7 +353,7 @@ couleur <- "Spectral" #Nom de la palette couleur (selon RColorBrewer)display.bre
 l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
 nomfichier <- "corgoxmed_period_fr" #Nom du fichier
 
-cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=3,position="bottom")
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=5,position="bottom",ggsaveheight=5,ggsavewidth=20)  
 ```
 
 # test avec les différences

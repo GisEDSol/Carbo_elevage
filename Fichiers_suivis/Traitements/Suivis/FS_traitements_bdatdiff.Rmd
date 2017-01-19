@@ -3,12 +3,14 @@ title: "Traitement des données de la BDAT :Evolution des teneurs en carbone org
 author: "Jean-Baptiste Paroissien"
 date: "21/12/2016"
 output:
+  html_document:
+    toc: yes
   html_notebook:
-    toc: true
-    fig_caption: true
+    fig_caption: yes
     highlight: zenburn
     number_sections: yes
     theme: spacelab
+    toc: yes
 ---
 
 
@@ -26,28 +28,23 @@ sessionInfo()
 ```
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
-# Chargement des tables de travail
-variaoccup <- c("p_sth","p_sfp","p_prairie")
-periodoccup <- c("1970","1979","1988","2000","2010")
-id_class <- apply(expand.grid(variaoccup,periodoccup),1, function(x){paste("classe_",x[1],x[2],sep="")})
-id_variaoccup <- c("classe_var_sth7910","classe_var_cereale7910","classe_var_sfp7910")
-id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt",id_class,id_variaoccup) #Nom des identifiants
-variafactor <- paste(id,collapse=",")
-
 # Lecture des tables de travail
-melted.bdatdiff <- sqlQuery(loc,paste("select diffmedian,diff,period,",variafactor," from dm_traitements.melted_bdatdiff",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE))
+melted.bdatdiff <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdatdiff",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE))
 dcast.bdat <- sqlQuery(loc,paste("select * from dm_vecteurs.canton",sep=""))
 
 melted.bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff),]
 ```
 
+# Objectifs
 
-# Analyse de l'évolution des teneurs en carbone organique 
-
-Pour cette partie, on se base sur les résultats fournis par InfoSol...Plusieurs analyses sont proposées en lien avec les objectifs suivants :
+Ici, on s'intéresse aux résultats sur les évolutions des teneurs en carbone. Les résultats ont été fournis par InfoSol et résultent d'un ré-échantillonnage des analyses de la bdat communales réalisées 100 fois. Plusieurs analyses sont réalisées :
 
 - Identifier la distribution spatiale de l'évolution à l'échelle de la france : Cartographie, boxplot du nombre de canton qui évolue par différents niveaux de stratification
 - Analyse de la distribution. Quelle sont les principaux facteurs qui expliquent ces évolutions ?
+
+
+# Analyse de l'évolution des teneurs en carbone organique (Echelle nationale)
+
 
 ## Analyse du nombre d'évolution significative par canton
 
@@ -73,23 +70,22 @@ bdatdiff$diff <- as.factor(bdatdiff$diff)
 ggplot(bdatdiff,aes(diff,fill=zonage_simple)) + geom_bar() + facet_wrap(~ period)
 
 # Sélection de la zone d'élevage B
-bdatdiff_B <- bdatdiff[bdatdiff$zonage_simple %in% "B",]
-ggplot(bdatdiff_B,aes(diff,fill=nom_region)) + geom_bar(position="dodge") + facet_wrap(~ period)
+
+ggplot(bdatdiff,aes(diff,fill=zonage_simple)) + geom_bar(position="dodge") + facet_wrap(~ period)
 ```
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
 # Histogramme des valeurs 
 
 # Sélection des cantons aux diminutions significatives
-bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff) & complete.cases(melted.bdatdiff$classe_var_sth7910),]
+bdatdiff_classe <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff) & complete.cases(melted.bdatdiff$classe_var_sth1979_2010) & melted.bdatdiff$diff !="Non significatif",]
 
 # Sélection
-bdatdiff <- subset(melted.bdatdiff,diff!="Non significatif")
 periodetud <- c("14","24","15","25")
-bdatdiff <- bdatdiff[(bdatdiff$period %in% periodetud), ]
-bdatdiff$diff <- as.factor(bdatdiff$diff)
+bdatdiff_classe <- bdatdiff_classe[(bdatdiff_classe$period %in% periodetud), ]
+bdatdiff_classe$diff <- as.factor(bdatdiff_classe$diff)
 
-ggplot(bdatdiff,aes(diff,fill=classe_var_sth7910)) + geom_bar(position="dodge") + facet_wrap(~ period)
+ggplot(bdatdiff_classe,aes(diff,fill=classe_var_sth1979_2010)) + geom_bar(position="dodge") + facet_wrap(~ period)
 
 # Sélection de la zone d'élevage B
 bdatdiff_B <- bdatdiff[bdatdiff$zonage_simple %in% "B",]
@@ -101,10 +97,10 @@ ggplot(bdatdiff_B,aes(diff,fill=nom_region)) + geom_bar(position="dodge") + face
 
 
 
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE}
 ## Revoir
 
-p <- ggplot(melted.bdatharmo) +
+p <- ggplot(melted.bdatdiff) +
             geom_boxplot(aes(x=period,y=value,col=typo_clim))+
             #scale_color_manual(name="Années")+
             scale_x_discrete("Années")+scale_y_continuous("Teneur en carbone (g/kg)")+
@@ -121,7 +117,7 @@ p
 
 oK, REVOIR LES JOINTURES AVEC LES DONNÉES, résultats à prendre avec des pincettes.
 
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
+```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,message=FALSE}
 tablecarto <- "dm_vecteurs.canton" 
 dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
 variablecarto <- c("diff15","diff14","diff24","diff25") #variable à spatialiser
@@ -162,5 +158,69 @@ test <- dcast.bdat[,c("corgox_med9094","corgox_med9599","corgox_med0004","corgox
 ggpairs(test)
 
 ```
+
+# Analyse sur les régions d'élevage B, C et D
+
+## Histogrammes
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+# Histogramme des valeurs 
+periodetud <- c("14","24","15","25")
+# Sélection des cantons aux diminutions significatives et des zones B,C et D
+bdatdiff <- subset(melted.bdatdiff,diff!="Non significatif")
+bdatdiffBCD <- bdatdiff[(bdatdiff$period %in% periodetud) & bdatdiff$zonage_simple %in% c("B","C","D"), ]
+
+# Sélection
+bdatdiff$diff <- as.factor(bdatdiff$diff)
+ggplot(bdatdiffBCD,aes(diff,fill=zonage_simple)) + geom_bar(position="dodge") + facet_wrap(~period)
+
+```
+
+## Graphiques de correlation
+ Rajouter les variation climatiques
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+
+# Stratifier les plots par les régions et autres facteurs (voir pour la classification climatique)
+plot(dcast.bdat$hpluie_an,dcast.bdat$corgox_medequi9094)
+plot(dcast.bdat$p_sth2000,dcast.bdat$corgox_medequi9094)
+
+
+plot(dcast.bdat$hpluie_an,dcast.bdat$corgox_medequi9094)
+
+dcast.bdat
+
+
+# Voir le développement de ce type de graphique
+dcast.bdatBCD <- dcast.bdat[dcast.bdat$zonage_simple %in% c("B","C","D"),]
+
+ggplot(dcast.bdatBCD, aes(var_ugb8810, diffmedian15,shape=factor(diff15))) +
+  geom_point(aes(colour = factor(diff15)), size = 2) +
+  geom_point(colour="grey10", size = 1.5)
+
+
+ggplot(dcast.bdatBCD, aes(var_cereale1970_2010, diffmedian15,shape=factor(diff15))) +
+  geom_point(aes(colour = factor(diff15)), size = 2) +
+  geom_point(colour="grey10", size = 1.5)
+
+
+ggplot(melted.bdatdiff, aes(var_cereale1970_2010, diffmedian15,shape=factor(diff15))) +
+  geom_point(aes(colour = factor(diff15)), size = 2) +
+  geom_point(colour="grey10", size = 1.5)
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
 
 

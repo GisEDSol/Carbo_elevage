@@ -11,12 +11,13 @@
 #' @param l_legend Nom pour la légende
 #' @param repsortie
 #' @param nomfichier Répertoire de sortie pour le fichier (XXX/XXX/)
-#' @param dept FALSE pour une cartographie france entière, dept <- "17|18"
+#' @param dept FALSE pour une cartographie france entière, dept <- "17|18" 
 #' @param reg FALSE pour une cartographie france entière, reg <- "26|23|83|54|74|52|53|25|74"
 #' @param nrowlayout nombre de rang pour la mise en page
 #' @param ncollayout nombre de colonne pour la mise en page
 #' @param position position de la légende ("right" ou "bottom")
-
+#' @param ggsavewidth paramètre largeur pour la sortie de l'image
+#' @param ggsaveheight paramètre hauteur pour la sortie de l'image
 #'
 #' @author Jean-Baptiste Paroissien
 #' @keywords cartographie
@@ -33,9 +34,9 @@ l_legend <- "Teneur en carbone organique (g/kg)" #label de la variable
 nomfichier <- "test"
 repsortie <- "/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/"
 
-#'cartoperiod(dsn,tablecarto,period,variable,nclasse=5,couleur="YlGnBu",l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE)
+#'carto(dsn,tablecarto,period,variable,nclasse=5,couleur="YlGnBu",l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=3,position="right")
 
-cartoperiod <- function(
+carto <- function(
        dsn,
        tablecarto,
        variablecarto,
@@ -49,7 +50,9 @@ cartoperiod <- function(
        reg,
        nrowlayout,
        ncollayout,
-       position
+       position,
+       ggsavewidth,
+       ggsaveheight
        )
 {
 
@@ -91,7 +94,7 @@ grid_arrange_shared_legend <- function(..., nrow = 1, ncol = length(list(...)), 
   return(combined)
 }
 
-# Fonction pour effectuer une requête sql avant d'importer un postgis (https://geospatial.commons.gc.cuny.edu/2013/12/31/subsetting-in-readogr/)
+# Fonction pour effectuer une requête sql avant d'importer un postgis (selon https://geospatial.commons.gc.cuny.edu/2013/12/31/subsetting-in-readogr/)
 readOgrSql = function (dsn, sql, ...) {
    # check dsn starts "PG:" and strip
   if (str_sub(dsn, 1, 3) != "PG:") {
@@ -230,7 +233,7 @@ for(i in variablecarto){#CHANGER CETTE VARIABLE
   	carto$fill <- as.factor(carto$fill)
     }else{
       # Classement (voir pour round)
-      classe_valeur <- classIntervals(melt.map,n=nclasse,style=style_classe,digits=2,na.rm=TRUE)[[2]]
+      classe_valeur <- round(classIntervals(melt.map,n=nclasse,style=style_classe,digits=2,na.rm=TRUE)[[2]],1)
   
       # Jointure et changement de nom
       carto <- merge(cartofor, map@data[,c("id_geofla",i)], by.x="id", by.y="id_geofla")
@@ -254,7 +257,7 @@ for(i in variablecarto){#CHANGER CETTE VARIABLE
 	}#fin boucle 
 
 # Provisoire/temporaire
-save(p,file="p.RData")
+#save(p,file=paste(repsortie,nomfichier,"1.RData",sep=""))
 #save(plotLegend,file="plotLegend.RData")
 
 #png(paste(repsortie,nomfichier,".png",sep=""),width=res, height=res)#,pointsize=10)
@@ -262,7 +265,8 @@ tt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=nrowlayout,ncol=ncollayou
 #dev.off()
 
 #save(tt,file="tt.RData")
-ggsave(tt, file = paste(repsortie,nomfichier,".png",sep=""))#, width = res, height = res)  
+
+ggsave(tt, file = paste(repsortie,nomfichier,".png",sep=""),width = ggsavewidth, height = ggsaveheight)  
 
 }else{}
 

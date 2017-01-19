@@ -14,6 +14,7 @@ Jean-Baptiste Paroissien
     -   [Cartographie](#cartographie)
 -   [test avec les différences](#test-avec-les-differences)
 -   [Analyse des facteurs explicatifs](#analyse-des-facteurs-explicatifs)
+    -   [Graphique de correlation](#graphique-de-correlation-1)
 -   [Modélisation avec GBM](#modelisation-avec-gbm)
 
 Objectifs
@@ -208,6 +209,7 @@ Test également en fonction des différentes régions d'élevage
 
 ``` r
 melted.bdat_regelevage <- melted.bdat[complete.cases(melted.bdat$zonage_simple),]
+melted.bdat_regelevage <- melted.bdat_regelevage[melted.bdat_regelevage$zonage_simple != "H",]
 
 cdf <- ggplot(melted.bdat_regelevage, aes(x=value))+
        facet_wrap(~zonage_simple)+
@@ -225,6 +227,10 @@ cdf
 ![](FS_traitements_bdat_files/figure-markdown_github/cdf_regelevage-1.png)
 
 ![](FS_traitements_bdat_files/figure-markdown_github/boxplot_reg_elevage-1.png)
+
+### Zoom sur les 3 régions d'élevage affectées par la baisse du pourcentage de STH, prairies et surface fourragères
+
+![](FS_traitements_bdat_files/figure-markdown_github/boxplot_reg_elevagezoom-1.png)
 
 ``` r
 #ylim1 <- boxplot.stats(melted.bdat$value)$stats[c(1,5)]
@@ -323,23 +329,18 @@ Dans cette partie, des cartes peuvent être produites selon plusieurs arguments 
 -   stratification temporelle (groupe de plusieurs années).
 
 ``` r
-# En cours
-repfonctions <- paste(masterrep,"Scripts/master/Fonctions/R/",sep="")
-# Chargement de la fonction cartoperiod
-source(paste(repfonctions,"cartoperiod.R",sep=""))
-
 # Paramètres #################
 tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
 period <- c("9094","9599","0004","0509","1014") #
 variable <- "corgox_medequi"
 variablecarto <- paste(variable,period,sep="")#variables à cartographier
 nclasse <- 5 
-style_classe <- "pretty"#Nombre de classes de valeurs pour la cartographie
+style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
 couleur <- "Spectral" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
 l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
-nomfichier <- "corgoxmed_period" #Nom du fichier
+nomfichier <- "corgoxmed_period_fr" #Nom du fichier
 
-cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE)
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=5,position="bottom",ggsaveheight=5,ggsavewidth=20)  
 ```
 
 test avec les différences
@@ -351,8 +352,8 @@ tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartograph
 period <- c("14","15","24","25")#
 variable <- "diff"
 variablecarto <- paste(variable,period,sep="")#variables à cartographier
-nclasse <- 5 
-style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
+nclasse <- 5 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "quantile"
 couleur <- "Spectral" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
 l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
 nomfichier <- "corgoxmed_period" #Nom du fichier de sortie (.png)
@@ -368,7 +369,8 @@ Analyse des facteurs explicatifs
 Rcovar <- c("ugbgrani_sau2010","ttemp_an","jfroids_an","jchauds_an","hpluie_an","ugbta1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sth1970","p_sth1979","p_sth1988","p_sfp1970","p_sfp1979","p_sfp1988","p_mf1970","p_mf1979","p_mf1988","p_c1970","p_c1979","p_c1988")
 vNames <- c("corgox_medequi9094",Rcovar)
 
-dcast.bdat_variables <- dcast.bdat[,vNames]
+# Lecture de la table sans les NA
+dcast.bdat_variables <- dcast.bdat[complete.cases(dcast.bdat[,vNames]),vNames]
 
 res.pca <- PCA(dcast.bdat_variables, graph = FALSE)
 eigenvalues <- res.pca$eig
@@ -383,6 +385,24 @@ scale_color_gradient2(low="white", mid="blue",
 
 Environ pourcent de l'information est contenu dans les deux premiers axes.
 
+Graphique de correlation
+------------------------
+
+``` r
+# Stratifier les plots par les régions et autres facteurs (voir pour la classification climatique)
+plot(dcast.bdat$hpluie_an,dcast.bdat$corgox_medequi9094)
+plot(dcast.bdat$p_sth2000,dcast.bdat$corgox_medequi9094)
+
+
+plot(dcast.bdat$hpluie_an,dcast.bdat$corgox_medequi9094)
+
+
+# Voir le développement de ce type de graphique
+ggplot(dcast.bdat, aes(hpluie_an, corgox_medequi9094,shape=factor(classe_p_prairie2000))) +
+  geom_point(aes(colour = factor(classe_p_prairie2000)), size = 4) +
+  geom_point(colour="grey10", size = 1.5)
+```
+
 Modélisation avec GBM
 =====================
 
@@ -391,19 +411,30 @@ L'application de ces modèles demande une bonne configuration de leurs paramètr
 1.  Boosted regression tree (BRT)
     Les modèles d'arbres de régression boostés sont connus pour améliorer la précision de prédiction par rapport aux simples arbres de régression.
     L'algo permet d'ajuster un modèle en fonction d'un processus itératif. A chaque itération, les arbres de régresssions sont ajustés et montés sur une fraction de l'ensemble des données échantillongées. Les principaux paramètres d'un modèle sont :
-    1.  le taux d'apprentissage *(skrinkage)* qui correspond à une constante déterminant l'influence de la combinaison individuelle des arbres qui forme le forme le modèle final. Lorsque ce coefficient est le faible, le modèle est très spécialisé et est difficilement applicable sur un autre jeu de données.
-    2.  la taille des arbres *(interaction depth)* correspond à la taille des arbres de régression. Lorsque la taille est égale à 1, chaque arbre est constitué d'un seul noeud, on modélise l'effet d'une seule variable prédictive. Ainsi, le modèle final additionne séparément l'effet prédictif des variables et les intéractions des variables ne sont pas explicitement prise en compte. Lorsque la taille des arbres est supérieur à 1, chaque arbre de régression individuelle modélise l'interaction d'au moins deux variables prédictives. Celà permet de l'utilisation de modèle prenant en compte les intéractions d'ordre i entre les variables prédictives. La capacité de représenter les interactions entre les variables prédictives sans connaissance a priori est l'un des avantages de la BRT et plus généralement des arbres de régression.
+    1.  le taux d'apprentissage *(skrinkage)* : il correspond à une constante déterminant l'influence de la combinaison individuelle des arbres qui forme le forme le modèle final. Lorsque ce coefficient est faible, le modèle est très spécialisé et est difficilement applicable sur un autre jeu de données.
+    2.  la taille des arbres *(interaction depth)* correspond à la taille des arbres de régression. Lorsque la taille est égale à 1, chaque arbre est constitué d'un seul noeud, on modélise l'effet d'une seule variable prédictive. Ainsi, le modèle final additionne séparément l'effet prédictif des variables et les intéractions des variables ne sont pas explicitement prise en compte. Lorsque la taille des arbres est supérieur à 1, chaque arbre de régression individuelle modélise l'interaction d'au moins deux variables prédictives. Celà permet l'utilisation de modèle prenant en compte les intéractions d'ordre i entre les variables prédictives. La capacité de représenter les interactions entre les variables prédictives sans connaissance a priori est l'un des avantages des arbres de régression.
     3.  le nombre d'arbre *(n.tree)*correspond au nombre d'arbre pour l'ajustement. C'est l'équivalent du nombre d'itérations.
 
 ``` r
-dcast.bdat_variables <- dcast.bdat_variables[complete.cases(dcast.bdat_variables),] # Pour supprimer les NA
-datax <- dcast.bdat_variables[, vNames[-1]]
-datay <- dcast.bdat_variables[, vNames[1]]
+Rcovar <- c("ugbgrani_sau2010","ttemp_an","jfroids_an","jchauds_an","hpluie_an","ugbta1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sth1970","p_sth1979","p_sth1988","p_sfp1970","p_sfp1979","p_sfp1988","p_mf1970","p_mf1979","p_mf1988","p_c1970","p_c1979","p_c1988",id_class)
+vNames <- c("corgox_medequi9094",Rcovar)
 
-tuneGrid <- expand.grid(interaction.depth = c(13),n.trees = c(150),shrinkage = 0.05,n.minobsinnode=10)
-fitControl <- trainControl(method = "repeatedcv",p=0.8,number=10,repeats=10)
+dcast.bdat_gbm <- dcast.bdat[complete.cases(dcast.bdat[,vNames]),vNames] # Pour supprimer les NA
+datax <- dcast.bdat_gbm[, vNames[-1]]
+datay <- dcast.bdat_gbm[, vNames[1]]
+
+#tuneGrid <- expand.grid(interaction.depth = c(13),n.trees = c(150),shrinkage = 0.05,n.minobsinnode=10)
+#fitControl <- trainControl(method = "repeatedcv",p=0.8,number=10,repeats=10)
+
+tuneGrid <- expand.grid(.interaction.depth = c(1,5,9,13),.n.trees = c(150,500,1000,1500),.shrinkage = 0.05)
+trControl <- trainControl(method = "cv",p=0.8)
+
+tuneGrid <-  expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:30)*50,shrinkage = 0.1,n.minobsinnode = 20)
+
+
 
 # Utilisation de caret, car plus rapide qu'une simple fonction gbm
+registerDoMC(4) # Nombre de processeurs activés
 mgbm <- train(x = datax , y = datay,method="gbm",tuneGrid = tuneGrid,trControl = fitControl,verbose = F,keep.data = T)
 
 #best.iter <- gbm.perf(mgbm,method="cv")
@@ -425,14 +456,4 @@ plot(varImp(mgbm), top = 5)
 #.committees : an integer: how many committee models (e.g.. boosting iterations) should be used
 
 #.neighbors : an integer from 0 to 9: how many instances to use to correct the rule-based prediction? if neighbors is greater than zero, these predictions are adjusted by training set instances nearby using the approach of Qunilan (1993)
-
-# Test des différents combinaison de paramètres
-model <- c("gbm","cubist")
-idField <- "id"
-titre <- "test"
-
-tuneGrid <- list(gbm=expand.grid(.interaction.depth = c(1,5,9,13),.n.trees = c(150,500,1000,1500),.shrinkage = 0.05),cubist=expand.grid(.committees = c(10,50,100),.neighbors = c(1,5,9)))
-trControl <- list(gbm=trainControl(method = "cv",p=0.8),cubist=trControl <- trainControl(method = "cv",p=0.8))
-
-crossValidateMachineLearning(titre = titre,fold = fold,model = model,data = "bdatigcs_ponct",transfParam ="log",vNames = vNames,coords = coords,tuneGrid=tuneGrid,trControl=trControl,distance = 0,probs = 0.8,nbl = 1,idField = idField)
 ```
