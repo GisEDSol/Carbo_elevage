@@ -3,7 +3,7 @@
 > Ce projet regroupe l'ensemble des scripts développés pour la création d'une base de données sur les sols et l'élevage et les différents traitements statistiques associés. Il est organisé selon l'arborescence suivante :
 
 * **[Fichiers_suivis](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis)** Répertoire de stockage des fichiers de suivis associés à la création de la base de données et aux traitements statistiques des données. Ce répertoire est constitué des sous-répertoires suivants :
-      * [BDD](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/BDD) Répertoire de stockage des fichiers de suivis liés à la création de la base de données. Le répertoire est constitué du [script](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/BDD/FS_bdd_brute.nb.Rmd) de création de la bdd brute et de plusieurs fichiers décrivant la création de données élaborées, directement exploitables pour les traitements, analyses et cartographie.
+      * [BDD](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/BDD) Répertoire de stockage des fichiers de suivis liés à la création de la base de données. Le répertoire est constitué du [script](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/BDD/FS_bdd_brute.Rmd) de création de la bdd brute et de plusieurs fichiers décrivant la création de données élaborées, directement exploitables pour les traitements, analyses et cartographie.
       * [Traitements](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements) Répertoire regroupant l'ensemble des traitements de données associés aux données climatiques, d'occupation du sol (notamment agreste) et des données sols. 
       * [Shiny](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Shiny) Répertoire test pour la création d'une application Shiny. Ce travail sera réalisé dans un second temps,
 
@@ -14,6 +14,6 @@
 
 ### Document de travail en cours
 
-Pour une lecture aisée des traitements et résultats en cours sur l'analyse des teneurs en carbone organique dans les sols avec la BDAT, le lecteur intéressé peut consulter cette [page](https://rawgit.com/Rosalien/GISEDSol/master/Fichiers_suivis/Traitements/Suivis/Traitement_BDAT.nb.html).
+Pour une lecture aisée des traitements et résultats en cours sur l'analyse des teneurs en carbone organique dans les sols avec la BDAT, le lecteur intéressé peut consulter cette [page](https://github.com/Rosalien/GISEDSol/blob/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdat.md) et cette [page](https://github.com/Rosalien/GISEDSol/blob/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdatdiff.md) qui traite de l'évolution des teneurs en carbone 
 
 ----

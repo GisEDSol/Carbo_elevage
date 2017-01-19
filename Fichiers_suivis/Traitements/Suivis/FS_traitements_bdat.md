@@ -20,15 +20,16 @@ Jean-Baptiste Paroissien
 Objectifs
 =========
 
-Ce fichier de suivi a pour but de centraliser l'ensemble des analyses portées sur les valeurs de teneurs en carbone organique de la BDAT. Ce travail est organisé de la façon suivante :
+Dans ce fichier, les analyses cantonales de la BDAT sont analysées afin appréhender la distribution statistiques géographiques des teneurs en carbone organique de plusieurs périodes de temps, regroupées en 5 périodes : 1990-1994, 1995-1999, 2000-2004, 2005-2009 et 2010-2014. Les résultats présentés font suite à différents scripts de préparations de données dont la chaîne de traitements générale est consultable à cette adresse.
 
--   Analyse des histogrammes de fréquence et tests statistiques pour chacune des périodes de temps analysées,
--   Représentation cartographique par canton,
--   Analyse des facteurs explicatifs.
+Globalement, le travail est organisé de la manière suivante :
+- [Statistiques descriptives](#) : Analyse des histogrammes de fréquence et tests statistiques pour chacune des périodes de temps analysées,
+- [Représentation cartographique](#) : Représentation cartographique par canton,
+- [Analyse des facteurs explicatifs](#) : Analyse des facteurs explicatifs.
 
 Plus d'information, voir [le chapitre](#boxplot)
 
-**Date : **
+**Date : `{r print(date)}`**
 
 Chargement des données et des principaux paramètres d'étude
 -----------------------------------------------------------
@@ -41,90 +42,63 @@ Cette première étape a pour but d'analyser les différences des teneurs en car
 France entière
 --------------
 
-La figure ci-dessous présente les courbes de fréquences cumulées pour la france entière. La figure montre un décalage des courbes des périodes 2000-2004, 2005-2009 et 2010-2014 vers des valeurs plus faibles. Parmi ces 3 périodes, la période 2005-2009 est celle qui se décale le plus vers des teneurs plus faible tandis que la période 2010-2014 se rapproche de valeur plus importante. Ces trois périodes se distinguent clairement des périodes de 1990-1994 et 1995-1999 qui sont rapprochées. Ces observations mettent en évidence une diminution des teneurs en carbone entre les périodes 1990-1999 et les périodes de 2000-2009. D'après la figure, ce sont les teneurs médianes les plus concernées par cette baisse de teneur.
+La figure <A HREF="#cdf_fr">1</A> présente les courbes de fréquences cumulées des teneurs en carbone organique distribuées pour les 5 périodes. Les courbes de fréquences des 5 périodes présentent la même forme en "S" et s'individualisent juste avant le plateau, présentant une différence affectant les sols riches en teneurs organiques. Sur cette zone, la figure montre un décalage des courbes des périodes 2000-2004, 2005-2009 et 2010-2014 vers des valeurs plus faibles. Parmi ces 3 périodes, la période 2005-2009 est celle qui se décale le plus vers des teneurs plus faible tandis que la période 2010-2014 se rapproche des valeurs de 1990-1994 et 1995-1999, présentant ainsi une inversion de la tendance observée. Ces trois périodes se distinguent clairement des périodes de 1990-1994 et 1995-1999 qui sont rapprochées. Ces observations mettent en évidence une diminution des teneurs en carbone entre les périodes 1990-1999 et les périodes de 2000-2009.
 
-![](FS_traitements_bdat_files/figure-markdown_github/unnamed-chunk-2-1.png)
+``` r
+period <- c("9094","9599","0004","0509","1014")
+xlabel <- "Carbone organique (g/kg)"
+ylabel <- "Fréquence"
+nperiod <- length(period)
+colors <- wes_palette("Rushmore",nperiod,type="continuous")
 
-On retrouve ces tendances dans le tableau présentant les statistiques descriptives par période. La période 2000-2004 présente la valeur médiane la plus faible avec une valeur de `bdatsummary$value["0004","Median"]` g/kg. Les valeurs les plus importantes sont observées pour les périodes 1990-1994 et 1995-1999 avec respectivement des teneurs en carbone organique de `bdatsummary$value["9094","Median"]` et `bdatsummary$value["9599","Median"]`. En terme de tendance, on remarque une augmentation des teneurs pour la période 2010-2014 avec une médiane des valeurs de `bdatsummary$value["1014","Median"]`.
+# Courbe de fréquence cumulée
+cdf <- ggplot(melted.bdat, aes(x=value))+
+       stat_ecdf(aes(colour=annees))+
+       scale_color_manual(values=colors, 
+                          name="Périodes")+
+       scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+       theme(plot.title = element_text(size = 14, face = "bold"), 
+             text = element_text(size = 12),
+             axis.title = element_text(face="bold"),
+             axis.text.x=element_text(size = 11))
+cdf
+```
+
+<figure style="text-align:center;">
+<a name="cdf_fr"></a><img src="FS_traitements_bdat_files/figure-markdown_github/unnamed-chunk-3-1.png">
+<figcaption>
+</figcaption>
+</figure>
+``` r
+# Ajout d'un zoom
+zoomtheme <- theme(legend.position="none", axis.line=element_blank(),axis.text.x=element_blank(),
+            axis.text.y=element_blank(),axis.ticks=element_blank(),
+            axis.title.x=element_blank(),axis.title.y=element_blank(),
+            panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+            panel.background = element_rect(color='red', fill="white"),
+            plot.margin = unit(c(0,0,-6,-6),"mm"))
+
+cdf_zoom <- ggplot(melted.bdat, aes(x=value))+
+       stat_ecdf(aes(colour=annees))+
+       scale_color_manual(values=colors,name="Années")+zoomtheme+
+       coord_cartesian(xlim=xlim, ylim=ylim)
+
+# Problème lors de la compilation avec knit     
+#cdf_zoom_grob <- ggplotGrob(cdf_zoom)
+#cdfcpt <- cdf + annotation_custom(grob = cdf_zoom_grob, xmin = 65, xmax = 90, ymin = 0.1, ymax = 0.50)  
+#cdfcpt
+```
 
 ``` r
 # Résumé des statistiques 
 bdatsummary <- apply(melted.bdat["value"],2, function(x) tapply(x, melted.bdat[,"annees"],summary))
 bdatsummary <- lapply(bdatsummary, do.call, what = rbind)
 
-pander(bdatsummary[[1]],caption = "Statistiques descriptives par période des teneurs en CO")
-```
 
-<table style="width:83%;">
-<caption>Statistiques descriptives par période des teneurs en CO</caption>
-<colgroup>
-<col width="15%" />
-<col width="9%" />
-<col width="13%" />
-<col width="12%" />
-<col width="9%" />
-<col width="13%" />
-<col width="8%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="center"> </th>
-<th align="center">Min.</th>
-<th align="center">1st Qu.</th>
-<th align="center">Median</th>
-<th align="center">Mean</th>
-<th align="center">3rd Qu.</th>
-<th align="center">Max.</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="center"><strong>9094</strong></td>
-<td align="center">4.58</td>
-<td align="center">11.04</td>
-<td align="center">14.06</td>
-<td align="center">16.03</td>
-<td align="center">18.52</td>
-<td align="center">65.58</td>
-</tr>
-<tr class="even">
-<td align="center"><strong>9599</strong></td>
-<td align="center">5.23</td>
-<td align="center">11.15</td>
-<td align="center">14.53</td>
-<td align="center">16.27</td>
-<td align="center">18.9</td>
-<td align="center">94.85</td>
-</tr>
-<tr class="odd">
-<td align="center"><strong>0004</strong></td>
-<td align="center">4.6</td>
-<td align="center">10.76</td>
-<td align="center">13.81</td>
-<td align="center">15.61</td>
-<td align="center">18.01</td>
-<td align="center">90.23</td>
-</tr>
-<tr class="even">
-<td align="center"><strong>0509</strong></td>
-<td align="center">3.78</td>
-<td align="center">10.91</td>
-<td align="center">13.96</td>
-<td align="center">15.44</td>
-<td align="center">18</td>
-<td align="center">78.37</td>
-</tr>
-<tr class="odd">
-<td align="center"><strong>1014</strong></td>
-<td align="center">4.7</td>
-<td align="center">11</td>
-<td align="center">14</td>
-<td align="center">15.7</td>
-<td align="center">18.27</td>
-<td align="center">63.75</td>
-</tr>
-</tbody>
-</table>
+#On retrouve ces tendances dans le tableau présentant les statistiques descriptives par période. La période 2000-2004 montre la valeur médiane la plus faible avec une valeur de `r bdatsummary$value["0004","Median"]` g/kg. Les valeurs les plus importantes sont observées pour les périodes 1990-1994 et 1995-1999 avec respectivement des teneurs en carbone organique de `r bdatsummary$value["9094","Median"]` et `r bdatsummary$value["9599","Median"]`. En terme de tendance, on remarque une augmentation des teneurs pour la période 2010-2014 avec une médiane des valeurs de `r bdatsummary$value["1014","Median"]`.
+
+#pander(bdatsummary[[1]],caption = "Statistiques descriptives par période des teneurs en CO")
+```
 
 Les différences entre les périodes
 
@@ -150,8 +124,11 @@ p <- ggplot(melted.bdat, aes(x=annees,y=value,col=annees)) +
 p  
 ```
 
-![](FS_traitements_bdat_files/figure-markdown_github/boxplot_periodes-1.png)
-
+<figure>
+<img src="FS_traitements_bdat_files/figure-markdown_github/boxplot_periodes-1.png">
+<figcaption>
+</figcaption>
+</figure>
 ``` r
 #ggsave(p,file = paste(repsortie,"boxplotbdat.png",sep=""), width = 10, height = 10)  
 ```
@@ -179,10 +156,16 @@ cdf <- ggplot(melted.bdat_clim, aes(x=value))+
 cdf
 ```
 
-![](FS_traitements_bdat_files/figure-markdown_github/cdf_clim-1.png)
-
-![](FS_traitements_bdat_files/figure-markdown_github/boxplot_clim-1.png)
-
+<figure>
+<img src="FS_traitements_bdat_files/figure-markdown_github/cdf_clim-1.png">
+<figcaption>
+</figcaption>
+</figure>
+<figure>
+<img src="FS_traitements_bdat_files/figure-markdown_github/boxplot_clim-1.png">
+<figcaption>
+</figcaption>
+</figure>
 ``` r
 ylim1 <- boxplot.stats(melted.bdat$value)$stats[c(1, 5)]
 
@@ -224,14 +207,23 @@ cdf <- ggplot(melted.bdat_regelevage, aes(x=value))+
 cdf
 ```
 
-![](FS_traitements_bdat_files/figure-markdown_github/cdf_regelevage-1.png)
-
-![](FS_traitements_bdat_files/figure-markdown_github/boxplot_reg_elevage-1.png)
-
+<figure>
+<img src="FS_traitements_bdat_files/figure-markdown_github/cdf_regelevage-1.png">
+<figcaption>
+</figcaption>
+</figure>
+<figure>
+<img src="FS_traitements_bdat_files/figure-markdown_github/boxplot_reg_elevage-1.png">
+<figcaption>
+</figcaption>
+</figure>
 ### Zoom sur les 3 régions d'élevage affectées par la baisse du pourcentage de STH, prairies et surface fourragères
 
-![](FS_traitements_bdat_files/figure-markdown_github/boxplot_reg_elevagezoom-1.png)
-
+<figure>
+<img src="FS_traitements_bdat_files/figure-markdown_github/boxplot_reg_elevagezoom-1.png">
+<figcaption>
+</figcaption>
+</figure>
 ``` r
 #ylim1 <- boxplot.stats(melted.bdat$value)$stats[c(1,5)]
 ylim1 <- c(min(melted.bdat$value,na.rm=TRUE),quantile(melted.bdat$value,0.99,na.rm=TRUE))

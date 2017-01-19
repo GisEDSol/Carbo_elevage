@@ -19,6 +19,50 @@ importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbn
 repsortie <- paste(repmaster,"Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
 ```
 
+```{r,eval=TRUE,echo=FALSE}
+## This chucnk will read through *this* Rmd file, and attempt to extract all of the 
+## labels (not caption text) used for Figure captions. These labels are used
+## as anchors, so scanning through the document now will allow us to create cross references
+## before the caption actually appears. 
+
+## Get the name of this Rmd file
+rmdFn <- knitr::current_input()  # filename of input document
+
+## Read lines and close connection
+rmdCon <- file(rmdFn, open = "r")
+rmdLines <- readLines(rmdCon)
+close(rmdCon)
+
+## Pull out all occurences of at least one back tick, followed 
+## by any number of characters, followed by fig$cap (all on one line)
+figscap_idx <- grep("`+(.*)fig\\$cap", rmdLines)
+rmdLines <- rmdLines[figscap_idx]
+
+## Get rid of everything up until the start of the caption label
+## This presumes the caption label is the first argument of fig$cap()
+## E.g., fig.cap = fig$cap("my_label", ...)
+rmdLinesSansPre <- sub("(.*)fig\\$cap(.*?)[\"']", "", rmdLines)
+
+## Identify everything up until the first quote
+match_data <- regexpr("(.*?)[\"']", rmdLinesSansPre)
+
+## Reduce the length by one, because we're not interested in the final quote
+attr(match_data, "match.length") <- attr(match_data, "match.length") - 1
+
+## Extract
+fig_labels <- regmatches(rmdLinesSansPre, match_data, invert=FALSE)
+
+if (length(fig_labels) > 0) {
+
+    ## Test for duplicates
+    if (anyDuplicated(fig_labels) > 0) stop("Duplicate caption labels detected")
+    
+    ## Create a named list of Figure numbers
+    ref <- as.list(1:length(fig_labels))
+    names(ref) <- fig_labels
+}    
+```
+
 ```{r date, include=FALSE,warning=FALSE,echo=FALSE,message=FALSE,eval=TRUE}
 date <- Sys.Date()
 sessionInfo()
@@ -26,34 +70,22 @@ sessionInfo()
 
 # Objectifs
 
-Ce fichier de suivi a pour but de centraliser l'ensemble des analyses portées sur les valeurs de teneurs en carbone organique de la BDAT. Ce travail est organisé de la façon suivante :
+Dans ce fichier, les analyses cantonales de la BDAT sont analysées afin appréhender la distribution statistiques géographiques des teneurs en carbone organique de plusieurs périodes de temps, regroupées en 5 périodes : 1990-1994, 1995-1999, 2000-2004, 2005-2009 et 2010-2014. Les résultats présentés font suite à différents scripts de préparations de données dont la chaîne de traitements générale est consultable à cette adresse.
 
-- Analyse des histogrammes de fréquence et tests statistiques pour chacune des périodes de temps analysées,
-- Représentation cartographique par canton,
-- Analyse des facteurs explicatifs. 
+Globalement, le travail est organisé de la manière suivante :
+- [Statistiques descriptives](#) : Analyse des histogrammes de fréquence et tests statistiques pour chacune des périodes de temps analysées,
+- [Représentation cartographique](#) : Représentation cartographique par canton,
+- [Analyse des facteurs explicatifs](#) : Analyse des facteurs explicatifs. 
 
 Plus d'information, voir [le chapitre](#boxplot)
 
-**Date : ** `r print(date)`
+**Date : `{r print(date)}`**
 
 ## Chargement des données et des principaux paramètres d'étude
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
-# Chargement des paramètres
-period <- c("9094","9599","0004","0509","1014")
-variable <- "corgox_medequi"
-xlabel <- "Carbone organique (g/kg)"
-ylabel <- "Fréquence"
-nperiod <- length(period)
-colors <- wes_palette("Rushmore",nperiod,type="continuous")
-variaoccup <- c("p_sth","p_sfp","p_prairie")
-periodoccup <- c("1970","1979","1988","2000","2010")
-id_class <- apply(expand.grid(variaoccup,periodoccup),1, function(x){paste("classe_",x[1],x[2],sep="")})
-id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt",id_class) #Nom des identifiants
-variafactor <- paste(id,collapse=",")
-
 # Lecture des tables de travail
-melted.bdat <- sqlQuery(loc,paste("select value,variable,annees,",variafactor," from dm_traitements.melted_bdat",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE))
+melted.bdat <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdat",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE))
 dcast.bdat <- sqlQuery(loc,paste("select * from dm_vecteurs.canton",sep=""))
 
 melted.bdat <- melted.bdat[complete.cases(melted.bdat$value),]
@@ -66,10 +98,18 @@ Cette première étape a pour but d'analyser les différences des teneurs en car
 
 ## France entière
 
-La figure ci-dessous présente les courbes de fréquences cumulées pour la france entière. La figure montre un décalage des courbes des périodes 2000-2004, 2005-2009 et 2010-2014 vers des valeurs plus faibles. Parmi ces 3 périodes, la période 2005-2009 est celle qui se décale le plus vers des teneurs plus faible tandis que la période 2010-2014 se rapproche de valeur plus importante. Ces trois périodes se distinguent clairement des périodes de 1990-1994 et 1995-1999 qui sont rapprochées. Ces observations mettent en évidence une diminution des teneurs en carbone entre les périodes 1990-1999 et les périodes de 2000-2009. D'après la figure, ce sont les teneurs médianes les plus concernées par cette baisse de teneur.
+### Statistiques descriptives
 
-```{r ,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE,error=FALSE}
-# Graphique général
+La figure `r fig$ref("cdf_fr",link=TRUE)` présente les courbes de fréquences cumulées des teneurs en carbone organique distribuées pour les 5 périodes. Les courbes de fréquences des 5 périodes présentent la même forme en "S" et s'individualisent juste avant le plateau, présentant une différence affectant les sols riches en teneurs organiques. Sur cette zone, la figure montre un décalage des courbes des périodes 2000-2004, 2005-2009 et 2010-2014 vers des valeurs plus faibles. Parmi ces 3 périodes, la période 2005-2009 est celle qui se décale le plus vers des teneurs plus faible tandis que la période 2010-2014 se rapproche des valeurs de 1990-1994 et 1995-1999, présentant ainsi une inversion de la tendance observée. Ces trois périodes se distinguent clairement des périodes de 1990-1994 et 1995-1999 qui sont rapprochées. Ces observations mettent en évidence une diminution des teneurs en carbone entre les périodes 1990-1999 et les périodes de 2000-2009. 
+
+```{r ,highlight=TRUE,eval=TRUE,fig.height=5, fig.width=8,fig.cap = fig$cap("cdf_fr","Courbe de fréquences cumulées"),fig.align="center"}
+period <- c("9094","9599","0004","0509","1014")
+xlabel <- "Carbone organique (g/kg)"
+ylabel <- "Fréquence"
+nperiod <- length(period)
+colors <- wes_palette("Rushmore",nperiod,type="continuous")
+
+# Courbe de fréquence cumulée
 cdf <- ggplot(melted.bdat, aes(x=value))+
        stat_ecdf(aes(colour=annees))+
        scale_color_manual(values=colors, 
@@ -99,32 +139,22 @@ cdf_zoom <- ggplot(melted.bdat, aes(x=value))+
 #cdfcpt
 ```
 
-On retrouve ces tendances dans le tableau présentant les statistiques descriptives par période. La période 2000-2004 présente la valeur médiane la plus faible avec une valeur de `bdatsummary$value["0004","Median"]` g/kg. Les valeurs les plus importantes sont observées pour les périodes 1990-1994 et 1995-1999 avec respectivement des teneurs en carbone organique de `bdatsummary$value["9094","Median"]` et `bdatsummary$value["9599","Median"]`. En terme de tendance, on remarque une augmentation des teneurs pour la période 2010-2014 avec une médiane des valeurs de `bdatsummary$value["1014","Median"]`.
-
-```{r summarybdatfrance,highlight=TRUE,eval=TRUE, eval=TRUE, message=FALSE, warning=FALSE, highlight=TRUE}
+```{r summarybdatfrance,highlight=TRUE,eval=TRUE}
 # Résumé des statistiques 
 bdatsummary <- apply(melted.bdat["value"],2, function(x) tapply(x, melted.bdat[,"annees"],summary))
 bdatsummary <- lapply(bdatsummary, do.call, what = rbind)
-
-pander(bdatsummary[[1]],caption = "Statistiques descriptives par période des teneurs en CO")
+pander(bdatsummary[[1]],caption = "Statistiques descriptives des teneurs en carbone organique par périodes")
 ```
 
-Les différences entre les périodes 
-```{r,highlight=TRUE,eval=FALSE}
-tt <- pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"])
-pander(c(tt[1],tt[2],tt[3]))
-```
+La distribution des teneurs en carbone organique par période est présentée dans la figure `r fig$ref("boxplot_fr",link=TRUE)` et les principales statistiques sont présentées dans le tableau XX. La tendance de diminution des teneurs observée dans la figure `r fig$ref("cdf_fr",link=TRUE)` est également constatée dans ces deux éléments. La période 2000-2004 montre la valeur médiane la plus faible avec une valeur de `r bdatsummary$value["0004","Median"]` g/kg. Les valeurs les plus importantes sont observées pour les périodes 1990-1994 et 1995-1999 avec respectivement des teneurs en carbone organique de `r bdatsummary$value["9094","Median"]` et `r bdatsummary$value["9599","Median"]`. En terme de tendance, on remarque une augmentation des teneurs pour la période 2010-2014 avec une médiane des valeurs de `r bdatsummary$value["1014","Median"]`. Ces évolutions sont très légèrement marquées sur la figure `r fig$ref("boxplot_fr",link=TRUE)` où la ligne noire représente XX. Celle-ci baisse légèrement après la période 1995-1999.
 
-La représentation sous forme de boxplot des teneurs en carbone organique est présentée dans la figure ci-dessous. Présenter rapidement la distribution des valeurs. Les valeurs extrêmes...
-Rajouter aussi une courbe de tendance?
-
-```{r boxplot_periodes,highlight=TRUE,eval=TRUE}
-# Voir pour rajouter les tendances...
-p <- ggplot(melted.bdat, aes(x=annees,y=value,col=annees)) + 
+```{r boxplot_fr,highlight=TRUE,eval=TRUE,fig.height=5, fig.width=6,fig.cap = fig$cap("boxplot_fr","Boxplot des teneurs en carbone organiques par périodes"),fig.align="center"}
+p <- ggplot(melted.bdat, aes(x=annees,y=value)) + 
   geom_violin(trim=FALSE)+
   geom_boxplot(width=0.1, fill="white")+
-  scale_color_manual(values=colors,name="Années")+
-  scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone (g/kg)")+
+  #scale_color_manual(values=colors,name="Années")+
+  geom_smooth(method = "loess", se=FALSE, color="black", aes(group=1))+
+  scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone organique (g/kg)")+
   theme(plot.title = element_text(size = 14, face = "bold"), 
         text = element_text(size = 12),
         axis.title = element_text(face="bold"),
@@ -132,6 +162,126 @@ p <- ggplot(melted.bdat, aes(x=annees,y=value,col=annees)) +
 p  
 #ggsave(p,file = paste(repsortie,"boxplotbdat.png",sep=""), width = 10, height = 10)  
 ```
+
+Les résultats du test de Wilcoxon présentés ci-dessous montrent que les différences globales entre les périodes sont significatives uniquement entre les périodes [1990-1994 et 2000-2004], [1995-1999 et 2000-2004], [1995-1999 et 2005-2009] et [2000-2004 et 2010-2014]. Ces résulats sont à prendre avec mesure, car réalisé sur les médianes des cantons. Des résultats de significacité seront présentés plus loin, basés sur les analyses à l'échelle communale.
+
+```{r,highlight=TRUE,eval=TRUE,echo=TRUE}
+tt <- pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"])
+tt
+#pander(c(tt[1],tt[2],tt[3],tt[4]))
+```
+
+### Cartographie des teneurs en carbone organique
+
+Bien que l'hétérogénéité spatiale et temporelle des analyses de la BDAT soit assez importante (certaines zones souffrent de manque de données), la cartographie des teneurs en carbone organique (figure XX) montre une distribution spatiale organisée et globalement similaire pour les différentes périodes analysées. De façon générale, cette organisation suit la lithologie du pays avec de fortes teneurs en carbone organique présentes dans les zones de socles et de piemond et des valeurs plus faibles dans les principaux bassins sédimentaires (parisien et aquitain).
+
+```{r carto_c_fr,highlight=TRUE,eval=FALSE,echo=FALSE}
+# Paramètres #################
+tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
+period <- c("9094","9599","0004","0509","1014") #
+variable <- "corgox_medequi"
+variablecarto <- paste(variable,period,sep="")#variables à cartographier
+nclasse <- 5 
+style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
+couleur <- "YlOrRd" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
+nomfichier <- "corgoxmed_period_fr" #Nom du fichier
+
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=5,position="bottom",ggsaveheight=5,ggsavewidth=20)  
+```
+
+```{r map_carbo_fr, echo = F, results = 'asis'}
+# Pour insérer l'image
+fichiers <- paste(repsortie,"corgoxmed_period_fr.png",sep="")
+cat(paste("![This is myfile_1.png](",fichiers,")",sep=""))
+```
+
+### Analyse des facteurs contrôlant la distribution spatiale
+
+#### Analyse en composante principale
+
+```{r,highlight=TRUE,eval=FALSE,fig.height=6, fig.width=7,fig.cap = fig$cap("pca_fr",""),fig.align="center"}
+# Sélection des variables de travail
+
+Rcovar <- c("ugbgrani_sau2010","ttemp_an","jfroids_an","jchauds_an","hpluie_an","ugbta1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sth1970","p_sth1979","p_sth1988","p_sfp1970","p_sfp1979","p_sfp1988","p_mf1970","p_mf1979","p_mf1988","p_c1970","p_c1979","p_c1988")
+vNames <- c("corgox_medequi9094",Rcovar)
+
+# Lecture de la table sans les NA
+dcast.bdat_variables <- dcast.bdat[complete.cases(dcast.bdat[,vNames]),vNames]
+
+res.pca <- PCA(dcast.bdat_variables, graph = FALSE)
+#fviz_screeplot(res.pca, ncp=10)
+
+pca <- fviz_pca_var(res.pca, col.var="contrib") +
+scale_color_gradient2(low="white", mid="blue", 
+                  high="red", midpoint=50) + theme_minimal()
+pca
+```
+Environ `r round(res.pca$eig[1,2]+res.pca$eig[2,2])` pourcent de l'information est contenu dans les deux premiers axes.
+
+#### Modélisation avec GBM
+
+Bien spécifier que GBM est utilisé juste pour appréhender l'importance et le comportement des variables explicatives.
+
+L'application de ces modèles demande une bonne configuration de leurs paramètres. Pour déterminer la meilleur combinaison de paramètres, la fonction *train* du package *caret* est utilisée.
+
+1. Boosted regression tree (BRT)
+Les modèles d'arbres de régression boostés sont connus pour améliorer la précision de prédiction par rapport aux simples arbres de régression.
+L'algo permet d'ajuster un modèle en fonction d'un processus itératif. A chaque itération, les arbres de régresssions sont ajustés et montés sur une fraction de l'ensemble des données échantillongées. Les principaux paramètres d'un modèle sont :
+	1. le taux d'apprentissage *(skrinkage)* : il correspond à une constante déterminant l'influence de la combinaison individuelle des arbres qui forme le forme le modèle final. Lorsque ce coefficient est faible, le modèle est très spécialisé et est difficilement applicable sur un autre jeu de données.
+	2. la taille des arbres *(interaction depth)* correspond à la taille des arbres de régression. Lorsque la taille est égale à 1, chaque arbre est constitué d'un seul noeud, on modélise l'effet d'une seule variable prédictive. Ainsi, le modèle final additionne séparément l'effet prédictif des variables et les intéractions des variables ne sont pas explicitement prise en compte. Lorsque la taille des arbres est supérieur à 1, chaque arbre de régression individuelle modélise l'interaction d'au moins deux variables prédictives. Celà permet l'utilisation de modèle prenant en compte les intéractions d'ordre i entre les variables prédictives. La capacité de représenter les interactions entre les variables prédictives sans connaissance a priori est l'un des avantages  des arbres de régression.
+	3. le nombre d'arbre *(n.tree)*correspond au nombre d'arbre pour l'ajustement. C'est l'équivalent du nombre d'itérations.
+
+```{r,highlight=TRUE,eval=FALSE}
+Rcovar <- c("ugbgrani_sau2010","ttemp_an","jfroids_an","jchauds_an","hpluie_an","ugbta1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sth1970","p_sth1979","p_sth1988","p_sfp1970","p_sfp1979","p_sfp1988","p_mf1970","p_mf1979","p_mf1988","p_c1970","p_c1979","p_c1988",id_class)
+vNames <- c("corgox_medequi9094",Rcovar)
+
+dcast.bdat_gbm <- dcast.bdat[complete.cases(dcast.bdat[,vNames]),vNames] # Pour supprimer les NA
+datax <- dcast.bdat_gbm[, vNames[-1]]
+datay <- dcast.bdat_gbm[, vNames[1]]
+
+#tuneGrid <- expand.grid(interaction.depth = c(13),n.trees = c(150),shrinkage = 0.05,n.minobsinnode=10)
+#fitControl <- trainControl(method = "repeatedcv",p=0.8,number=10,repeats=10)
+
+tuneGrid <- expand.grid(.interaction.depth = c(1,5,9,13),.n.trees = c(150,500,1000,1500),.shrinkage = 0.05)
+trControl <- trainControl(method = "cv",p=0.8)
+
+tuneGrid <-  expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:30)*50,shrinkage = 0.1,n.minobsinnode = 20)
+
+
+
+# Utilisation de caret, car plus rapide qu'une simple fonction gbm
+registerDoMC(4) # Nombre de processeurs activés
+mgbm <- train(x = datax , y = datay,method="gbm",tuneGrid = tuneGrid,trControl = fitControl,verbose = F,keep.data = T)
+
+#best.iter <- gbm.perf(mgbm,method="cv")
+save(mgbm,file=paste(repsortie,"mgbm_1.RData",sep=""))
+
+plot(varImp(mgbm), top = 5)
+
+#f.predict <- predict(mgbm, learningx , neighbors = mgbm$bestTune$.n.trees)
+			
+### GBM Model parameters ###
+
+# interaction.depth : The maximum depth of variable interactions. 1 implies an additive model, 2 implies a model with up to 2-way interactions, etc
+# .n.trees : The total number of trees to fit. This is equivalent to the number of iterations and  the number of basis functions in the additive expansion.
+# shrinkage : a shrinkage parameter applied to each tree in the expansion. Also known as the learning rate or step-size reduction.
+
+
+### Cubist Model parameters ###
+
+#.committees : an integer: how many committee models (e.g.. boosting iterations) should be used
+
+#.neighbors : an integer from 0 to 9: how many instances to use to correct the rule-based prediction? if neighbors is greater than zero, these predictions are adjusted by training set instances nearby using the approach of Qunilan (1993)
+
+```
+
+### Conclusion
+
+Ici, conclure en disant que l'analyse des teneurs france entière et des dynamiques n'est pas facile en raison de :
+
+- les dynamiques régionales spécifiques peuvent être noyées (pourquoi?) dans la masse...
+- la part des facteurs contrôlant la distribution (climat, l'occup du sol...)
 
 ## Par type de climat
 
@@ -268,7 +418,7 @@ ggsave(p,file = paste(repsortie,"boxplotbdat_typoclim2.png",sep=""), width = 10,
 
 ## Par classe de pourcentage d'occupation du sol (données du recensement agricole)
 
-```{r boxplotbdat_classeoccup,highlight=TRUE,eval=TRUE}
+```{r boxplotbdat_classeoccup,highlight=TRUE,eval=FALSE}
 for(i in id_class){
   melted.bdat_ra <- melted.bdat[complete.cases(melted.bdat[,i]),]
   names(melted.bdat_ra)[names(melted.bdat_ra)==i] <- "classe"
@@ -288,7 +438,7 @@ for(i in id_class){
 
 # Résumé des statistiques 
 
-```{r,highlight=TRUE,eval=TRUE, eval=TRUE, message=FALSE, warning=FALSE, highlight=TRUE}
+```{r,highlight=TRUE,eval=FALSE,message=FALSE, warning=FALSE, highlight=TRUE}
 # Ici, voir pour rajouter année+zonage_simple ou année+climato ou année+région
 bdatsummary_regelevage <- apply(melted.bdat["value"],2, function(x) tapply(x, list(melted.bdat[,"zonage_simple"],melted.bdat[,"annees"]),summary))
 bdatsummary_regelevage <- data.frame(bdatsummary_regelevage[[1]])
@@ -378,25 +528,7 @@ cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,r
 
 # Analyse des facteurs explicatifs
 
-```{r,highlight=TRUE,eval=FALSE}
-# Sélection des variables de travail
-Rcovar <- c("ugbgrani_sau2010","ttemp_an","jfroids_an","jchauds_an","hpluie_an","ugbta1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sth1970","p_sth1979","p_sth1988","p_sfp1970","p_sfp1979","p_sfp1988","p_mf1970","p_mf1979","p_mf1988","p_c1970","p_c1979","p_c1988")
-vNames <- c("corgox_medequi9094",Rcovar)
 
-# Lecture de la table sans les NA
-dcast.bdat_variables <- dcast.bdat[complete.cases(dcast.bdat[,vNames]),vNames]
-
-res.pca <- PCA(dcast.bdat_variables, graph = FALSE)
-eigenvalues <- res.pca$eig
-head(eigenvalues[, 1:2])
-fviz_screeplot(res.pca, ncp=10)
-
-fviz_pca_var(res.pca, col.var="contrib") +
-scale_color_gradient2(low="white", mid="blue", 
-                  high="red", midpoint=50) + theme_minimal()
-`r round(res.pca$eig[1,2]+res.pca$eig[2,2])`
-```
-Environ  pourcent de l'information est contenu dans les deux premiers axes.
 
 
 
@@ -420,56 +552,5 @@ ggplot(dcast.bdat, aes(hpluie_an, corgox_medequi9094,shape=factor(classe_p_prair
 
 # Modélisation avec GBM
 
-L'application de ces modèles demande une bonne configuration de leurs paramètres. Pour déterminer la meilleur combinaison de paramètres, la fonction *train* du package *caret* est utilisée.
 
-1. Boosted regression tree (BRT)
-Les modèles d'arbres de régression boostés sont connus pour améliorer la précision de prédiction par rapport aux simples arbres de régression.
-L'algo permet d'ajuster un modèle en fonction d'un processus itératif. A chaque itération, les arbres de régresssions sont ajustés et montés sur une fraction de l'ensemble des données échantillongées. Les principaux paramètres d'un modèle sont :
-	1. le taux d'apprentissage *(skrinkage)* : il correspond à une constante déterminant l'influence de la combinaison individuelle des arbres qui forme le forme le modèle final. Lorsque ce coefficient est faible, le modèle est très spécialisé et est difficilement applicable sur un autre jeu de données.
-	2. la taille des arbres *(interaction depth)* correspond à la taille des arbres de régression. Lorsque la taille est égale à 1, chaque arbre est constitué d'un seul noeud, on modélise l'effet d'une seule variable prédictive. Ainsi, le modèle final additionne séparément l'effet prédictif des variables et les intéractions des variables ne sont pas explicitement prise en compte. Lorsque la taille des arbres est supérieur à 1, chaque arbre de régression individuelle modélise l'interaction d'au moins deux variables prédictives. Celà permet l'utilisation de modèle prenant en compte les intéractions d'ordre i entre les variables prédictives. La capacité de représenter les interactions entre les variables prédictives sans connaissance a priori est l'un des avantages  des arbres de régression.
-	3. le nombre d'arbre *(n.tree)*correspond au nombre d'arbre pour l'ajustement. C'est l'équivalent du nombre d'itérations.
-
-```{r,highlight=TRUE,eval=FALSE}
-Rcovar <- c("ugbgrani_sau2010","ttemp_an","jfroids_an","jchauds_an","hpluie_an","ugbta1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sth1970","p_sth1979","p_sth1988","p_sfp1970","p_sfp1979","p_sfp1988","p_mf1970","p_mf1979","p_mf1988","p_c1970","p_c1979","p_c1988",id_class)
-vNames <- c("corgox_medequi9094",Rcovar)
-
-dcast.bdat_gbm <- dcast.bdat[complete.cases(dcast.bdat[,vNames]),vNames] # Pour supprimer les NA
-datax <- dcast.bdat_gbm[, vNames[-1]]
-datay <- dcast.bdat_gbm[, vNames[1]]
-
-#tuneGrid <- expand.grid(interaction.depth = c(13),n.trees = c(150),shrinkage = 0.05,n.minobsinnode=10)
-#fitControl <- trainControl(method = "repeatedcv",p=0.8,number=10,repeats=10)
-
-tuneGrid <- expand.grid(.interaction.depth = c(1,5,9,13),.n.trees = c(150,500,1000,1500),.shrinkage = 0.05)
-trControl <- trainControl(method = "cv",p=0.8)
-
-tuneGrid <-  expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:30)*50,shrinkage = 0.1,n.minobsinnode = 20)
-
-
-
-# Utilisation de caret, car plus rapide qu'une simple fonction gbm
-registerDoMC(4) # Nombre de processeurs activés
-mgbm <- train(x = datax , y = datay,method="gbm",tuneGrid = tuneGrid,trControl = fitControl,verbose = F,keep.data = T)
-
-#best.iter <- gbm.perf(mgbm,method="cv")
-save(mgbm,file=paste(repsortie,"mgbm_1.RData",sep=""))
-
-plot(varImp(mgbm), top = 5)
-
-#f.predict <- predict(mgbm, learningx , neighbors = mgbm$bestTune$.n.trees)
-			
-### GBM Model parameters ###
-
-# interaction.depth : The maximum depth of variable interactions. 1 implies an additive model, 2 implies a model with up to 2-way interactions, etc
-# .n.trees : The total number of trees to fit. This is equivalent to the number of iterations and  the number of basis functions in the additive expansion.
-# shrinkage : a shrinkage parameter applied to each tree in the expansion. Also known as the learning rate or step-size reduction.
-
-
-### Cubist Model parameters ###
-
-#.committees : an integer: how many committee models (e.g.. boosting iterations) should be used
-
-#.neighbors : an integer from 0 to 9: how many instances to use to correct the rule-based prediction? if neighbors is greater than zero, these predictions are adjusted by training set instances nearby using the approach of Qunilan (1993)
-
-```
 

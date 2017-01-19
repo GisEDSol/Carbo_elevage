@@ -136,7 +136,7 @@ cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l
 
 
 
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+```{r,highlight=TRUE,eval=false,echo=FALSE,warning=FALSE}
 # Voir les graphiques de "différence" réalisés durant le M1
 # Rajouter les types de climat ou autre niveau de stratification pour voir l'influence de ces régions sur les pertes 
 # Voir également pour rajouter ces données sur une table au format melt

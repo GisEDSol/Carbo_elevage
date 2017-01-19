@@ -16,7 +16,7 @@ output:
 source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
 repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
 importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
-repsortie <- paste(repmaster,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
+repsortie <- paste(repmaster,"Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
 ```
 
 ```{r date, include=FALSE,warning=FALSE,echo=FALSE,message=FALSE,eval=TRUE}
@@ -26,11 +26,12 @@ sessionInfo()
 
 # Objectifs
 
-Ce fichier de suivi a pour but de centraliser l'ensemble des analyses portées sur les valeurs de teneurs en carbone organique de la BDAT. Ce travail est organisé de la façon suivante :
+Dans ce fichier, les analyses cantonales de la BDAT sont analysées afin appréhender la distribution statistiques géographiques des teneurs en carbone organique de plusieurs périodes de temps, regroupées en 5 périodes : 1990-1994, 1995-1999, 2000-2004, 2005-2009 et 2010-2014. Les résultats présentés font suite à différents scripts de préparations de données dont la chaîne de traitements générale est consultable à cette adresse.
 
-- Analyse des histogrammes de fréquence et tests statistiques pour chacune des périodes de temps analysées,
-- Représentation cartographique par canton,
-- Analyse des facteurs explicatifs. 
+Globalement, le travail est organisé de la manière suivante :
+- [Statistiques descriptives](#) : Analyse des histogrammes de fréquence et tests statistiques pour chacune des périodes de temps analysées,
+- [Représentation cartographique](#) : Représentation cartographique par canton,
+- [Analyse des facteurs explicatifs](#) : Analyse des facteurs explicatifs. 
 
 Plus d'information, voir [le chapitre](#boxplot)
 
