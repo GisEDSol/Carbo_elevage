@@ -1,16 +1,15 @@
 ---
 title: "Traitement des données de la BDAT :Evolution des teneurs en carbone organique"
 author: "Jean-Baptiste Paroissien"
-date: "21/12/2016"
+date: "27/01/2017"
 output:
-  html_document:
-    toc: yes
-  html_notebook:
-    fig_caption: yes
-    highlight: zenburn
-    number_sections: yes
-    theme: spacelab
-    toc: yes
+  github_document:
+    toc: true
+    toc_depth: 2
+    fig_width: 10
+    fig_height: 10
+    dev: png
+    md_extensions: +autolink_bare_uris+hard_line_breaks+header_attributes+line_blocks+table_captions
 ---
 
 
@@ -20,6 +19,49 @@ source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
 repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
 importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
 repsortie <- paste(repmaster,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
+```
+```{r,eval=TRUE,echo=FALSE}
+## This chunck will read through *this* Rmd file, and attempt to extract all of the 
+## labels (not caption text) used for Figure captions. These labels are used
+## as anchors, so scanning through the document now will allow us to create cross references
+## before the caption actually appears. 
+
+## Get the name of this Rmd file
+rmdFn <- knitr::current_input()  # filename of input document
+
+## Read lines and close connection
+rmdCon <- file(rmdFn, open = "r")
+rmdLines <- readLines(rmdCon)
+close(rmdCon)
+
+## Pull out all occurences of at least one back tick, followed 
+## by any number of characters, followed by fig$cap (all on one line)
+figscap_idx <- grep("`+(.*)fig\\$cap", rmdLines)
+rmdLines <- rmdLines[figscap_idx]
+
+## Get rid of everything up until the start of the caption label
+## This presumes the caption label is the first argument of fig$cap()
+## E.g., fig.cap = fig$cap("my_label", ...)
+rmdLinesSansPre <- sub("(.*)fig\\$cap(.*?)[\"']", "", rmdLines)
+
+## Identify everything up until the first quote
+match_data <- regexpr("(.*?)[\"']", rmdLinesSansPre)
+
+## Reduce the length by one, because we're not interested in the final quote
+attr(match_data, "match.length") <- attr(match_data, "match.length") - 1
+
+## Extract
+fig_labels <- regmatches(rmdLinesSansPre, match_data, invert=FALSE)
+
+if (length(fig_labels) > 0) {
+
+    ## Test for duplicates
+    if (anyDuplicated(fig_labels) > 0) stop("Duplicate caption labels detected")
+    
+    ## Create a named list of Figure numbers
+    ref <- as.list(1:length(fig_labels))
+    names(ref) <- fig_labels
+}    
 ```
 
 ```{r, tidy=FALSE,eval=TRUE}
@@ -72,7 +114,7 @@ carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsort
 ```{r map_carbo_fr, echo = F, results = 'asis'}
 # Pour insérer l'image
 fichiers <- paste(repsortie,nomfichier,sep="")
-cat(paste("![This is myfile_1.png](",fichiers,")",sep=""))
+cat(paste("![](",fichiers,")",sep=""))
 ```
 
 ## Analyse du nombre d'évolution significative par canton
@@ -94,7 +136,14 @@ periodetud <- c("14","24","15","25")
 bdatdiff <- bdatdiff[(bdatdiff$period %in% periodetud) & bdatdiff$zonage_simple != "H" & bdatdiff$zonage_simple != "G" & bdatdiff$zonage_simple != "F", ]
 bdatdiff$diff <- as.factor(bdatdiff$diff)
 
-histo_regelevage <- ggplot(bdatdiff,aes(diff,fill=zonage_cplt)) + geom_bar() + facet_wrap(~ period) #geom_bar(position="dodge")
+histo_regelevage <- ggplot(bdatdiff,aes(diff,fill=zonage_cplt)) + geom_bar() + facet_wrap(~ period)+
+                    scale_fill_brewer(palette = 'Paired',name="Zones d'élevage")+
+                    xlab("Classe d'évolution des teneurs en carbone organique")+ylab("Nombre de canton")+
+                    theme(plot.title = element_text(size = 14, face = "bold"), 
+                    text = element_text(size = 12),
+                    axis.title = element_text(face="bold"),
+                    axis.text.x=element_text(size = 11))    
+                    #geom_bar(position="dodge")
 histo_regelevage
 ```
 Présenter dans le détail les histogrammes `r fig$ref("histo_evolution",link=TRUE)`. Possibilité de comparer le nbr de canton en augmentation et en diminution par période analysées et ensuite développer une analyse par classe de diminution ou d'augmentation. Par exemple, il y a quasiment autant de canton ayant des teneurs en C en augmentation et en diminution entre les périodes 1994-1999 et 2010-2014.
@@ -102,6 +151,7 @@ Présenter dans le détail les histogrammes `r fig$ref("histo_evolution",link=TR
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
 # Histogramme des valeurs 
+# Revoir, pas très bien visible
 
 # Sélection des cantons aux diminutions significatives
 bdatdiff_classe <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff) & melted.bdatdiff$diff !="Non significatif",]
@@ -111,9 +161,12 @@ periodetud <- c("14","24","15","25")
 bdatdiff_classe <- bdatdiff_classe[(bdatdiff_classe$period %in% periodetud), ]
 bdatdiff_classe$diff <- as.factor(bdatdiff_classe$diff)
 #
-ggplot(bdatdiff_classe,aes(diff,fill=nom_region)) + geom_bar(position="dodge") + facet_wrap(~ period)
-#
-
+ggplot(bdatdiff_classe,aes(diff,fill=nom_region)) + geom_bar(position="dodge") + facet_wrap(~ period) + 
+                    xlab("Classe d'évolution des teneurs en carbone organique")+ylab("Nombre de canton")+
+                    theme(plot.title = element_text(size = 14, face = "bold"), 
+                    text = element_text(size = 12),
+                    axis.title = element_text(face="bold"),
+                    axis.text.x=element_text(size = 11))                      
 ```
 
 
@@ -125,6 +178,36 @@ A faire
 # Reproduire ce type de graphe par stratification
 bar_prairie <- ggplot(bdatdiff_classe,aes(diff,fill=diff_var_prairie1970_2010)) + geom_bar() + facet_wrap(~ period)
 bar_prairie
+
+# Faire une sélection sur les principales années 
+
+
+periodetud <- c("14","24","15","25")
+bdatdiff_classe <- melted.bdatdiff[(melted.bdatdiff$period %in% periodetud),]
+bdatdiff_classe$diff <- as.factor(bdatdiff_classe$diff)
+bdatdiff_classe$diffmedian <- as.numeric(bdatdiff_classe$diffmedian)
+
+bdatponct, aes(x=occupation, y=c, color=occupation, group=occupation)
+
+
+ggplot(bdatdiff_classe,aes(x=diff_var_prairie1970_2010,y=diffmedian)) +
+            geom_boxplot()+
+            geom_point(position=position_jitter(width=0.3), alpha=0.1) +
+            facet_wrap(~period)
+# Voir cette figure et rajouter color=diff,
+
+
+
+
+            #scale_color_manual(values=colors,name="Années")+
+            #geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
+            scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone (g/kg)")+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+                  text = element_text(size = 12),
+                  axis.title = element_text(face="bold"),
+                  axis.text.x=element_text(size = 11))+
+            coord_cartesian(ylim = ylim1*1.05)
+
 ```
 
 Dans cette figure, on s'intéresse particulièrement aux différences entre les périodes 1994-1999 et 2004-2009 et on regarde de plus près la stratification par grande région agricole.
@@ -140,7 +223,7 @@ p2 <- ggplot(bdatdiff_classe[bdatdiff_classe$period %in% "24" & bdatdiff_classe$
 p.ass <- grid.arrange(p1,p2,ncol=2)
 ```
 
-```{r,highlight=TRUE,eval=false,echo=FALSE,warning=FALSE}
+```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE}
 ggplot(bdatdiff_classe[bdatdiff_classe$period %in% "24" & bdatdiff_classe$zonage_cplt %in% c("A","B1","B2","C1","C2","D","E1","E2"),],aes(diff,fill=classe2_var_c1970_2010)) + geom_bar() + facet_wrap(~ zonage_cplt)
 
 ggplot(bdatdiff_classe[bdatdiff_classe$period %in% "24" & bdatdiff_classe$zonage_cplt %in% c("A","B1","B2","C1","C2","D","E1","E2"),],aes(diff,fill=classe2_var_sfp1970_2010)) + geom_bar() + facet_wrap(~ zonage_cplt)
@@ -153,7 +236,7 @@ ggplot(bdatdiff_B,aes(diff,fill=nom_region)) + geom_bar(position="dodge") + face
 
 ```
 
-```{r,highlight=TRUE,eval=false,echo=FALSE,warning=FALSE}
+```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE}
 # Voir les graphiques de "différence" réalisés durant le M1
 # Rajouter les types de climat ou autre niveau de stratification pour voir l'influence de ces régions sur les pertes 
 # Voir également pour rajouter ces données sur une table au format melt
@@ -198,7 +281,7 @@ Rajouter les variation climatiques
 
 Figure ci-dessous à commenter pour aller plus loin.
 
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE}
 # GET EQUATION AND R-SQUARED AS STRING
 # SOURCE: http://goo.gl/K4yh
 
@@ -268,7 +351,7 @@ ggplot(dcast.bdat, aes(meancorgox9599_0409,diffmedian24,shape=factor(diff24))) +
   geom_point(colour="grey10", size = 1.5)# + facet_wrap(~ zonage_cplt)
 
 
-ggplot(dcast.bdat, aes(ttmean,meancorgox9599_0509)) +
+ggplot(dcast.bdat, aes(altimean,meancorgox9599_0509)) +
   geom_point(aes(colour = factor(diff24)), size = 4) +
   geom_point(colour="grey10", size = 1.5)# + facet_wrap(~ zonage_cplt)
 
@@ -278,7 +361,7 @@ ggplot(dcast.bdat, aes(ttmean,meancorgox9599_0509)) +
 
 
 
-```{r}
+```{r,eval=FALSE}
 # Voir le développement de ce type de graphique
 dcast.bdatBCD <- dcast.bdat[dcast.bdat$zonage_simple %in% c("B","C","D"),]
 

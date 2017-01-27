@@ -3,6 +3,7 @@ title: "Analyse des teneurs en carbone organique de la BDAT"
 author: "Jean-Baptiste Paroissien"
 output:
   github_document:
+    number_sections: true
     toc: true
     toc_depth: 2
     fig_width: 10
@@ -17,10 +18,11 @@ source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
 repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
 importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
 repsortie <- paste(repmaster,"Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
+github_url <- "https://github.com/Rosalien/GISEDSol/tree/master/" #url du dépôt github
 ```
 
 ```{r,eval=TRUE,echo=FALSE}
-## This chucnk will read through *this* Rmd file, and attempt to extract all of the 
+## This chunck will read through *this* Rmd file, and attempt to extract all of the 
 ## labels (not caption text) used for Figure captions. These labels are used
 ## as anchors, so scanning through the document now will allow us to create cross references
 ## before the caption actually appears. 
@@ -68,29 +70,24 @@ date <- Sys.Date()
 sessionInfo()
 ```
 
-# Objectifs
-
-Dans ce fichier, les analyses cantonales de la BDAT sont analysées afin appréhender la distribution statistiques géographiques des teneurs en carbone organique de plusieurs périodes de temps, regroupées en 5 périodes : 1990-1994, 1995-1999, 2000-2004, 2005-2009 et 2010-2014. Les résultats présentés font suite à différents scripts de préparations de données dont la chaîne de traitements générale est consultable à cette adresse.
-
-Globalement, le travail est organisé de la manière suivante :
-- [Statistiques descriptives](#) : Analyse des histogrammes de fréquence et tests statistiques pour chacune des périodes de temps analysées,
-- [Représentation cartographique](#) : Représentation cartographique par canton,
-- [Analyse des facteurs explicatifs](#) : Analyse des facteurs explicatifs. 
-
-Plus d'information, voir [le chapitre](#boxplot)
-
-**Date : `{r print(date)}`**
-
-## Chargement des données et des principaux paramètres d'étude
-
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE}
 # Lecture des tables de travail
 melted.bdat <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdat",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE))
 dcast.bdat <- sqlQuery(loc,paste("select * from dm_vecteurs.canton",sep=""))
-
+period <- c("9094","9599","0004","0509","1014")
 melted.bdat <- melted.bdat[complete.cases(melted.bdat$value),]
 melted.bdat$annees <- factor(melted.bdat$annees,levels=period)
 ```
+
+# Objectifs
+
+Dans ce fichier, les analyses cantonales de la BDAT sont analysées afin appréhender la distribution statistique et géographique des teneurs en carbone organique regroupées en 5 périodes : 1990-1994, 1995-1999, 2000-2004, 2005-2009 et 2010-2014. Les résultats présentés font suite à différents scripts de préparations de données dont la chaîne de traitements générale est consultable à cette [adresse](`r github_url`Documentation/Modes_operatoires/Figures/workflow.html)
+
+Globalement, le travail est organisé de la manière suivante :
+
+- **Statistiques descriptives** : Analyse des histogrammes de fréquence et tests statistiques pour chacune des périodes de temps analysées,
+- **Représentation cartographique** : Plusieurs cartes sont proposées pour visualiser la répartition géographiques des données
+- **Analyse des facteurs explicatifs** : Analyse des facteurs explicatifs. 
 
 # Analyse des teneurs en carbone organique par période (France métropolitaine)
 
@@ -102,14 +99,17 @@ Bien présenter l'état des lieux des teneurs pour faciliter l'analyse des évol
 
 ### Statistiques descriptives
 
-La figure `r fig$ref("cdf_fr",link=TRUE)` présente les courbes de fréquences cumulées des teneurs en carbone organique distribuées pour les 5 périodes. Les courbes de fréquences des 5 périodes présentent la même forme en "S" et s'individualisent juste avant le plateau, présentant une différence affectant les sols riches en teneurs organiques. Sur cette zone, la figure montre un décalage des courbes des périodes 2000-2004, 2005-2009 et 2010-2014 vers des valeurs plus faibles. Parmi ces 3 périodes, la période 2005-2009 est celle qui se décale le plus vers des teneurs plus faible tandis que la période 2010-2014 se rapproche des valeurs de 1990-1994 et 1995-1999, présentant ainsi une inversion de la tendance observée. Ces trois périodes se distinguent clairement des périodes de 1990-1994 et 1995-1999 qui sont rapprochées. Ces observations mettent en évidence une diminution des teneurs en carbone entre les périodes 1990-1999 et les périodes de 2000-2009. 
+La figure `r fig$ref("cdf_fr",link=TRUE)` présente les courbes de fréquences cumulées des teneurs en carbone organique distribuées pour les 5 périodes. Les courbes de fréquences des 5 périodes présentent la même forme en "S" et s'individualisent juste avant le plateau, présentant une différence affectant les sols riches en teneurs organiques. Sur cette zone, la figure montre un décalage des courbes des périodes 2000-2004, 2005-2009 et 2010-2014 vers des valeurs plus faibles. Parmi ces 3 périodes, la période 2005-2009 est celle qui se décale le plus vers des teneurs plus faible tandis que la période 2010-2014 se rapproche des valeurs de 1990-1994 et 1995-1999, présentant ainsi une inversion de la tendance observée. Ces trois périodes se distinguent clairement des périodes de 1990-1994 et 1995-1999 qui sont rapprochées.
 
-```{r ,highlight=TRUE,eval=TRUE,fig.height=5, fig.width=8,fig.cap = fig$cap("cdf_fr","Courbe de fréquences cumulées"),fig.align="center"}
+**Ces observations mettent en évidence une diminution des teneurs en carbone entre les périodes 1990-1999 et 2000-2009 et une légère augmentation pour la période 2010-2014.**
+
+```{r cdf_fr,highlight=TRUE,echo=FALSE,eval=TRUE,fig.height=5, fig.width=6,fig.cap = fig$cap("cdf_fr","Courbe de fréquences cumulées"),fig.align="center"}
+
 period <- c("9094","9599","0004","0509","1014")
 xlabel <- "Carbone organique (g/kg)"
 ylabel <- "Fréquence"
 nperiod <- length(period)
-colors <- wes_palette("Rushmore",nperiod,type="continuous")
+colors <- brewer.pal(nperiod,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
 
 # Courbe de fréquence cumulée
 cdf <- ggplot(melted.bdat, aes(x=value))+
@@ -122,35 +122,23 @@ cdf <- ggplot(melted.bdat, aes(x=value))+
              axis.title = element_text(face="bold"),
              axis.text.x=element_text(size = 11))
 cdf
-# Ajout d'un zoom
-zoomtheme <- theme(legend.position="none", axis.line=element_blank(),axis.text.x=element_blank(),
-            axis.text.y=element_blank(),axis.ticks=element_blank(),
-            axis.title.x=element_blank(),axis.title.y=element_blank(),
-            panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-            panel.background = element_rect(color='red', fill="white"),
-            plot.margin = unit(c(0,0,-6,-6),"mm"))
-
-cdf_zoom <- ggplot(melted.bdat, aes(x=value))+
-       stat_ecdf(aes(colour=annees))+
-       scale_color_manual(values=colors,name="Années")+zoomtheme+
-       coord_cartesian(xlim=xlim, ylim=ylim)
-
-# Problème lors de la compilation avec knit     
-#cdf_zoom_grob <- ggplotGrob(cdf_zoom)
-#cdfcpt <- cdf + annotation_custom(grob = cdf_zoom_grob, xmin = 65, xmax = 90, ymin = 0.1, ymax = 0.50)  
-#cdfcpt
 ```
 
-```{r summarybdatfrance,highlight=TRUE,eval=TRUE}
+```{r summarybdatfrance,echo=FALSE,eval=TRUE}
 # Résumé des statistiques 
 bdatsummary <- apply(melted.bdat["value"],2, function(x) tapply(x, melted.bdat[,"annees"],summary))
 bdatsummary <- lapply(bdatsummary, do.call, what = rbind)
+```
+
+La distribution des teneurs en carbone organique par période est présentée dans la figure `r fig$ref("boxplot_fr",link=TRUE)` et les principales statistiques sont présentées dans le tableau ci-dessus. La tendance de diminution des teneurs observée dans la figure `r fig$ref("cdf_fr",link=TRUE)` est également constatée dans ces deux éléments. La période 2000-2004 montre la valeur médiane la plus faible avec une valeur de `r bdatsummary$value["0004","Median"]` g/kg. Les valeurs les plus importantes sont observées pour les périodes 1990-1994 et 1995-1999 avec respectivement des teneurs en carbone organique de `r bdatsummary$value["9094","Median"]` et `r bdatsummary$value["9599","Median"]`. En terme de tendance, on remarque une augmentation des teneurs pour la période 2010-2014 avec une médiane des valeurs de . Ces évolutions sont très légèrement marquées sur la figure `r fig$ref("boxplot_fr",link=TRUE)` où la ligne noire représente XX. Celle-ci baisse légèrement après la période 1995-1999.
+
+`r bdatsummary$value["0004","Median"]`revoir avec le 1014
+
+```{r summarybdatfrancetable,highlight=TRUE,echo=FALSE,eval=TRUE,results = 'asis'}
 pander(bdatsummary[[1]],caption = "Statistiques descriptives des teneurs en carbone organique par périodes")
 ```
 
-La distribution des teneurs en carbone organique par période est présentée dans la figure `r fig$ref("boxplot_fr",link=TRUE)` et les principales statistiques sont présentées dans le tableau XX. La tendance de diminution des teneurs observée dans la figure `r fig$ref("cdf_fr",link=TRUE)` est également constatée dans ces deux éléments. La période 2000-2004 montre la valeur médiane la plus faible avec une valeur de `r bdatsummary$value["0004","Median"]` g/kg. Les valeurs les plus importantes sont observées pour les périodes 1990-1994 et 1995-1999 avec respectivement des teneurs en carbone organique de `r bdatsummary$value["9094","Median"]` et `r bdatsummary$value["9599","Median"]`. En terme de tendance, on remarque une augmentation des teneurs pour la période 2010-2014 avec une médiane des valeurs de `r bdatsummary$value["1014","Median"]`. Ces évolutions sont très légèrement marquées sur la figure `r fig$ref("boxplot_fr",link=TRUE)` où la ligne noire représente XX. Celle-ci baisse légèrement après la période 1995-1999.
-
-```{r boxplot_fr,highlight=TRUE,eval=TRUE,fig.height=5, fig.width=6,fig.cap = fig$cap("boxplot_fr","Boxplot des teneurs en carbone organiques par périodes"),fig.align="center"}
+```{r boxplot_fr,highlight=TRUE,echo=FALSE,eval=TRUE,fig.height=5, fig.width=6,fig.cap = fig$cap("boxplot_fr","Boxplot des teneurs en carbone organiques par périodes"),fig.align="center"}
 p <- ggplot(melted.bdat, aes(x=annees,y=value)) + 
   geom_violin(trim=FALSE)+
   geom_boxplot(width=0.1, fill="white")+
@@ -162,15 +150,13 @@ p <- ggplot(melted.bdat, aes(x=annees,y=value)) +
         axis.title = element_text(face="bold"),
         axis.text.x=element_text(size = 11))
 p  
-#ggsave(p,file = paste(repsortie,"boxplotbdat.png",sep=""), width = 10, height = 10)  
+#ggsave(p,file = paste(repsortie,"boxplotbdat.png",sep=""), width = 6, height = 5)  
 ```
 
-Les résultats du test de Wilcoxon présentés ci-dessous montrent que les différences globales entre les périodes sont significatives entre les périodes [1990-1994 et 2000-2004], [1995-1999 et 2000-2004], [1995-1999 et 2005-2009] et [2000-2004 et 2010-2014]. Ces résulats sont à prendre avec mesure, car réalisé sur les médianes des cantons. Des résultats de significacité seront présentés plus loin, basés sur les analyses à l'échelle communale. Ils montrent toutefois que...
+Les résultats du test de Wilcoxon présentés ci-dessous montrent que **les différences globales entre les périodes sont significatives entre les périodes [1990-1994 et 2000-2004], [1995-1999 et 2000-2004], [1995-1999 et 2005-2009] et [2000-2004 et 2010-2014]**. Ces résulats sont à prendre avec mesure, car réalisé sur l'ensemble des cantons. Des résultats de significacité seront présentés plus loin, basés sur les analyses à l'échelle des cantons. Ils montrent toutefois que...
 
 ```{r,highlight=TRUE,eval=TRUE,echo=TRUE}
-tt <- pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"])
-tt
-#pander(c(tt[1],tt[2],tt[3],tt[4]))
+pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"])
 ```
 
 ### Cartographie des teneurs en carbone organique
@@ -195,7 +181,7 @@ carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsort
 ```{r map_carbo_fr, echo = F, results = 'asis'}
 # Pour insérer l'image
 fichiers <- paste(repsortie,"corgoxmed_period_fr.png",sep="")
-cat(paste("![This is myfile_1.png](",fichiers,")",sep=""))
+cat(paste("![](",fichiers,")",sep=""))
 ```
 
 ### Analyse des facteurs contrôlant la distribution spatiale
@@ -204,15 +190,20 @@ Dans cette partie, les facteurs contrôlant la distribution spatiale des teneurs
 
 #### Analyse en composante principale
 
-```{r,highlight=TRUE,eval=FALSE,fig.height=6, fig.width=7,fig.cap = fig$cap("pca_fr",""),fig.align="center"}
+```{r,highlight=TRUE,eval=TRUE,fig.height=6, fig.width=7,fig.cap = fig$cap("pca_fr",""),fig.align="center"}
 # Sélection des variables de travail
-Rcovar <- c("ttemp_an","jfroids_an","jchauds_an","hpluie_an","ugbta1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sth1970","p_sth1979","p_sth1988","p_sfp1970","p_sfp1979","p_sfp1988","p_mf1970","p_mf1979","p_mf1988","p_c1970","p_c1979","p_c1988","zonage_simple")#,"grdcultures1988","elevagehorsol1988","polyelevage1988","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90")
+Rcovar <- c("ttemp_an","jfroids_an","jchauds_an","hpluie_an","ugbta1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sth1970","p_sth1979","p_sth1988","p_sfp1970","p_sfp1979","p_sfp1988","p_mf1970","p_mf1979","p_mf1988","p_c1970","p_c1979","p_c1988","altimean","classe_C")#,"grdcultures1988","elevagehorsol1988","polyelevage1988","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90")
 vNames <- c("corgox_medequi9094",Rcovar)
 #vNames <- c("corgox_medequi9094","corgox_medequi9599","corgox_medequi0004","corgox_medequi0509","corgox_medequi1014",Rcovar)
 # Lecture de la table sans les NA
-dcast.bdat_variables <- dcast.bdat[complete.cases(dcast.bdat[,vNames]),vNames]
+lvNames <- length(vNames)
+dcast.bdat_variables <- dcast.bdat[complete.cases(dcast.bdat[,vNames[-lvNames]]),vNames[-lvNames]]
 
-res.pca <- PCA(dcast.bdat_variables[,-(length(vNames))], graph = FALSE)
+# Création d'une classe de valeur pour le carbone
+classe_valeur <- classIntervals(dcast.bdat_variables[vNames[1]][[1]],n=4,style="quantile",digits=1,na.rm=TRUE)[[2]]
+dcast.bdat_variables[,"classe_C"] <- cut(dcast.bdat_variables[vNames[1]][[1]],breaks = data.frame(classe_valeur)[,1],include.lowest=T) 
+
+res.pca <- PCA(dcast.bdat_variables[,!names(dcast.bdat_variables) %in% "classe_C"], graph = FALSE)
 #fviz_screeplot(res.pca, ncp=10)
 
 pca <- fviz_pca_var(res.pca, axes = c(1,2),col.var="contrib") +
@@ -220,9 +211,8 @@ scale_color_gradient2(low="white", mid="blue",
                   high="red", midpoint=50) + theme_minimal()
 pca
 
-fviz_pca_biplot(res.pca, label="var",habillage=dcast.bdat_variables$zonage_simple,
-     addEllipses=TRUE, ellipse.level=0.95, ggtheme = theme_minimal())
-
+fviz_pca_biplot(res.pca, label="var",habillage=dcast.bdat_variables$classe_C,
+     addEllipses=FALSE, ellipse.level=0.95, ggtheme = theme_minimal())
 ```
 
 La figure `r fig$ref("pca_fr",link=TRUE)` présente la distribution des variables sur les axes 1 et 2 de l'ACP. Environ `r round(res.pca$eig[1,2]+res.pca$eig[2,2])` pourcent de l'information est contenu dans ces deux premiers axes. Description de la distribution des variables dans l'espace des ACP : 
@@ -231,7 +221,10 @@ La figure `r fig$ref("pca_fr",link=TRUE)` présente la distribution des variable
 - Le mais fourrage est également lié aux UGB. Ces 2 types de variables sont liés à l'axe 2,
 - Les variables climatiques semblent être liées à l'axe 3 (à vérifier).
 
-Dans cet espace, la variable carbone est peu contributrice et n'est pas nettement liée à un axe (1 ou 2). Il faudra regarder la répartition de ces variables sur les axes 1-3 et 2-3
+Dans cet espace, la variable carbone est peu contributrice et n'est pas nettement liée à un axe (1 ou 2). Il faudra regarder la répartition de ces variables sur les axes 1-3 et 2-3.
+
+La représentation des échantillons classés par teneurs en carbone organique permet de visualiser le lien entre les variables et ...(mal dit).
+
 
 #### Modélisation avec GBM
 
@@ -249,33 +242,28 @@ L'algo permet d'ajuster un modèle en fonction d'un processus itératif. A chaqu
 Pour ce travail, rajouter la topographie (altitude moyenne par canton) + l'argile
 Faire une boucle et présenter les graphs d'importances pour les différentes périodes de temps analysées. Si il n'y a pas de différences dans l'ordre d'importance des variables, on pourra en conclure que la stratification est pertinente (pourquoi?)
 
-```{r,highlight=TRUE,eval=FALSE}
-#grdcultures1988,grdcultures2000,grdcultures2010
-#elevagehorsol1988,elevagehorsol2000,elevagehorsol2010
-#polyelevage1988,polyelevage2000,polyelevage2010
-#ugbta1988,ugbta2000,ugbta2010
+```{r,highlight=TRUE,eval=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("gbm_fr","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
 
-Rcovar <- c("ugbgrani_sau2010","ttemp_an","jfroids_an","jchauds_an","hpluie_an","ugbta1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sth1970","p_sth1979","p_sth1988","p_sfp1970","p_sfp1979","p_sfp1988","p_mf1970","p_mf1979","p_mf1988","p_c1970","p_c1979","p_c1988","grdcultures1988","elevagehorsol1988","polyelevage1988","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ttmean")# Rajouter la topo, pour le moment, nom de variable temporaire
+##### Sélection des variables explicatives (revoir cette sélection, se baser sur un tableau à charger en fonction des périodes à analyser)
+Rcovar <- c("hpluie_an","jchauds_an","jfroids_an","ttemp_an","altimean","p_sfp1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_c1988","p_c1970","p_c1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbgrani_sau2010","ugbta1988")
+type <- c("climat","climat","climat","climat","topo","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup")
 vNames <- c("corgox_medequi9599",Rcovar) #9599 car meilleure représentation spatiale
+#####
 
+#  Sélection du jeu de données
 dcast.bdat_gbm <- dcast.bdat[complete.cases(dcast.bdat[,vNames]),vNames] # Pour supprimer les NA
 datax <- dcast.bdat_gbm[, vNames[-1]]
 datay <- dcast.bdat_gbm[, vNames[1]]
 
 #tuneGrid <- expand.grid(.interaction.depth = c(1,5,9,13),.n.trees = c(150,500,1000,1500),.shrinkage = 0.05)
-trControl <- trainControl(method = "cv",p=0.8)
-tuneGrid <-  expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:30)*10,shrinkage = 0.1,n.minobsinnode = 20)
+#trControl <- trainControl(method = "cv",p=0.8)
+#tuneGrid <-  expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:30)*10,shrinkage = 0.1,n.minobsinnode = 20)
 
-# Utilisation de caret, car plus rapide qu'une simple fonction gbm ou cubist
-registerDoMC(4) # Nombre de processeurs activés
-mgbm <- train(x = datax , y = datay,method="gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
-plot(varImp(mgbm), top = 10)
+#registerDoMC(4) # Nombre de processeurs activés
+#mgbm <- train(x = datax , y = datay,method="gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
+#plot(varImp(mgbm), top = 10)
 
-# Voir si il y a des différences avec la stratification ?
-
-# Voir dans le détail la démarche. Parfois, le nombre d'échantillon n'est pas suffisant. Revoir aussi la construction du graphique.
-# Dans l'idée, ça semble intéressant à approfondir.
-registerDoMC(4) # Nombre de processeurs activés
+# Stratification par zonage des grandes régions d'élevage
 p <- list()
 for(i in levels(dcast.bdat$zonage_simple)){
   print(i)
@@ -288,57 +276,100 @@ for(i in levels(dcast.bdat$zonage_simple)){
   trControl <- trainControl(method = "cv",p=0.9)
   tuneGrid <-  expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:50)*10,shrinkage = 0.1,n.minobsinnode = 20)
 
-  # Utilisation de caret, car plus rapide qu'une simple fonction gbm ou cubist
-
   mgbm <- train(x = datax , y = datay,method="gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
 
   varimport <- varImp(mgbm)
   varimport <- as.data.frame(varimport[[1]])
   varimport$variable <- rownames(varimport)
   colnames(varimport) <- c("importance","variable")
-  varimport <- varimport[order(varimport$importance,decreasing = TRUE),]
-  
-  varimport$importance <- with(varimport, factor(importance, levels = rev(levels(importance))))
-
+  #varimport <- varimport[order(varimport$importance,decreasing = TRUE),]
+  varimport$variable <- reorder(varimport$variable, varimport$importance)
   varimport <- varimport[1:10,]
+  varimport$type <- gsub2(Rcovar,type,varimport$variable)#Ajout du type de facteurs
 
-  p[[i]] <- ggplot(varimport, aes(x = variable, y = importance,)) + 
-  geom_bar(stat = "identity") + coord_flip()
+  p[[i]] <- ggplot(varimport, aes(x = variable, y = importance,fill=type)) + 
+  geom_bar(stat = "identity") + coord_flip() + labs(title=i)
 }
+
+do.call(grid.arrange,c(p,list(ncol=2,nrow=3))) #Figure finale
+```
+
+```{r,highlight=TRUE,eval=FALSE}
+# Voir pour rajouter une analyse avec cubist
 
 tuneGridcubist <- expand.grid(.committees = c(10,50,100),.neighbors = c(1,5,9)) 
 mcubist <- train(x = datax , y = datay,"cubist",tuneGrid = tuneGridcubist,trControl = trControl,verbose = F,keep.data = T)
-
-
-
 
 cubistimportVar <- varImp(mcubist)
 cubistimportVar$variable <- rownames(cubistimportVar)
 colnames(cubistimportVar) <- c("importance","variable")
 
-from <- c("hpluie_an","jchauds_an","jfroids_an","p_sfp1988","ttemp_an","polyelevage1988","jach00","sth00","four00","mod17a3mean_00_09","firedensity","entropie06","occup")
-to <- c("topo","topo","pedo","pedo","pedo","anthrop","anthrop","anthrop","anthrop","anthrop","anthrop","anthrop","anthrop")
-MeanimportVar$type  <- gsub2(from,to,MeanimportVar$type)
-
-  
 ccubist <- ggplot(MeanimportVar, aes(x = variable, y = importance, fill = type)) + 
     geom_bar(stat = "identity") + coord_flip()
 plot(ccubist)
 
-from <- c("hpluie_an","jchauds_an","jfroids_an","ttemp_an","p_sfp1988","polyelevage1988","p_prairie1988","p_sfp1979","p_sfp1970","p_prairie1970","p_mf1988","p_sth1979","p_c1988","p_c1979","p_sth1988","p_c1970","p_sth1970","p_prairie1979","p_mf1979","clc31_90")         
-to <- c("climat","climat","climat","climat","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup")
-
-MeanimportVar$type  <- gsub2(from,to,MeanimportVar$type)
 
 plot(varImp(mcubist), top = 10)
 print(mcubist$usage)
+```
 
 
+#### Graphiques de correlation
 
-#best.iter <- gbm.perf(mgbm,method="cv")
-#save(mgbm,file=paste(repsortie,"mgbm_1.RData",sep=""))
 
-plot(varImp(mgbm), top = 10)
+```{r,highlight=TRUE,eval=TRUE,fig.height=6, fig.width=6,fig.cap = fig$cap("correlation","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
+
+xlabel <- "Pluie annuelle (mm)"
+ylabel <- "Carbone organique (g/kg)"
+period <- c("9094","9599","0004","0509","1014") #
+colors <- brewer.pal(5,"Set1")
+
+p <- list()
+for(i in period){
+  c_period <- paste("corgox_medequi",i,sep="")
+  
+  dataplot <- dcast.bdat[complete.cases(dcast.bdat$classe_p_prairie2000) & complete.cases(dcast.bdat$hpluie_an) & complete.cases(dcast.bdat[,c_period]),]
+  
+  p[[i]] <- ggplot(dataplot, aes_string("hpluie_an",c_period)) +
+            geom_point(aes(colour = factor(classe_p_prairie2000)),alpha = 0.8, size = 1) +
+            #geom_point(colour="grey10", alpha = 0.1,size = 1)+
+            scale_color_manual(values=colors,name="% de prairie (2000)")+
+            scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+            text = element_text(size = 12),
+            axis.title = element_text(face="bold"),
+            axis.text.x=element_text(size = 11))+ labs(title=i)    
+}
+    
+#do.call(grid.arrange,c(p,list(ncol=2,nrow=3)))
+do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=3,position="bottom")))
+
+```
+
+```{r,highlight=TRUE,eval=TRUE,fig.height=6, fig.width=6,fig.cap = fig$cap("altitude","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
+
+xlabel <- "Altitude moyenne (m)"
+
+p <- list()
+for(i in period){
+  c_period <- paste("corgox_medequi",i,sep="")
+  
+  dataplot <- dcast.bdat[complete.cases(dcast.bdat$classe_p_prairie2000) & complete.cases(dcast.bdat$altimean) & complete.cases(dcast.bdat[,c_period]),]
+  
+  p[[i]] <- ggplot(dataplot, aes_string("altimean",c_period)) +
+            geom_point(aes(colour = factor(classe_p_prairie2000)),alpha = 0.8, size = 1) +
+            #geom_point(colour="grey10", alpha = 0.1,size = 1)+
+            scale_color_manual(values=colors,name="% de prairie (2000)")+
+            scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+            text = element_text(size = 12),
+            axis.title = element_text(face="bold"),
+            axis.text.x=element_text(size = 11))+ labs(title=i)    
+}
+    
+#do.call(grid.arrange,c(p,list(ncol=2,nrow=3)))
+do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=3,position="bottom")))
+
 ```
 
 ### Conclusion
@@ -350,20 +381,22 @@ Ici, conclure en disant que l'analyse des teneurs france entière et des dynamiq
 
 ## Par type de climat
 
+Ici, expliquer rapidement cette stratification et présenter rapidement la carte des types de climat.
 
 ```{r cdf_clim,highlight=TRUE,eval=TRUE,fig.height=6, fig.width=7,fig.cap = fig$cap("cdf_clim",""),fig.align="center"}
 
-label <- "Carbone organique (g/kg)"
+xlabel <- "Carbone organique (g/kg)"
 ylabel <- "Fréquence"
-cbPalette <- c("#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+colour <- brewer.pal(5,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
+
 
 melted.bdat_clim <- melted.bdat[complete.cases(melted.bdat$typo_clim) & complete.cases(melted.bdat$annees),]
 
 cdf_clim <- ggplot(melted.bdat_clim, aes(x=value))+
        facet_wrap(~typo_clim)+
        stat_ecdf(aes(colour=annees))+
-       scale_color_manual(values=cbPalette, 
-                          name="Années")+
+       scale_color_manual(values=colour, 
+                          name="Périodes")+
        scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
        theme(plot.title = element_text(size = 14, face = "bold"), 
              text = element_text(size = 12),
@@ -379,11 +412,11 @@ Voir la figure `r fig$ref("cdf_clim",link=TRUE)` présente les courbes de fréqu
 ylim1 <- boxplot.stats(melted.bdat_clim$value)$stats[c(1, 5)]
 
 boxplot_clim <- ggplot(melted.bdat_clim) +
-            geom_boxplot(aes(x=annees,y=value,col=annees),outlier.shape = NA,outlier.size=NA)+
+            geom_boxplot(aes(x=annees,y=value),outlier.shape = NA,outlier.size=NA)+
             facet_wrap(~typo_clim,scales="free")+
             #scale_color_manual(values=colors,name="Années")+
             #geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
-            scale_x_discrete("Années")+scale_y_continuous("Teneur en carbone (g/kg)")+
+            scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone (g/kg)")+
             theme(plot.title = element_text(size = 14, face = "bold"), 
                   text = element_text(size = 12),
                   axis.title = element_text(face="bold"),
@@ -399,10 +432,10 @@ Voir aussi pour rajouter la figure `r fig$ref("boxplot_clim",link=TRUE)`. Sur ce
 Egalement, ce concentrer sur les zones où les données sont importantes. On peut supprimer les zones de hautes de montagnes...
 Test également en fonction des différentes régions d'élevage
 
-Regard sur les courbes de fréquences cumulées avec la figure `r fig$ref("cdf_regelevage_clim",link=TRUE)`
+Regard sur les courbes de fréquences cumulées avec la figure `r fig$ref("cdf_regelevage",link=TRUE)`
 
 ```{r cdf_regelevage,highlight=TRUE,eval=TRUE,fig.height=6, fig.width=7,fig.cap = fig$cap("cdf_regelevage",""),fig.align="center"}
-melted.bdat_regelevage <- melted.bdat[complete.cases(melted.bdat$zonage_cplt,]
+melted.bdat_regelevage <- melted.bdat[complete.cases(melted.bdat$zonage_cplt),]
 #melted.bdat_regelevage <- melted.bdat_regelevage[melted.bdat_regelevage$zonage_simple != "H",]
 
 cdf_regelevage <- ggplot(melted.bdat_regelevage, aes(x=value))+
@@ -602,19 +635,6 @@ ggplot(dcast.bdat, aes(ttmean, corgox_medequi9094,shape=factor(classe_p_prairie2
 
 # Autres graphiques
 
-```{r boxplot_clim,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
-
-boxplot_clim <- ggplot(melted.bdat_clim) +
-                geom_boxplot(aes(x=annees,y=value,col=typo_clim))+
-                #scale_color_manual(values=colors,name="Années")+
-                scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone organique (g/kg)")+
-                theme(plot.title = element_text(size = 14, face = "bold"), 
-                      text = element_text(size = 12),
-                      axis.title = element_text(face="bold"),
-                      axis.text.x=element_text(size = 11))
-
-boxplot_clim  
-```
 
 Même démarche que boxplot_clim mais avec les régions d'élevage
 

@@ -84,6 +84,6 @@ Si vous souhaitez utiliser ces fonctionnalités en dehors de Rstudio (le logicie
 
 ```{r, tidy=FALSE,eval=TRUE,echo=FALSE}
 for i in *.Rmd; do
-	echo "rmarkdown::render('$i')" | R --vanilla
+	echo "Sys.setenv(RSTUDIO_PANDOC=\"/usr/lib/rstudio/bin/pandoc/\") & rmarkdown::render('$i')" | R --vanilla
 done
 ```

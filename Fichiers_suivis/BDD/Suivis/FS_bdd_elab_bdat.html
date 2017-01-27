@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="data:text/css;charset=utf-8,%0A%40font%2Dface%20%7B%0Afont%2Dfamily%3A%20octicons%2Dlink%3B%0Asrc%3A%20url%28data%3Afont%2Fwoff%3Bcharset%3Dutf%2D8%3Bbase64%2Cd09GRgABAAAAAAZwABAAAAAACFQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEU0lHAAAGaAAAAAgAAAAIAAAAAUdTVUIAAAZcAAAACgAAAAoAAQAAT1MvMgAAAyQAAABJAAAAYFYEU3RjbWFwAAADcAAAAEUAAACAAJThvmN2dCAAAATkAAAABAAAAAQAAAAAZnBnbQAAA7gAAACyAAABCUM%2B8IhnYXNwAAAGTAAAABAAAAAQABoAI2dseWYAAAFsAAABPAAAAZwcEq9taGVhZAAAAsgAAAA0AAAANgh4a91oaGVhAAADCAAAABoAAAAkCA8DRGhtdHgAAAL8AAAADAAAAAwGAACfbG9jYQAAAsAAAAAIAAAACABiATBtYXhwAAACqAAAABgAAAAgAA8ASm5hbWUAAAToAAABQgAAAlXu73sOcG9zdAAABiwAAAAeAAAAME3QpOBwcmVwAAAEbAAAAHYAAAB%2FaFGpk3jaTY6xa8JAGMW%2FO62BDi0tJLYQincXEypYIiGJjSgHniQ6umTsUEyLm5BV6NDBP8Tpts6F0v%2Bk%2F0an2i%2BitHDw3v2%2B9%2BDBKTzsJNnWJNTgHEy4BgG3EMI9DCEDOGEXzDADU5hBKMIgNPZqoD3SilVaXZCER3%2FI7AtxEJLtzzuZfI%2BVVkprxTlXShWKb3TBecG11rwoNlmmn1P2WYcJczl32etSpKnziC7lQyWe1smVPy%2FLt7Kc%2B0vWY%2FgAgIIEqAN9we0pwKXreiMasxvabDQMM4riO%2BqxM2ogwDGOZTXxwxDiycQIcoYFBLj5K3EIaSctAq2kTYiw%2Bymhce7vwM9jSqO8JyVd5RH9gyTt2%2BJ%2FyUmYlIR0s04n6%2B7Vm1ozezUeLEaUjhaDSuXHwVRgvLJn1tQ7xiuVv%2FocTRF42mNgZGBgYGbwZOBiAAFGJBIMAAizAFoAAABiAGIAznjaY2BkYGAA4in8zwXi%2BW2%2BMjCzMIDApSwvXzC97Z4Ig8N%2FBxYGZgcgl52BCSQKAA3jCV8CAABfAAAAAAQAAEB42mNgZGBg4f3vACQZQABIMjKgAmYAKEgBXgAAeNpjYGY6wTiBgZWBg2kmUxoDA4MPhGZMYzBi1AHygVLYQUCaawqDA4PChxhmh%2F8ODDEsvAwHgMKMIDnGL0x7gJQCAwMAJd4MFwAAAHjaY2BgYGaA4DAGRgYQkAHyGMF8NgYrIM3JIAGVYYDT%2BAEjAwuDFpBmA9KMDEwMCh9i%2Fv8H8sH0%2F4dQc1iAmAkALaUKLgAAAHjaTY9LDsIgEIbtgqHUPpDi3gPoBVyRTmTddOmqTXThEXqrob2gQ1FjwpDvfwCBdmdXC5AVKFu3e5MfNFJ29KTQT48Ob9%2FlqYwOGZxeUelN2U2R6%2BcArgtCJpauW7UQBqnFkUsjAY%2FkOU1cP%2BDAgvxwn1chZDwUbd6CFimGXwzwF6tPbFIcjEl%2BvvmM%2FbyA48e6tWrKArm4ZJlCbdsrxksL1AwWn%2FyBSJKpYbq8AXaaTb8AAHja28jAwOC00ZrBeQNDQOWO%2F%2FsdBBgYGRiYWYAEELEwMTE4uzo5Zzo5b2BxdnFOcALxNjA6b2ByTswC8jYwg0VlNuoCTWAMqNzMzsoK1rEhNqByEyerg5PMJlYuVueETKcd%2F89uBpnpvIEVomeHLoMsAAe1Id4AAAAAAAB42oWQT07CQBTGv0JBhagk7HQzKxca2sJCE1hDt4QF%2B9JOS0nbaaYDCQfwCJ7Au3AHj%2BLO13FMmm6cl7785vven0kBjHCBhfpYuNa5Ph1c0e2Xu3jEvWG7UdPDLZ4N92nOm%2BEBXuAbHmIMSRMs%2B4aUEd4Nd3CHD8NdvOLTsA2GL8M9PODbcL%2BhD7C1xoaHeLJSEao0FEW14ckxC%2BTU8TxvsY6X0eLPmRhry2WVioLpkrbp84LLQPGI7c6sOiUzpWIWS5GzlSgUzzLBSikOPFTOXqly7rqx0Z1Q5BAIoZBSFihQYQOOBEdkCOgXTOHA07HAGjGWiIjaPZNW13%2F%2Blm6S9FT7rLHFJ6fQbkATOG1j2OFMucKJJsxIVfQORl%2B9Jyda6Sl1dUYhSCm1dyClfoeDve4qMYdLEbfqHf3O%2FAdDumsjAAB42mNgYoAAZQYjBmyAGYQZmdhL8zLdDEydARfoAqIAAAABAAMABwAKABMAB%2F%2F%2FAA8AAQAAAAAAAAAAAAAAAAABAAAAAA%3D%3D%29%20format%28%27woff%27%29%3B%0A%7D%0Abody%20%7B%0A%2Dwebkit%2Dtext%2Dsize%2Dadjust%3A%20100%25%3B%0Atext%2Dsize%2Dadjust%3A%20100%25%3B%0Acolor%3A%20%23333%3B%0Afont%2Dfamily%3A%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20%22Segoe%20UI%22%2C%20Arial%2C%20freesans%2C%20sans%2Dserif%2C%20%22Apple%20Color%20Emoji%22%2C%20%22Segoe%20UI%20Emoji%22%2C%20%22Segoe%20UI%20Symbol%22%3B%0Afont%2Dsize%3A%2016px%3B%0Aline%2Dheight%3A%201%2E6%3B%0Aword%2Dwrap%3A%20break%2Dword%3B%0A%7D%0Aa%20%7B%0Abackground%2Dcolor%3A%20transparent%3B%0A%7D%0Aa%3Aactive%2C%0Aa%3Ahover%20%7B%0Aoutline%3A%200%3B%0A%7D%0Astrong%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Ah1%20%7B%0Afont%2Dsize%3A%202em%3B%0Amargin%3A%200%2E67em%200%3B%0A%7D%0Aimg%20%7B%0Aborder%3A%200%3B%0A%7D%0Ahr%20%7B%0Abox%2Dsizing%3A%20content%2Dbox%3B%0Aheight%3A%200%3B%0A%7D%0Apre%20%7B%0Aoverflow%3A%20auto%3B%0A%7D%0Acode%2C%0Akbd%2C%0Apre%20%7B%0Afont%2Dfamily%3A%20monospace%2C%20monospace%3B%0Afont%2Dsize%3A%201em%3B%0A%7D%0Ainput%20%7B%0Acolor%3A%20inherit%3B%0Afont%3A%20inherit%3B%0Amargin%3A%200%3B%0A%7D%0Ahtml%20input%5Bdisabled%5D%20%7B%0Acursor%3A%20default%3B%0A%7D%0Ainput%20%7B%0Aline%2Dheight%3A%20normal%3B%0A%7D%0Ainput%5Btype%3D%22checkbox%22%5D%20%7B%0Abox%2Dsizing%3A%20border%2Dbox%3B%0Apadding%3A%200%3B%0A%7D%0Atable%20%7B%0Aborder%2Dcollapse%3A%20collapse%3B%0Aborder%2Dspacing%3A%200%3B%0A%7D%0Atd%2C%0Ath%20%7B%0Apadding%3A%200%3B%0A%7D%0A%2A%20%7B%0Abox%2Dsizing%3A%20border%2Dbox%3B%0A%7D%0Ainput%20%7B%0Afont%3A%2013px%20%2F%201%2E4%20Helvetica%2C%20arial%2C%20nimbussansl%2C%20liberationsans%2C%20freesans%2C%20clean%2C%20sans%2Dserif%2C%20%22Apple%20Color%20Emoji%22%2C%20%22Segoe%20UI%20Emoji%22%2C%20%22Segoe%20UI%20Symbol%22%3B%0A%7D%0Aa%20%7B%0Acolor%3A%20%234078c0%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Aa%3Ahover%2C%0Aa%3Aactive%20%7B%0Atext%2Ddecoration%3A%20underline%3B%0A%7D%0Ahr%20%7B%0Aheight%3A%200%3B%0Amargin%3A%2015px%200%3B%0Aoverflow%3A%20hidden%3B%0Abackground%3A%20transparent%3B%0Aborder%3A%200%3B%0Aborder%2Dbottom%3A%201px%20solid%20%23ddd%3B%0A%7D%0Ahr%3Abefore%20%7B%0Adisplay%3A%20table%3B%0Acontent%3A%20%22%22%3B%0A%7D%0Ahr%3Aafter%20%7B%0Adisplay%3A%20table%3B%0Aclear%3A%20both%3B%0Acontent%3A%20%22%22%3B%0A%7D%0Ah1%2C%0Ah2%2C%0Ah3%2C%0Ah4%2C%0Ah5%2C%0Ah6%20%7B%0Amargin%2Dtop%3A%2015px%3B%0Amargin%2Dbottom%3A%2015px%3B%0Aline%2Dheight%3A%201%2E1%3B%0A%7D%0Ah1%20%7B%0Afont%2Dsize%3A%2030px%3B%0A%7D%0Ah2%20%7B%0Afont%2Dsize%3A%2021px%3B%0A%7D%0Ah3%20%7B%0Afont%2Dsize%3A%2016px%3B%0A%7D%0Ah4%20%7B%0Afont%2Dsize%3A%2014px%3B%0A%7D%0Ah5%20%7B%0Afont%2Dsize%3A%2012px%3B%0A%7D%0Ah6%20%7B%0Afont%2Dsize%3A%2011px%3B%0A%7D%0Ablockquote%20%7B%0Amargin%3A%200%3B%0A%7D%0Aul%2C%0Aol%20%7B%0Apadding%3A%200%3B%0Amargin%2Dtop%3A%200%3B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Aol%20ol%2C%0Aul%20ol%20%7B%0Alist%2Dstyle%2Dtype%3A%20lower%2Droman%3B%0A%7D%0Aul%20ul%20ol%2C%0Aul%20ol%20ol%2C%0Aol%20ul%20ol%2C%0Aol%20ol%20ol%20%7B%0Alist%2Dstyle%2Dtype%3A%20lower%2Dalpha%3B%0A%7D%0Add%20%7B%0Amargin%2Dleft%3A%200%3B%0A%7D%0Acode%20%7B%0Afont%2Dfamily%3A%20Consolas%2C%20%22Liberation%20Mono%22%2C%20Menlo%2C%20Courier%2C%20monospace%3B%0Afont%2Dsize%3A%2012px%3B%0A%7D%0Apre%20%7B%0Amargin%2Dtop%3A%200%3B%0Amargin%2Dbottom%3A%200%3B%0Afont%3A%2012px%20Consolas%2C%20%22Liberation%20Mono%22%2C%20Menlo%2C%20Courier%2C%20monospace%3B%0A%7D%0A%2Eselect%3A%3A%2Dms%2Dexpand%20%7B%0Aopacity%3A%200%3B%0A%7D%0A%2Eocticon%20%7B%0Afont%3A%20normal%20normal%20normal%2016px%2F1%20octicons%2Dlink%3B%0Adisplay%3A%20inline%2Dblock%3B%0Atext%2Ddecoration%3A%20none%3B%0Atext%2Drendering%3A%20auto%3B%0A%2Dwebkit%2Dfont%2Dsmoothing%3A%20antialiased%3B%0A%2Dmoz%2Dosx%2Dfont%2Dsmoothing%3A%20grayscale%3B%0A%2Dwebkit%2Duser%2Dselect%3A%20none%3B%0A%2Dmoz%2Duser%2Dselect%3A%20none%3B%0A%2Dms%2Duser%2Dselect%3A%20none%3B%0Auser%2Dselect%3A%20none%3B%0A%7D%0A%2Eocticon%2Dlink%3Abefore%20%7B%0Acontent%3A%20%27%5Cf05c%27%3B%0A%7D%0A%2Emarkdown%2Dbody%3Abefore%20%7B%0Adisplay%3A%20table%3B%0Acontent%3A%20%22%22%3B%0A%7D%0A%2Emarkdown%2Dbody%3Aafter%20%7B%0Adisplay%3A%20table%3B%0Aclear%3A%20both%3B%0Acontent%3A%20%22%22%3B%0A%7D%0A%2Emarkdown%2Dbody%3E%2A%3Afirst%2Dchild%20%7B%0Amargin%2Dtop%3A%200%20%21important%3B%0A%7D%0A%2Emarkdown%2Dbody%3E%2A%3Alast%2Dchild%20%7B%0Amargin%2Dbottom%3A%200%20%21important%3B%0A%7D%0Aa%3Anot%28%5Bhref%5D%29%20%7B%0Acolor%3A%20inherit%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0A%2Eanchor%20%7B%0Adisplay%3A%20inline%2Dblock%3B%0Apadding%2Dright%3A%202px%3B%0Amargin%2Dleft%3A%20%2D18px%3B%0A%7D%0A%2Eanchor%3Afocus%20%7B%0Aoutline%3A%20none%3B%0A%7D%0Ah1%2C%0Ah2%2C%0Ah3%2C%0Ah4%2C%0Ah5%2C%0Ah6%20%7B%0Amargin%2Dtop%3A%201em%3B%0Amargin%2Dbottom%3A%2016px%3B%0Afont%2Dweight%3A%20bold%3B%0Aline%2Dheight%3A%201%2E4%3B%0A%7D%0Ah1%20%2Eocticon%2Dlink%2C%0Ah2%20%2Eocticon%2Dlink%2C%0Ah3%20%2Eocticon%2Dlink%2C%0Ah4%20%2Eocticon%2Dlink%2C%0Ah5%20%2Eocticon%2Dlink%2C%0Ah6%20%2Eocticon%2Dlink%20%7B%0Acolor%3A%20%23000%3B%0Avertical%2Dalign%3A%20middle%3B%0Avisibility%3A%20hidden%3B%0A%7D%0Ah1%3Ahover%20%2Eanchor%2C%0Ah2%3Ahover%20%2Eanchor%2C%0Ah3%3Ahover%20%2Eanchor%2C%0Ah4%3Ahover%20%2Eanchor%2C%0Ah5%3Ahover%20%2Eanchor%2C%0Ah6%3Ahover%20%2Eanchor%20%7B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Ah1%3Ahover%20%2Eanchor%20%2Eocticon%2Dlink%2C%0Ah2%3Ahover%20%2Eanchor%20%2Eocticon%2Dlink%2C%0Ah3%3Ahover%20%2Eanchor%20%2Eocticon%2Dlink%2C%0Ah4%3Ahover%20%2Eanchor%20%2Eocticon%2Dlink%2C%0Ah5%3Ahover%20%2Eanchor%20%2Eocticon%2Dlink%2C%0Ah6%3Ahover%20%2Eanchor%20%2Eocticon%2Dlink%20%7B%0Avisibility%3A%20visible%3B%0A%7D%0Ah1%20%7B%0Apadding%2Dbottom%3A%200%2E3em%3B%0Afont%2Dsize%3A%202%2E25em%3B%0Aline%2Dheight%3A%201%2E2%3B%0Aborder%2Dbottom%3A%201px%20solid%20%23eee%3B%0A%7D%0Ah1%20%2Eanchor%20%7B%0Aline%2Dheight%3A%201%3B%0A%7D%0Ah2%20%7B%0Apadding%2Dbottom%3A%200%2E3em%3B%0Afont%2Dsize%3A%201%2E75em%3B%0Aline%2Dheight%3A%201%2E225%3B%0Aborder%2Dbottom%3A%201px%20solid%20%23eee%3B%0A%7D%0Ah2%20%2Eanchor%20%7B%0Aline%2Dheight%3A%201%3B%0A%7D%0Ah3%20%7B%0Afont%2Dsize%3A%201%2E5em%3B%0Aline%2Dheight%3A%201%2E43%3B%0A%7D%0Ah3%20%2Eanchor%20%7B%0Aline%2Dheight%3A%201%2E2%3B%0A%7D%0Ah4%20%7B%0Afont%2Dsize%3A%201%2E25em%3B%0A%7D%0Ah4%20%2Eanchor%20%7B%0Aline%2Dheight%3A%201%2E2%3B%0A%7D%0Ah5%20%7B%0Afont%2Dsize%3A%201em%3B%0A%7D%0Ah5%20%2Eanchor%20%7B%0Aline%2Dheight%3A%201%2E1%3B%0A%7D%0Ah6%20%7B%0Afont%2Dsize%3A%201em%3B%0Acolor%3A%20%23777%3B%0A%7D%0Ah6%20%2Eanchor%20%7B%0Aline%2Dheight%3A%201%2E1%3B%0A%7D%0Ap%2C%0Ablockquote%2C%0Aul%2C%0Aol%2C%0Adl%2C%0Atable%2C%0Apre%20%7B%0Amargin%2Dtop%3A%200%3B%0Amargin%2Dbottom%3A%2016px%3B%0A%7D%0Ahr%20%7B%0Aheight%3A%204px%3B%0Apadding%3A%200%3B%0Amargin%3A%2016px%200%3B%0Abackground%2Dcolor%3A%20%23e7e7e7%3B%0Aborder%3A%200%20none%3B%0A%7D%0Aul%2C%0Aol%20%7B%0Apadding%2Dleft%3A%202em%3B%0A%7D%0Aul%20ul%2C%0Aul%20ol%2C%0Aol%20ol%2C%0Aol%20ul%20%7B%0Amargin%2Dtop%3A%200%3B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Ali%3Ep%20%7B%0Amargin%2Dtop%3A%2016px%3B%0A%7D%0Adl%20%7B%0Apadding%3A%200%3B%0A%7D%0Adl%20dt%20%7B%0Apadding%3A%200%3B%0Amargin%2Dtop%3A%2016px%3B%0Afont%2Dsize%3A%201em%3B%0Afont%2Dstyle%3A%20italic%3B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Adl%20dd%20%7B%0Apadding%3A%200%2016px%3B%0Amargin%2Dbottom%3A%2016px%3B%0A%7D%0Ablockquote%20%7B%0Apadding%3A%200%2015px%3B%0Acolor%3A%20%23777%3B%0Aborder%2Dleft%3A%204px%20solid%20%23ddd%3B%0A%7D%0Ablockquote%3E%3Afirst%2Dchild%20%7B%0Amargin%2Dtop%3A%200%3B%0A%7D%0Ablockquote%3E%3Alast%2Dchild%20%7B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Atable%20%7B%0Adisplay%3A%20block%3B%0Awidth%3A%20100%25%3B%0Aoverflow%3A%20auto%3B%0Aword%2Dbreak%3A%20normal%3B%0Aword%2Dbreak%3A%20keep%2Dall%3B%0A%7D%0Atable%20th%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Atable%20th%2C%0Atable%20td%20%7B%0Apadding%3A%206px%2013px%3B%0Aborder%3A%201px%20solid%20%23ddd%3B%0A%7D%0Atable%20tr%20%7B%0Abackground%2Dcolor%3A%20%23fff%3B%0Aborder%2Dtop%3A%201px%20solid%20%23ccc%3B%0A%7D%0Atable%20tr%3Anth%2Dchild%282n%29%20%7B%0Abackground%2Dcolor%3A%20%23f8f8f8%3B%0A%7D%0Aimg%20%7B%0Amax%2Dwidth%3A%20100%25%3B%0Abox%2Dsizing%3A%20content%2Dbox%3B%0Abackground%2Dcolor%3A%20%23fff%3B%0A%7D%0Acode%20%7B%0Apadding%3A%200%3B%0Apadding%2Dtop%3A%200%2E2em%3B%0Apadding%2Dbottom%3A%200%2E2em%3B%0Amargin%3A%200%3B%0Afont%2Dsize%3A%2085%25%3B%0Abackground%2Dcolor%3A%20rgba%280%2C0%2C0%2C0%2E04%29%3B%0Aborder%2Dradius%3A%203px%3B%0A%7D%0Acode%3Abefore%2C%0Acode%3Aafter%20%7B%0Aletter%2Dspacing%3A%20%2D0%2E2em%3B%0Acontent%3A%20%22%5C00a0%22%3B%0A%7D%0Apre%3Ecode%20%7B%0Apadding%3A%200%3B%0Amargin%3A%200%3B%0Afont%2Dsize%3A%20100%25%3B%0Aword%2Dbreak%3A%20normal%3B%0Awhite%2Dspace%3A%20pre%3B%0Abackground%3A%20transparent%3B%0Aborder%3A%200%3B%0A%7D%0A%2Ehighlight%20%7B%0Amargin%2Dbottom%3A%2016px%3B%0A%7D%0A%2Ehighlight%20pre%2C%0Apre%20%7B%0Apadding%3A%2016px%3B%0Aoverflow%3A%20auto%3B%0Afont%2Dsize%3A%2085%25%3B%0Aline%2Dheight%3A%201%2E45%3B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0Aborder%2Dradius%3A%203px%3B%0A%7D%0A%2Ehighlight%20pre%20%7B%0Amargin%2Dbottom%3A%200%3B%0Aword%2Dbreak%3A%20normal%3B%0A%7D%0Apre%20%7B%0Aword%2Dwrap%3A%20normal%3B%0A%7D%0Apre%20code%20%7B%0Adisplay%3A%20inline%3B%0Amax%2Dwidth%3A%20initial%3B%0Apadding%3A%200%3B%0Amargin%3A%200%3B%0Aoverflow%3A%20initial%3B%0Aline%2Dheight%3A%20inherit%3B%0Aword%2Dwrap%3A%20normal%3B%0Abackground%2Dcolor%3A%20transparent%3B%0Aborder%3A%200%3B%0A%7D%0Apre%20code%3Abefore%2C%0Apre%20code%3Aafter%20%7B%0Acontent%3A%20normal%3B%0A%7D%0Akbd%20%7B%0Adisplay%3A%20inline%2Dblock%3B%0Apadding%3A%203px%205px%3B%0Afont%2Dsize%3A%2011px%3B%0Aline%2Dheight%3A%2010px%3B%0Acolor%3A%20%23555%3B%0Avertical%2Dalign%3A%20middle%3B%0Abackground%2Dcolor%3A%20%23fcfcfc%3B%0Aborder%3A%20solid%201px%20%23ccc%3B%0Aborder%2Dbottom%2Dcolor%3A%20%23bbb%3B%0Aborder%2Dradius%3A%203px%3B%0Abox%2Dshadow%3A%20inset%200%20%2D1px%200%20%23bbb%3B%0A%7D%0A%2Epl%2Dc%20%7B%0Acolor%3A%20%23969896%3B%0A%7D%0A%2Epl%2Dc1%2C%0A%2Epl%2Ds%20%2Epl%2Dv%20%7B%0Acolor%3A%20%230086b3%3B%0A%7D%0A%2Epl%2De%2C%0A%2Epl%2Den%20%7B%0Acolor%3A%20%23795da3%3B%0A%7D%0A%2Epl%2Ds%20%2Epl%2Ds1%2C%0A%2Epl%2Dsmi%20%7B%0Acolor%3A%20%23333%3B%0A%7D%0A%2Epl%2Dent%20%7B%0Acolor%3A%20%2363a35c%3B%0A%7D%0A%2Epl%2Dk%20%7B%0Acolor%3A%20%23a71d5d%3B%0A%7D%0A%2Epl%2Dpds%2C%0A%2Epl%2Ds%2C%0A%2Epl%2Ds%20%2Epl%2Dpse%20%2Epl%2Ds1%2C%0A%2Epl%2Dsr%2C%0A%2Epl%2Dsr%20%2Epl%2Dcce%2C%0A%2Epl%2Dsr%20%2Epl%2Dsra%2C%0A%2Epl%2Dsr%20%2Epl%2Dsre%20%7B%0Acolor%3A%20%23183691%3B%0A%7D%0A%2Epl%2Dv%20%7B%0Acolor%3A%20%23ed6a43%3B%0A%7D%0A%2Epl%2Did%20%7B%0Acolor%3A%20%23b52a1d%3B%0A%7D%0A%2Epl%2Dii%20%7B%0Abackground%2Dcolor%3A%20%23b52a1d%3B%0Acolor%3A%20%23f8f8f8%3B%0A%7D%0A%2Epl%2Dsr%20%2Epl%2Dcce%20%7B%0Acolor%3A%20%2363a35c%3B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0A%2Epl%2Dml%20%7B%0Acolor%3A%20%23693a17%3B%0A%7D%0A%2Epl%2Dmh%2C%0A%2Epl%2Dmh%20%2Epl%2Den%2C%0A%2Epl%2Dms%20%7B%0Acolor%3A%20%231d3e81%3B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0A%2Epl%2Dmq%20%7B%0Acolor%3A%20%23008080%3B%0A%7D%0A%2Epl%2Dmi%20%7B%0Acolor%3A%20%23333%3B%0Afont%2Dstyle%3A%20italic%3B%0A%7D%0A%2Epl%2Dmb%20%7B%0Acolor%3A%20%23333%3B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0A%2Epl%2Dmd%20%7B%0Abackground%2Dcolor%3A%20%23ffecec%3B%0Acolor%3A%20%23bd2c00%3B%0A%7D%0A%2Epl%2Dmi1%20%7B%0Abackground%2Dcolor%3A%20%23eaffea%3B%0Acolor%3A%20%2355a532%3B%0A%7D%0A%2Epl%2Dmdr%20%7B%0Acolor%3A%20%23795da3%3B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0A%2Epl%2Dmo%20%7B%0Acolor%3A%20%231d3e81%3B%0A%7D%0Akbd%20%7B%0Adisplay%3A%20inline%2Dblock%3B%0Apadding%3A%203px%205px%3B%0Afont%3A%2011px%20Consolas%2C%20%22Liberation%20Mono%22%2C%20Menlo%2C%20Courier%2C%20monospace%3B%0Aline%2Dheight%3A%2010px%3B%0Acolor%3A%20%23555%3B%0Avertical%2Dalign%3A%20middle%3B%0Abackground%2Dcolor%3A%20%23fcfcfc%3B%0Aborder%3A%20solid%201px%20%23ccc%3B%0Aborder%2Dbottom%2Dcolor%3A%20%23bbb%3B%0Aborder%2Dradius%3A%203px%3B%0Abox%2Dshadow%3A%20inset%200%20%2D1px%200%20%23bbb%3B%0A%7D%0A%2Etask%2Dlist%2Ditem%20%7B%0Alist%2Dstyle%2Dtype%3A%20none%3B%0A%7D%0A%2Etask%2Dlist%2Ditem%2B%2Etask%2Dlist%2Ditem%20%7B%0Amargin%2Dtop%3A%203px%3B%0A%7D%0A%2Etask%2Dlist%2Ditem%20input%20%7B%0Amargin%3A%200%200%2E35em%200%2E25em%20%2D1%2E6em%3B%0Avertical%2Dalign%3A%20middle%3B%0A%7D%0A%3Achecked%2B%2Eradio%2Dlabel%20%7B%0Az%2Dindex%3A%201%3B%0Aposition%3A%20relative%3B%0Aborder%2Dcolor%3A%20%234078c0%3B%0A%7D%0Acode%20%3E%20%2Ekw%20%7B%20color%3A%20%23000000%3B%20%7D%0Acode%20%3E%20%2Edt%20%7B%20color%3A%20%23ed6a43%3B%20%7D%0Acode%20%3E%20%2Edv%20%7B%20color%3A%20%23009999%3B%20%7D%0Acode%20%3E%20%2Ebn%20%7B%20color%3A%20%23009999%3B%20%7D%0Acode%20%3E%20%2Efl%20%7B%20color%3A%20%23009999%3B%20%7D%0Acode%20%3E%20%2Ech%20%7B%20color%3A%20%23009999%3B%20%7D%0Acode%20%3E%20%2Est%20%7B%20color%3A%20%23183691%3B%20%7D%0Acode%20%3E%20%2Eco%20%7B%20color%3A%20%23969896%3B%20%7D%0Acode%20%3E%20%2Eot%20%7B%20color%3A%20%230086b3%3B%20%7D%0Acode%20%3E%20%2Eal%20%7B%20color%3A%20%23a61717%3B%20%7D%0Acode%20%3E%20%2Efu%20%7B%20color%3A%20%2363a35c%3B%20%7D%0Acode%20%3E%20%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%0Acode%20%3E%20%2Ewa%20%7B%20color%3A%20%23000000%3B%20%7D%0Acode%20%3E%20%2Ecn%20%7B%20color%3A%20%23008080%3B%20%7D%0Acode%20%3E%20%2Esc%20%7B%20color%3A%20%23008080%3B%20%7D%0Acode%20%3E%20%2Evs%20%7B%20color%3A%20%23183691%3B%20%7D%0Acode%20%3E%20%2Ess%20%7B%20color%3A%20%23183691%3B%20%7D%0Acode%20%3E%20%2Eim%20%7B%20color%3A%20%23000000%3B%20%7D%0Acode%20%3E%20%2Eva%20%7Bcolor%3A%20%23008080%3B%20%7D%0Acode%20%3E%20%2Ecf%20%7B%20color%3A%20%23000000%3B%20%7D%0Acode%20%3E%20%2Eop%20%7B%20color%3A%20%23000000%3B%20%7D%0Acode%20%3E%20%2Ebu%20%7B%20color%3A%20%23000000%3B%20%7D%0Acode%20%3E%20%2Eex%20%7B%20color%3A%20%23000000%3B%20%7D%0Acode%20%3E%20%2Epp%20%7B%20color%3A%20%23999999%3B%20%7D%0Acode%20%3E%20%2Eat%20%7B%20color%3A%20%23008080%3B%20%7D%0Acode%20%3E%20%2Edo%20%7B%20color%3A%20%23969896%3B%20%7D%0Acode%20%3E%20%2Ean%20%7B%20color%3A%20%23008080%3B%20%7D%0Acode%20%3E%20%2Ecv%20%7B%20color%3A%20%23008080%3B%20%7D%0Acode%20%3E%20%2Ein%20%7B%20color%3A%20%23008080%3B%20%7D%0A" rel="stylesheet">
+<style>
+body {
+  box-sizing: border-box;
+  min-width: 200px;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 45px;
+  padding-top: 0px;
+}
+</style>
+
+</head>
+
+<body>
+
+<h1 id="traitement-des-donnees-de-la-bdat">Traitement des données de la BDAT</h1>
+<p>Jean-Baptiste Paroissien</p>
+<ul>
+<li><a href="#objectifs">Objectifs</a></li>
+<li><a href="#integration-des-donnees-de-la-bdat-vers-la-table-dm_vecteurs.canton">Intégration des données de la BDAT vers la table <code>dm_vecteurs.canton</code></a>
+<ul>
+<li><a href="#integration-de-la-mediane-des-teneurs-en-carbone-organique-par-canton">Intégration de la médiane des teneurs en carbone organique par canton</a></li>
+<li><a href="#integration-des-resultats-des-tests-statistiques-des-differences-de-teneur-en-carbone-organique">Intégration des résultats des tests statistiques des différences de teneur en carbone organique</a></li>
+</ul></li>
+<li><a href="#creation-des-tables-de-travail-au-format-long">Création des tables de travail au format &quot;long&quot;</a>
+<ul>
+<li><a href="#evolution-des-teneurs-en-carbone-organique">Evolution des teneurs en carbone organique</a></li>
+</ul></li>
+</ul>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">Sys.Date</span>()</code></pre></div>
+<pre><code>## [1] &quot;2017-01-27&quot;</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">sessionInfo</span>()</code></pre></div>
+<pre><code>## R version 3.3.2 (2016-10-31)
+## Platform: x86_64-pc-linux-gnu (64-bit)
+## Running under: Ubuntu 16.04.1 LTS
+## 
+## locale:
+##  [1] LC_CTYPE=fr_FR.UTF-8       LC_NUMERIC=C              
+##  [3] LC_TIME=fr_FR.UTF-8        LC_COLLATE=fr_FR.UTF-8    
+##  [5] LC_MONETARY=fr_FR.UTF-8    LC_MESSAGES=fr_FR.UTF-8   
+##  [7] LC_PAPER=fr_FR.UTF-8       LC_NAME=C                 
+##  [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+## [11] LC_MEASUREMENT=fr_FR.UTF-8 LC_IDENTIFICATION=C       
+## 
+## attached base packages:
+## [1] parallel  grid      stats     graphics  grDevices utils     datasets 
+## [8] methods   base     
+## 
+## other attached packages:
+##  [1] raster_2.5-8       doMC_1.3.4         iterators_1.0.8   
+##  [4] foreach_1.4.3      plyr_1.8.4         caret_6.0-73      
+##  [7] factoextra_1.0.3   GGally_1.3.0       pander_0.6.0      
+## [10] knitr_1.15.1       FactoMineR_1.34    wesanderson_0.3.2 
+## [13] mapproj_1.2-4      gridExtra_2.2.1    Hmisc_4.0-0       
+## [16] Formula_1.2-1      survival_2.40-1    lattice_0.20-34   
+## [19] reshape2_1.4.2     devtools_1.12.0    classInt_0.1-23   
+## [22] RColorBrewer_1.1-2 maptools_0.8-40    rgdal_1.2-4       
+## [25] sp_1.2-3           ggplot2_2.2.0      stringr_1.1.0     
+## [28] fields_8.4-1       maps_3.1.1         spam_1.4-0        
+## [31] gdata_2.17.0       RODBC_1.3-14      
+## 
+## loaded via a namespace (and not attached):
+##  [1] splines_3.3.2        gtools_3.5.0         assertthat_0.1      
+##  [4] stats4_3.3.2         latticeExtra_0.6-28  yaml_2.1.14         
+##  [7] ggrepel_0.6.5        backports_1.0.4      quantreg_5.29       
+## [10] digest_0.6.10        minqa_1.2.4          colorspace_1.2-7    
+## [13] htmltools_0.3.5      Matrix_1.2-7.1       SparseM_1.74        
+## [16] scales_0.4.1         lme4_1.1-12          MatrixModels_0.4-1  
+## [19] htmlTable_1.7        tibble_1.2           mgcv_1.8-16         
+## [22] car_2.1-4            withr_1.0.2          nnet_7.3-12         
+## [25] lazyeval_0.2.0       pbkrtest_0.4-6       magrittr_1.5        
+## [28] memoise_1.0.0        evaluate_0.10        nlme_3.1-128        
+## [31] MASS_7.3-45          foreign_0.8-67       class_7.3-14        
+## [34] tools_3.3.2          data.table_1.10.0    munsell_0.4.3       
+## [37] cluster_2.0.5        flashClust_1.01-2    e1071_1.6-7         
+## [40] nloptr_1.0.4         leaps_2.9            rmarkdown_1.3       
+## [43] gtable_0.2.0         ModelMetrics_1.1.0   codetools_0.2-15    
+## [46] reshape_0.8.6        rprojroot_1.1        stringi_1.1.2       
+## [49] Rcpp_0.12.7          rpart_4.1-10         acepack_1.4.1       
+## [52] scatterplot3d_0.3-37</code></pre>
+<h1 id="objectifs">Objectifs</h1>
+<p>Ce fichier permet de créer les tables de données de la BDAT utilisables pour le traitement statistique. Deux principaux points sont réalisés :</p>
+<ul>
+<li>Les teneurs en carbone organique et les calculs d'évolution de ces teneurs sont jointes dans la table de travail <code>dm_vecteurs.canton</code> pour faciliter la cartographie et l'analyse spatiale des données,</li>
+<li>Plusieurs autres tables sont générées pour les différents travaux demandant un format de table &quot;long&quot;.</li>
+</ul>
+<h1 id="integration-des-donnees-de-la-bdat-vers-la-table-dm_vecteurs.canton">Intégration des données de la BDAT vers la table <code>dm_vecteurs.canton</code></h1>
+<h2 id="integration-de-la-mediane-des-teneurs-en-carbone-organique-par-canton">Intégration de la médiane des teneurs en carbone organique par canton</h2>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Paramètres</span>
+table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
+period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;9094&quot;</span>,<span class="st">&quot;9599&quot;</span>,<span class="st">&quot;0004&quot;</span>,<span class="st">&quot;0509&quot;</span>,<span class="st">&quot;1014&quot;</span>)
+schema &lt;-<span class="st"> &quot;bdat&quot;</span>
+
+for(i in period){
+  var_variable &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;corgox_medequi&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+  tableBDAT &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;bdat_canton_corgequiv&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+  
+  <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                      drop column if exists &quot;</span>,var_variable,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+  
+  <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                      add column &quot;</span>,var_variable,<span class="st">&quot; numeric;</span>
+<span class="st">                      update &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                      SET &quot;</span>,var_variable,<span class="st">&quot; = s1.med from(</span>
+<span class="st">                      select med,canton</span>
+<span class="st">                      from &quot;</span>,schema,<span class="st">&quot;.&quot;</span>,tableBDAT,<span class="st">&quot;) as s1</span>
+<span class="st">                      where &quot;</span>,table_dm,<span class="st">&quot;.code_canton=s1.canton::text&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+  
+  <span class="co"># Ajout d'un commentaire sur la nouvelle colonne crée</span>
+  <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">  COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,var_variable,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">Médiane des teneurs en carbone organique après ré-échantillonnage pour la période &quot;</span>,i,<span class="st">&quot;.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+}</code></pre></div>
+<h2 id="integration-des-resultats-des-tests-statistiques-des-differences-de-teneur-en-carbone-organique">Intégration des résultats des tests statistiques des différences de teneur en carbone organique</h2>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
+period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;12&quot;</span>,<span class="st">&quot;13&quot;</span>,<span class="st">&quot;14&quot;</span>,<span class="st">&quot;15&quot;</span>,<span class="st">&quot;23&quot;</span>,<span class="st">&quot;24&quot;</span>,<span class="st">&quot;25&quot;</span>,<span class="st">&quot;34&quot;</span>,<span class="st">&quot;35&quot;</span>,<span class="st">&quot;45&quot;</span>)
+schema &lt;-<span class="st"> &quot;bdat&quot;</span>
+
+for(i in period){
+  for(v in <span class="kw">c</span>(<span class="st">&quot;diff&quot;</span>,<span class="st">&quot;diffmedian&quot;</span>)){
+  
+  var_variable &lt;-<span class="st"> </span><span class="kw">paste</span>(v,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+  
+  tableBDAT &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;bdat_canton_corgequiv_comp_&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+  
+  <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                      drop column if exists &quot;</span>,var_variable,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+  
+  if(v==<span class="st">&quot;diff&quot;</span>){
+  <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                      add column &quot;</span>,var_variable,<span class="st">&quot; text;</span>
+<span class="st">                      update &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                      SET &quot;</span>,var_variable,<span class="st">&quot; = s1.diff from(</span>
+<span class="st">                      select diff,canton</span>
+<span class="st">                      from &quot;</span>,schema,<span class="st">&quot;.&quot;</span>,tableBDAT,<span class="st">&quot;) as s1</span>
+<span class="st">                      where &quot;</span>,table_dm,<span class="st">&quot;.code_canton=s1.canton::text&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+    
+      <span class="co"># Ajout d'un commentaire sur la nouvelle colonne crée</span>
+      <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">      COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,var_variable,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">Résultat du test de significacité de la différence de la médiane des teneurs en carbone organique au niveau du canton.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+    
+  }else{
+    <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                      add column &quot;</span>,var_variable,<span class="st">&quot; numeric;</span>
+<span class="st">                      update &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                      SET &quot;</span>,var_variable,<span class="st">&quot; = s1.&quot;</span>,var_variable,<span class="st">&quot; from(</span>
+<span class="st">                      select &quot;</span>,var_variable,<span class="st">&quot;,canton</span>
+<span class="st">                      from &quot;</span>,schema,<span class="st">&quot;.&quot;</span>,tableBDAT,<span class="st">&quot;) as s1</span>
+<span class="st">                      where &quot;</span>,table_dm,<span class="st">&quot;.code_canton=s1.canton::text&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+    
+      <span class="co"># Ajout d'un commentaire sur la nouvelle colonne crée</span>
+      <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">      COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,var_variable,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">Pourcentage d évolution de la médiane des teneurs en carbone organique par canton ((medA-medB)/medB))*100 avec B une période antérieure à A.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+    }
+  }
+}</code></pre></div>
+<h1 id="creation-des-tables-de-travail-au-format-long">Création des tables de travail au format &quot;long&quot;</h1>
+<p>Les données de la BDAT sont ré-organisées pour faciliter les traitements statistiques et la production de graphiques. La fonction <code>melt</code> est utilisée pour transformer les données d'un format &quot;large&quot; à un format &quot;long&quot;. Deux tables sont créées :</p>
+<ul>
+<li><code>dm_traitements.melted.bdat</code> : table des valeurs des médianes teneurs en carbone organique</li>
+<li><code>dm_traitements.melted.bdat</code> : table des valeurs de différences des teneurs en carbone organique entre plusieurs périodes.</li>
+</ul>
+<p><strong>Important :</strong> La création de ces tables nécessite le lancement de plusieurs scripts au préalable : <code>FS_bdd_brute.Rmd</code>,<code>FS_bdd_elab_climat.Rmd</code>,<code>FS_bdd_elab_ra.Rmd</code> et <code>FS_bdd_elab_clc.Rmd</code>.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Paramètres</span>
+table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
+varia &lt;-<span class="st"> &quot;corgox_medequi&quot;</span> <span class="co"># Variable à analyser </span>
+period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;9094&quot;</span>,<span class="st">&quot;9599&quot;</span>,<span class="st">&quot;0004&quot;</span>,<span class="st">&quot;0509&quot;</span>,<span class="st">&quot;1014&quot;</span>)
+variaoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;p_sth&quot;</span>,<span class="st">&quot;p_sfp&quot;</span>,<span class="st">&quot;p_prairie&quot;</span>)
+<span class="co">#id_class &lt;- apply(expand.grid(varia,period), 1, paste, collapse=&quot;&quot;)</span>
+periodoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;1970&quot;</span>,<span class="st">&quot;1979&quot;</span>,<span class="st">&quot;1988&quot;</span>,<span class="st">&quot;2000&quot;</span>,<span class="st">&quot;2010&quot;</span>)
+id_class &lt;-<span class="st"> </span><span class="kw">apply</span>(<span class="kw">expand.grid</span>(variaoccup,periodoccup),<span class="dv">1</span>, function(x){<span class="kw">paste</span>(<span class="st">&quot;classe_&quot;</span>,x[<span class="dv">1</span>],x[<span class="dv">2</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)})
+id &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;code_canton&quot;</span>,<span class="st">&quot;code_reg&quot;</span>,<span class="st">&quot;nom_region&quot;</span>,<span class="st">&quot;typo_clim&quot;</span>,<span class="st">&quot;zonage_simple&quot;</span>,<span class="st">&quot;zonage_cplt&quot;</span>,id_class) <span class="co">#Nom des identifiants</span>
+
+<span class="co"># Lecture de la table dm_vecteurs.canton</span>
+mapcanton &lt;-<span class="st"> </span><span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;select * from &quot;</span>,table_dm,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+
+<span class="co"># Boucle pour séparer l'année du nom de la variable étudiée</span>
+
+
+<span class="co"># revoir dans le détail la construction</span>
+cpt &lt;-<span class="st"> </span><span class="dv">0</span>
+for(i in varia){
+  cpt &lt;-<span class="st"> </span>cpt +<span class="st"> </span><span class="dv">1</span>
+  variaperiod &lt;-<span class="st"> </span><span class="kw">paste</span>(i,period,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)  
+  
+  stats.canton &lt;-<span class="st"> </span>mapcanton[,<span class="kw">c</span>(id,variaperiod)]
+
+  <span class="co"># Modification de la structure de la table</span>
+  stats.canton &lt;-<span class="st"> </span><span class="kw">melt</span>(<span class="dt">data=</span>stats.canton,<span class="dt">id.vars=</span>id)
+  
+  <span class="co"># Extraction de l'année et renommage des colonnes</span>
+  stats.canton[,<span class="st">&quot;variable&quot;</span>] &lt;-<span class="st"> </span><span class="kw">as.character</span>(<span class="kw">unlist</span>(<span class="kw">regmatches</span>(stats.canton[,<span class="st">&quot;variable&quot;</span>],<span class="kw">gregexpr</span>(<span class="st">'[0-9]+.[0-9]+'</span>,stats.canton[,<span class="st">&quot;variable&quot;</span>]))))
+  <span class="kw">colnames</span>(stats.canton)[(<span class="kw">length</span>(id)+<span class="dv">1</span>):(<span class="kw">length</span>(id)+<span class="dv">2</span>)] &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;annees&quot;</span>,i)
+    
+  if(cpt==<span class="dv">1</span>){
+    <span class="co"># Construction de la première table</span>
+    melt.canton &lt;-<span class="st"> </span>stats.canton
+  }else{
+    <span class="co"># Ajout à chaque itération de la variable (i)</span>
+    melt.canton &lt;-<span class="st"> </span><span class="kw">merge</span>(melt.canton,stats.canton, <span class="dt">by.x=</span><span class="kw">c</span>(id,<span class="st">&quot;annees&quot;</span>), <span class="dt">by.y=</span><span class="kw">c</span>(id,<span class="st">&quot;annees&quot;</span>),<span class="dt">all.x=</span><span class="ot">TRUE</span>,<span class="dt">all.y=</span><span class="ot">TRUE</span>)
+  }
+}
+
+<span class="co"># Création finale de la table</span>
+melted.bdat &lt;-<span class="st"> </span><span class="kw">melt</span>(<span class="dt">data=</span>melt.canton,<span class="dt">id.vars=</span><span class="kw">c</span>(id,<span class="st">&quot;annees&quot;</span>))
+melted.bdat$annees &lt;-<span class="st"> </span><span class="kw">as.character</span>(melted.bdat$annees)
+melted.bdat$typo_clim &lt;-<span class="st"> </span><span class="kw">as.factor</span>(melted.bdat$typo_clim)
+
+<span class="co"># Enregistrement dans le schema dm_traitements  </span>
+tablename &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;dm_traitements.&quot;</span>,<span class="st">&quot;melted_bdat&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;drop table if exists &quot;</span>,tablename,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+<span class="kw">sqlSave</span>(loc,melted.bdat,<span class="dt">tablename=</span>tablename)
+
+<span class="co"># Rajouter les commentaires</span></code></pre></div>
+<h2 id="evolution-des-teneurs-en-carbone-organique">Evolution des teneurs en carbone organique</h2>
+<h3 id="integration-des-resultats-dans-une-table-au-format-long">Intégration des résultats dans une table au format long</h3>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Paramètres</span>
+table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
+varia &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;diffmedian&quot;</span>,<span class="st">&quot;diff&quot;</span>) <span class="co"># Préfixe de la variable à intégrer (varia+period)</span>
+period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;12&quot;</span>,<span class="st">&quot;13&quot;</span>,<span class="st">&quot;14&quot;</span>,<span class="st">&quot;15&quot;</span>,<span class="st">&quot;23&quot;</span>,<span class="st">&quot;24&quot;</span>,<span class="st">&quot;25&quot;</span>,<span class="st">&quot;34&quot;</span>,<span class="st">&quot;35&quot;</span>,<span class="st">&quot;45&quot;</span>)
+variaoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;sth&quot;</span>,<span class="st">&quot;sfp&quot;</span>,<span class="st">&quot;prairie&quot;</span>)
+periodra &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;1970&quot;</span>,<span class="st">&quot;1979&quot;</span>,<span class="st">&quot;1988&quot;</span>,<span class="st">&quot;2000&quot;</span>,<span class="st">&quot;2010&quot;</span>)
+<span class="co"># Classes d'occupation du sol</span>
+id_class &lt;-<span class="st"> </span><span class="kw">apply</span>(<span class="kw">expand.grid</span>(variaoccup,periodra),<span class="dv">1</span>,function(x){<span class="kw">paste</span>(<span class="st">&quot;classe_p_&quot;</span>,x[<span class="dv">1</span>],x[<span class="dv">2</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)})
+periodoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;1970_2010&quot;</span>,<span class="st">&quot;1979_2010&quot;</span>,<span class="st">&quot;1988_2010&quot;</span>)
+id_varclass &lt;-<span class="st"> </span><span class="kw">apply</span>(<span class="kw">expand.grid</span>(variaoccup,periodoccup),<span class="dv">1</span>, function(x){<span class="kw">paste</span>(<span class="st">&quot;classe_var_&quot;</span>,x[<span class="dv">1</span>],x[<span class="dv">2</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)})
+id_diff &lt;-<span class="st"> </span><span class="kw">apply</span>(<span class="kw">expand.grid</span>(variaoccup,periodoccup),<span class="dv">1</span>, function(x){<span class="kw">paste</span>(<span class="st">&quot;diff_var_&quot;</span>,x[<span class="dv">1</span>],x[<span class="dv">2</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)})
+id &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;code_canton&quot;</span>,<span class="st">&quot;code_reg&quot;</span>,<span class="st">&quot;nom_region&quot;</span>,<span class="st">&quot;typo_clim&quot;</span>,<span class="st">&quot;zonage_simple&quot;</span>,<span class="st">&quot;zonage_cplt&quot;</span>,id_class,id_diff,id_varclass)
+
+<span class="co"># Lecture de la table dm_vecteurs.canton</span>
+mapcanton &lt;-<span class="st"> </span><span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;select * from &quot;</span>,table_dm,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+
+<span class="co"># Boucle pour séparer les périodes analysées du nom de la variable étudiée</span>
+cpt &lt;-<span class="st"> </span><span class="dv">0</span>
+for(i in varia){
+  <span class="kw">print</span>(i)
+  cpt &lt;-<span class="st"> </span>cpt +<span class="st"> </span><span class="dv">1</span>
+  variaperiod &lt;-<span class="st"> </span><span class="kw">paste</span>(i,period,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)  
+  stats.canton &lt;-<span class="st"> </span>mapcanton[,<span class="kw">c</span>(id,variaperiod)]
+ 
+   <span class="co"># Modification de la structure de la table</span>
+  stats.canton &lt;-<span class="st"> </span><span class="kw">melt</span>(<span class="dt">data=</span>stats.canton,<span class="dt">id.vars=</span>id)
+
+  <span class="co"># Extraction de l'année et renommage des colonnes</span>
+  stats.canton[,<span class="st">&quot;variable&quot;</span>] &lt;-<span class="st"> </span><span class="kw">as.character</span>(<span class="kw">unlist</span>(<span class="kw">regmatches</span>(stats.canton[,<span class="st">&quot;variable&quot;</span>],<span class="kw">gregexpr</span>(<span class="st">'[0-9]+.'</span>,stats.canton[,<span class="st">&quot;variable&quot;</span>]))))
+  <span class="kw">colnames</span>(stats.canton)[(<span class="kw">length</span>(id)+<span class="dv">1</span>):(<span class="kw">length</span>(id)+<span class="dv">2</span>)] &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;period&quot;</span>,i) <span class="co">#revoir la sélection de ces colonnes</span>
+    
+  if(cpt==<span class="dv">1</span>){
+    <span class="co"># Construction de la première table</span>
+    melt.canton &lt;-<span class="st"> </span>stats.canton
+  }else{
+    <span class="co"># Ajout à chaque itération de la variable (i)</span>
+    melt.canton &lt;-<span class="st"> </span><span class="kw">merge</span>(melt.canton,stats.canton, <span class="dt">by.x=</span><span class="kw">c</span>(id,<span class="st">&quot;period&quot;</span>), <span class="dt">by.y=</span><span class="kw">c</span>(id,<span class="st">&quot;period&quot;</span>),<span class="dt">all.x=</span><span class="ot">TRUE</span>,<span class="dt">all.y=</span><span class="ot">TRUE</span>)
+  }
+}
+
+<span class="co"># Création finale de la table</span>
+melted.bdatdiff &lt;-<span class="st"> </span>melt.canton
+melted.bdatdiff$typo_clim &lt;-<span class="st"> </span><span class="kw">as.factor</span>(melted.bdatdiff$typo_clim)
+
+<span class="co"># Enregistrement dans le schéma dm_traitements</span>
+tablename &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;dm_traitements.&quot;</span>,<span class="st">&quot;melted_bdatdiff2&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;drop table if exists &quot;</span>,tablename,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+<span class="kw">sqlSave</span>(loc,melted.bdatdiff,<span class="dt">tablename=</span>tablename)
+
+<span class="co"># Rajouter les commentaires</span></code></pre></div>
+
+</body>
+</html>

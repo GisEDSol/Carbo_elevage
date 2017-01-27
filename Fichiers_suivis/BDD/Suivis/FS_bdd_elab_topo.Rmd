@@ -70,7 +70,7 @@ sqlQuery(loc,paste("update ",table_dm,"
 
 # Ajout d'un commentaire sur la nouvelle colonne créée
 print(sqlQuery(loc,paste("
-COMMENT ON COLUMN ",table_dm,".",vName," IS \'Altitude moyenne (en m)",i,".\';",sep="")))
+COMMENT ON COLUMN ",table_dm,".",vName," IS \'Altitude moyenne (en m).\';",sep="")))
     
 # Suppression de la table temporaire
 sqlQuery(loc,"drop table if exists dm_vecteurs.tmptopo")

@@ -81,7 +81,7 @@ voir <https://halshs.archives-ouvertes.fr/tel-00636846v2/file/soutenance_ppt_spa
 
 ``` r
 meta_clc <- read.csv(paste(repmetadonnees,"Nomenclature_clc.csv",sep=""),sep=";",header=TRUE)
-variables <- c("21","22","23","24") # Nom des champs à type d'occupation du sol à importer
+variables <- c("21","22","23") # Nom des champs à type d'occupation du sol à importer (21   Terres arables,22   Cultures permanentes, 23    Prairies)
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
 versionclc <- c("90","00","06","12") # Nom des années clc pris en compte
 
@@ -106,6 +106,7 @@ for(i in 1:3){
                         drop column if exists ",vName,sep=""))
     
     # Création de la colonne, aggrégation par canton et jointure vers la table canton 
+    
     sqlQuery(loc,paste("alter table ",table_dm,"
                       add column ",vName," numeric;
                       update ",table_dm,"
@@ -121,5 +122,34 @@ for(i in 1:3){
     print(sqlQuery(loc,paste("
             COMMENT ON COLUMN ",table_dm,".",vName," IS \'Perte en ha de l\''occupation du sol ",v," entre l\''année ",period1," et l\''année ",period2,"\';",sep="")))
   }
+}
+```
+
+Dans les lignes suivantes, on calcule la somme des pertes de surfaces d'occupation du sol pour 1990 à 2012
+
+``` r
+meta_clc <- read.csv(paste(repmetadonnees,"Nomenclature_clc.csv",sep=""),sep=";",header=TRUE)
+variables <- c("21","22","23") # Nom des champs à type d'occupation du sol à importer (21   Terres arables,22   Cultures permanentes, 23    Prairies)
+table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+periodclc <- c("90_00","00_06","06_12")
+
+for(i in variables){
+  newvName <- paste("tt_",i,"_90_12",sep="")
+ 
+  chgtclc <- apply(expand.grid(i,periodclc),1, function(x){paste("clc",x[1],"_",x[2],sep="")})  
+
+  # Suppression de la colonne si déjà existante
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                        drop column if exists tt",newvName,sep=""))
+  
+  # Création de la colonne et somme pour les différentes annéesaggrégation par canton et jointure vers la table canton 
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                      add column ",newvName," numeric;
+                      update ",table_dm,"
+                      SET ",newvName," = (COALESCE(",chgtclc[1],",0) + COALESCE(",chgtclc[2],",0) + COALESCE(",chgtclc[3],",0))",sep=""))
+  
+    # Ajout d'un commentaire sur la nouvelle colonne créée
+    print(sqlQuery(loc,paste("
+            COMMENT ON COLUMN ",table_dm,".",newvName," IS \'Somme des pertes en ha de l\''occupation du sol ",i," entre 1990 et 2012\';",sep="")))
 }
 ```

@@ -12,7 +12,6 @@
 	* une description des schéma de la base de données,
 	* une description des tables et des champs présents dans les tables,
 	* une présentation de la nomenclature de certaines variables.
-
 Il est également composé de plusieurs modes opératoires pour prendre en le projet, avec notamment :
 	* un mode opératoire décrivant l'arborescence du projet et de son dépôt sur GitHub,
 	* un mode opératoire sur la base de données (présentation et connexion avec R et QGIS),

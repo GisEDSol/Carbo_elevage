@@ -105,6 +105,7 @@ for(v in variablecarto){
 ```
 
 Ici, on rajoute la carte sur les ugb tout aliments
+
 ```{r ugbtplot, echo = F, results = 'asis'}
 period <- c("1988","2000","2010") #Période de temps prise en compte
 variablecarto <- "ugbta"

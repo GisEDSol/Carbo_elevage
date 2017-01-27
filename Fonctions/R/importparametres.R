@@ -74,6 +74,7 @@ fig <- local({
             ref
         })
 })
+assign("fig",fig,.GlobalEnv)
 
 library(knitr)
 knit_hooks$set(plot = function(x, options) {
@@ -131,8 +132,35 @@ gsub2 <- function(pattern, replacement, x, ...) {
     x <- gsub(pattern[i], replacement[i], x, ...)
   x
 }
+assign("gsub2",gsub2,.GlobalEnv)
 
+# From http://stackoverflow.com/questions/13649473/add-a-common-legend-for-combined-ggplots
+grid_arrange_shared_legend <- function(..., nrow = 1, ncol = length(list(...)), position = c("bottom", "right")) {
 
+  plots <- list(...)
+  position <- match.arg(position)
+  g <- ggplotGrob(plots[[1]] + theme(legend.position = position))$grobs
+  legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
+  lheight <- sum(legend$height)
+  lwidth <- sum(legend$width)
+  gl <- lapply(plots, function(x) x + theme(legend.position = "none"))
+  gl <- c(gl, nrow = nrow, ncol = ncol)
 
-#return(list(repLucas=repLucas))
+  combined <- switch(position,
+                     "bottom" = arrangeGrob(do.call(arrangeGrob, gl),
+                                            legend,
+                                            ncol = 1,
+                                            heights = unit.c(unit(1, "npc") - lheight, lheight)),
+                     "right" = arrangeGrob(do.call(arrangeGrob, gl),
+                                           legend,
+                                           ncol = 2,
+                                           widths = unit.c(unit(1, "npc") - lwidth, lwidth)))
+  grid.newpage()
+  grid.draw(combined)
+  return(combined)
+}
+
+assign("grid_arrange_shared_legend",grid_arrange_shared_legend,.GlobalEnv)
+
+#return(list(grid_arrange_shared_legend,gsub2,fig=fig))
 }#Fin fonction
