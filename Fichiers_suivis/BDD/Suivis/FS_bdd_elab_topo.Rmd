@@ -1,0 +1,80 @@
+---
+title: "Traitement des données topographiques"
+author: "Jean-Baptiste Paroissien"
+date: "26/01/2017"
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
+    fig_width: 10
+    fig_height: 10
+    dev: png
+    md_extensions: +autolink_bare_uris+hard_line_breaks+header_attributes+line_blocks+table_captions
+---
+
+```{r setup, include=FALSE,eval=TRUE}
+# Importation des paramètres de travail
+source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
+repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
+importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
+```
+
+```{r, tidy=FALSE,eval=TRUE}
+Sys.Date()
+sessionInfo()
+```
+
+# Objectifs
+
+L'objectif de ce fichier de suivi est de stocker l'ensemble des traitements élaborés associés aux données topographiques. Ces traitements concernent pour le moment l'intégration des données [européenne](http://www.eea.europa.eu/data-and-maps/data/eu-dem) et touchent les points suivants :
+
+- Calcul de l'altitude moyenne par canton.
+
+# Calcul de différentes statistiques jointes vers la table `dm_vecteurs.canton`
+
+
+## Aggrégation par la moyenne à l'échelle du canton
+
+```{r,highlight=TRUE,eval=FALSE}
+reptopo <- "/media/sf_GIS_ED/Dev/Data/Topographie/dem_copernicus/" #répertoire contenant les rasters à assembler
+Fr_demName <- paste(reptopo,"Fr_L93_90eudem.tif",sep="")
+
+table_dm <- "dm_vecteurs.canton"
+mapcanton <- readOGR(dsn = dsn,table_dm)
+
+rasterdem1<-readGDAL(Fr_demName) 
+r <- raster(rasterdem1,layer=1,values=TRUE)
+
+r.vals <- extract(r, mapcanton, fun = mean, na.rm = TRUE,sp=TRUE)#fonctionne mais prend un certain temps...(l'extension 'Statistiques zones' est plus rapide)
+
+# Jointure
+tmp <- merge(mapcanton@data,r.vals, by.x="code_canton", by.y="code_canton",all.x=TRUE,all.y=TRUE)[,c("id_geofla.x","band1")]
+vName <- "altimean"  #Nom du champs calculé
+colnames(tmp) <- c("id_geofla2",vName)
+
+# Création d'une table provisoire pour jointure
+sqlQuery(loc,"drop table if exists dm_vecteurs.tmptopo")
+sqlSave(loc,tmp,tablename="dm_vecteurs.tmptopo")
+
+# Ajout de la colonne
+sqlQuery(loc,paste("alter table ",table_dm,"
+                    drop column if exists ",vName,";
+                    alter table ",table_dm,"
+                    add column ",vName," numeric",sep=""))                 
+# Jointure 
+sqlQuery(loc,paste("update ",table_dm,"
+                    SET ",vName," = s1.",vName," from(
+                    select ",vName,",id_geofla2
+                    from dm_vecteurs.tmptopo) as s1
+                    where ",table_dm,".id_geofla=s1.id_geofla2",sep=""))
+
+# Ajout d'un commentaire sur la nouvelle colonne créée
+print(sqlQuery(loc,paste("
+COMMENT ON COLUMN ",table_dm,".",vName," IS \'Altitude moyenne (en m)",i,".\';",sep="")))
+    
+# Suppression de la table temporaire
+sqlQuery(loc,"drop table if exists dm_vecteurs.tmptopo")
+
+# Ci-dessous, une solution en postGIS (intéressant à exploiter)
+#http://gis.stackexchange.com/questions/155974/calculate-mean-value-of-polygon-from-raster-in-postgis
+```

@@ -1,0 +1,206 @@
+---
+title: "Mode opératoire pour configurer la machine locale à la production de webservices"
+author: "Jean-Baptiste Paroissien"
+date: "21/10/2014"
+output:
+  html_document:
+    fig_caption: yes
+    highlight: zenburn
+    number_sections: yes
+    theme: spacelab
+    toc: yes
+categories: [Preparation]
+rerCat: Preparation
+tags: [Acces Rodas]
+---
+```{r, tidy=FALSE,eval=TRUE,echo=FALSE}
+mo_url <- "https://forge.orleans.inra.fr/projects/infosol/repository/entry/Modes_operatoires/"
+pro_url <- "https://forge.orleans.inra.fr/projects/infosol/repository/entry/Procedure/"
+```
+# Objectif et domaine d'application
+Ce document décrit la configuration nécessaire pour produire des webservices sur une machine locale. Il s'adresse aux producteurs de données n'ayant pas besoin d'utiliser le serveur de calcul Rodas. Ce mode opératoire est pour le moment adapté à un système d'exploitation de type ubuntu (12.04 et 14.04) 32/64 bit.
+
+| Type d'utilisateur | Systèmes d'exploitation | Langages               |
+|------------------|-------------------------|------------------------|
+| Producteurs      | Linux (ubuntu 12.04/14.04)        | bash |
+
+# Démarche générale
+Le mode opératoire aborde les différents points de configuration pour diffuser une donnée sur internet. Il développe notamment : 
+
+- L'installation du logiciel R, Rstudio et des différents paquets (pour le fichier de suivi et l'analyse spatiale),
+- La configuration ODBC/RODBC pour les relations entre la base PostgreSQL et la machine locale,
+
+**Important :** l'ensemble des commandes présentées ici sont lancées dans un terminal linux ou dans un terminal R.
+
+# Installation de logiciels scientifiques
+
+## Installation de logiciels pour la gestion de données spatiales
+
+```{r,tidy=FALSE,eval=FALSE}
+sudo su -
+
+# Mise à jour des paquets
+apt-get update
+apt-get upgrade -y
+
+# Ajout de dépôt pour qgis/grass 
+add-apt-repository ppa:ubuntugis/ubuntugis-unstable
+apt-get update
+
+# Installation des logiciels SIG dans linux
+apt-get install grass grass-dev qgis qgis-plugin-grass-common qgis-plugin-grass qgis-common python-wxgtk2.8 python-wxversion libxml2-utils xml2 xml2rfc xml-twig-tools xml-core libqt4-xmlpatterns libxml2 libxml2-dev python-psycopg2
+
+# Ajout de dépôt 
+sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ precise-pgdg main" >> /etc/apt/sources.list'
+wget --quiet -O - http://apt.postgresql.org/pub/repos/apt/ACCC4CF8.asc | apt-key add -
+apt-add-repository ppa:sharpie/postgis-stable
+apt-get update
+
+# Installation de postgresql 9.3
+apt-get install postgresql-9.3 pgadmin3 postgresql-contrib
+
+# Création des liens symboliques
+ln -sf /usr/share/postgresql-common/pg_wrapper /usr/local/bin/shp2pgsql
+ln -sf /usr/share/postgresql-common/pg_wrapper /usr/local/bin/pgsql2shp
+ln -sf /usr/share/postgresql-common/pg_wrapper /usr/local/bin/raster2pgsql
+```
+
+
+
+## Installation R et Rstudio
+Pour installer R et Rstudio, ouvrir un terminal bash et lancer les commandes suivantes :
+** Important **  Si vous êtes sur Ubuntu 14.04, changez le nom de la distribution precise par trusty.
+
+```{r, tidy=FALSE,eval=FALSE}
+sudo su -
+
+# Mise à jour des paquets
+apt-get update
+apt-get upgrade -y
+
+# Installation de R et de python
+apt-get install -y r-base r-base-core r-base-dev python-setuptools python-rpy2 python-pandas python-numpy python-scipy python-matplotlib python-mdp scons python-pyodbc python-pip libc6
+
+# Installation de Java pour plusieurs paquets R (spcosa et rJava)
+apt-get install -y openjdk-7-* 
+R CMD javareconf
+# Si nécessaire
+export LD_LIBRARY_PATH=$JAVA_HOME/jre/lib/amd64:$JAVA_HOME/jre/lib/amd64/server
+
+# Mise à jour de R
+sed -i '$ a\deb http://cran.univ-lyon1.fr/bin/linux/ubuntu precise/' /etc/apt/sources.list
+apt-get update
+apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
+apt-get update && apt-get upgrade -y
+
+# Installation de R-studio (l'exemple présenté ici est adapté à une machine 64 bit, vous pouvez consulter et télécharger les autres versions de R-studio à cette adresse http://www.rstudio.com/products/rstudio/download/)
+echo 'Installation R-studio'
+apt-get install -y libjpeg62
+wget http://download1.rstudio.org/rstudio-0.98.1080-amd64.deb
+dpkg -i rstudio-0.98.1080-amd64.deb
+```
+
+## Configuration R
+La création des fichiers de suivis nécessite l'installation de plusieurs paquets R. Voici les commandes à lancer dans R.
+
+```{r, tidy=FALSE,eval=FALSE}
+# Installation des paquets pour la création des fichiers de suivi
+install.packages(c("knitr","htmltools","caTools","bitops","rmarkdown"))
+               
+# Installation rJava...                 
+install.packages("rJava")
+
+# Installation des paquets de 'base'
+install.packages(c("classInt","RColorBrewer","uuid","tools","xlsx","plotKML","XML")
+
+# Installation des paquets pour la gestion de données spatiales
+install.packages(c("sp","rgdal","geoR","gstat"))
+```
+
+# Configuration des connexions
+## Installation des paquets système
+Voici les commandes à reproduire pour installer les paquets relatifs à la gestion du versionnement des fichiers (subversion), aux connexions ODBC et ssh.
+```{r, tidy=FALSE,eval=FALSE}
+sudo su -
+
+# Mise à jour des paquets
+apt-get update
+apt-get upgrade -y
+
+# Installation des paquets 
+apt-get install -y subversion unixODBC odbc-postgresql unixODBC-dev dos2unix
+
+```
+
+
+## Connexion ODBC
+### Configuration d'une connexion ODBC
+Les connexions odbc sont configurées dans le fichier `odbc.ini` présent dans l'arborescence du système `\etc\odbc.ini`. Pour configurer une connexion, une modification de ce fichier est nécessaire. Tapez dans un terminal `sudo gedit \etc\odbc.ini` puis apporter les modifications nécessaires. 
+
+### Les connexions ODBC nécessaires
+
+La mise en place de plusieurs connexions est nécessaire pour assurer le bon fonctionnement de certains scripts. Ces connexion doivent respecter les alias affiliés aux paramètres de connexion : 
+
+| Nom Alias ODBC | Nom connexion RODBC | Description                                                          |
+|----------------|---------------------|----------------------------------------------------------------------|
+| dela           | dela                | Connexion pour la connexion vers l'entrepôt de données |
+| donesol3ns     | donesol3            | Connexion vers la base de données donesol3ns                         |
+| ecomic         | ecomic              | Connexion vers la base de données ecomic                             |
+
+### Configuration des connexions
+
+Voici ci-dessous les différents paramètres de connexions relatifs aux différents alias présentés précédemment. Vous pouvez directement copier ces lignes vers le fichier `\etc\odbc.ini` en remplaçant nomutilisateur_ldap et mdp_ldap par votre nom d'utilisateur et votre mot de passe LDAP.
+
+- Database : Nom de la base de données
+- Servername : Nom du serveur
+- Username : Nom d'utilisateur
+- Password : Mot de passe
+- Port : Port de la base de données
+
+```{r, tidy=FALSE,eval=FALSE}
+[ODBC]
+InstallDir = /usr/lib
+
+[dela]
+Driver = /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so
+Database = dela
+Servername = mayari.orleans.inra.fr
+Username = nomutilisateur_ldap
+Password = mdp_ldap
+Port=5432
+Protocol = 8.1
+ReadOnly = 0
+
+[ecomic]
+Driver = /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so
+Database = ecomic_rmqs
+Servername = baracoa.orleans.inra.fr
+Username = nomutilisateur_ldap
+Password = mdp_ldap
+Port=5432
+Protocol = 8.1
+ReadOnly = 0
+
+[donesol3ns]
+Driver = /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so
+Database = donesol3_ns
+Servername = baracoa.orleans.inra.fr
+Username = nomutilisateur_ldap
+Password = mdp_ldap
+Port=5433
+Protocol = 8.1
+ReadOnly = 0
+```
+
+### Connexion ODBC dans R
+
+Les connexions ODBC dans R sont possibles avec le paquet `RODBC`. Pour l'installer, tapez la commande suivante dans un terminal R : `install.packages("RODBC")`
+Ensuite, vous pouvez utiliser l'alias des paramètres de connexions du fichier `odbc.ini` dans la fonction décrivant les paramètres de connexion `odbcConnect`. Pour vérifier les modifications apportées au fichier de configuration `odbc.ini`, vous pouvez lancer les lignes de commandes suivantes dans le logiciel R.
+
+```{r, tidy=FALSE,eval=FALSE}
+library(RODBC)
+dela <- odbcConnect("dela",case="postgresql", believeNRows=FALSE)
+donesol3 <- odbcConnect("donesol3_ns",case="postgresql", believeNRows=FALSE)
+ecomic <- odbcConnect("ecomic",case="postgresql", believeNRows=FALSE)
+```
+

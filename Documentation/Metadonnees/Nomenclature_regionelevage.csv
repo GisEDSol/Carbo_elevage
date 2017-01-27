@@ -1,35 +1,14 @@
-Schéma;Table;Description
-ra;MethodeCulture_canton2010;Méthodes de cultures en nombre d’exploitation par canton pour le ra 2010
-ra;Otex_canton1988;Orientation technico-économique des exploitations par canton pour le ra 1988
-ra;Otex_canton2000;Orientation technico-économique des exploitations par canton pour le ra 2000
-ra;Otex_canton2010;Orientation technico-économique des exploitations par canton pour le ra 2010
-ra;Cultures_canton1979;Nombre d’exploitation par canton classées par type de culture pour le ra 1979
-ra;Cultures_canton1988;Nombre d’exploitation par canton classées par type de culture pour le ra 1988
-ra;Cultures_canton2000;Nombre d’exploitation par canton classées par type de culture pour le ra 2000
-ra;Cultures_canton2010;Nombre d’exploitation par canton classées par type de culture pour le ra 2010
-ra;S_cultures_canton1970;Surfaces des cultures par canton pour le ra 1970
-ra;S_cultures_canton1979;Surfaces des cultures par canton pour le ra 1979
-ra;S_cultures_canton1988;Surfaces des cultures par canton pour le ra 1988
-ra;S_cultures_canton2000;Surfaces des cultures par canton pour le ra 2000
-ra;S_cultures_canton2010;Surfaces des cultures par canton pour le ra 2010
-ra;UGBGrani_canton2000;Unité gros bétail tous aliments des granivores par canton pour le ra 2000
-ra;UGBGrani_canton2010;Unité gros bétail tous aliments des granivores par canton pour le ra 2010
-ra;UGBHerbi_canton2000;Unité gros bétail tous aliments des herbivores par canton pour le ra 2000
-ra;UGBHerbi_canton2010;Unité gros bétail tous aliments des herbivores par canton pour le ra 2010
-ra;UGBTA_canton2000;Unité gros bétail tous aliments par canton pour le ra 2000
-ra;UGBTA_canton2010;Unité gros bétail tous aliments par canton pour le ra 2010
-ra;UGBTA_canton880010;Unité gros bétail tous aliments par canton pour les ra 1988,2000,2010
-clc;changements00_06;
-clc;changements06_12;
-clc;changements90_00;
-clc;clc00_revisee;
-clc;clc06_revisee;
-clc;clc12;
-clc;clc90;
-climat;climatjoly;
-dm_vecteurs;canton;
-dm_vecteurs;commune;
-dm_vecteurs;departement;
-dm_traitements;melted_bdat;
-dm_traitements;melted_bdatdiff;
-dm_traitements;melted_ra;
+Zonage_simple;Zonage_cplt;Label_simple;Label_cplt
+A;A;Zones de grandes cultures ou sans élevage;Zones de grandes cultures ou sans élevage
+B;B2;Cultures +Elevages;Zone de polyculture-élevage du Bassin Aquitain, RhAlpes, Alsace (régression plus rapide de l'élevage)
+B;B1;Cultures +Elevages;Zone de polyculture-élevage du Bassin Parisien
+C;C1;Cultures fourragères;Zone intensive du Grand Ouest (zone laitière avec alternatives à l’élevage)
+C;C2;Cultures fourragères;Piémonts intensifs (zone à dominante viande avec peu d’alternatives)
+D;D;Zone herbagère du Nord-Ouest;Zone herbagère du Nord-Ouest
+E;E1;Zone herbagère du Centre et de l’Est;Zone herbagère du Nord-Est (de tradition laitière)
+E;E2;Zone herbagère du Centre et de l’Est;Zone herbagère du Nord Massif-Central (de tradition allaitante)
+F;F1;Zones pastorales;Zone pastorale méditerranéenne
+F;F2;Zones pastorales;Causses et coteaux du Sud-Ouest
+G;G1;Montagne humides;Franche-comté + Vosges (forte spécialisation laitière)
+G;G2;Montagne humides;Auvergne (et Massif-Central) (mixité lait-viande)
+H;H;Haute-Montagne;Haute-Montagne

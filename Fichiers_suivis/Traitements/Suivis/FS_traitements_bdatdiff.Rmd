@@ -43,8 +43,37 @@ Ici, on s'intéresse aux résultats sur les évolutions des teneurs en carbone. 
 - Analyse de la distribution. Quelle sont les principaux facteurs qui expliquent ces évolutions ?
 
 
-# Analyse de l'évolution des teneurs en carbone organique (Echelle nationale)
+# Analyse de l'évolution des teneurs en carbone organique à l'échelle nationale
 
+A l'échelle nationale, on souhaite avoir une vision des évolutions générales des teneurs en C, appréhender les zones les plus touchées, savoir si ces évolutions sont significatives ou non.
+
+
+## Cartographie des évolutions
+
+Description des cartes :
+
+- Répartition des zones touchées par des augmentations ou diminutions significatives. Prendre en compte aussi les différences observées entre les périodes de temps analysées
+- Faire un focus sur les zones aux changements significatifs??
+
+```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,message=FALSE}
+
+tablecarto <- "dm_vecteurs.canton" 
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
+variablecarto <- c("diff15","diff14","diff24","diff25") #variable à spatialiser
+l_legend <- "Evolution des teneurs en C"#label de la variable
+nclasse <- 3 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "fixed" #"pretty"#"jenks","fixed"
+couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+nomfichier <- "Evolu_c"
+
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=10,ggsavewidth=10)  
+```
+
+```{r map_carbo_fr, echo = F, results = 'asis'}
+# Pour insérer l'image
+fichiers <- paste(repsortie,nomfichier,sep="")
+cat(paste("![This is myfile_1.png](",fichiers,")",sep=""))
+```
 
 ## Analyse du nombre d'évolution significative par canton
 
@@ -53,7 +82,7 @@ Dans la figure ci-dessous,
 Analyser la figure en la confrontant avec des graphiques similaires basés sur les données du RA et de CLC.
 Ce serait intéressant de développer un indice de changement d'occupation du sol pour faciliter les analyses.
 
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("histo_evolution",""),fig.align="center"}
 # Histogramme des valeurs 
 
 # Sélection des cantons aux diminutions significatives
@@ -64,77 +93,65 @@ bdatdiff <- subset(melted.bdatdiff,diff!="Non significatif")
 periodetud <- c("14","24","15","25")
 bdatdiff <- bdatdiff[(bdatdiff$period %in% periodetud) & bdatdiff$zonage_simple != "H" & bdatdiff$zonage_simple != "G" & bdatdiff$zonage_simple != "F", ]
 bdatdiff$diff <- as.factor(bdatdiff$diff)
+
+histo_regelevage <- ggplot(bdatdiff,aes(diff,fill=zonage_cplt)) + geom_bar() + facet_wrap(~ period) #geom_bar(position="dodge")
+histo_regelevage
 ```
+Présenter dans le détail les histogrammes `r fig$ref("histo_evolution",link=TRUE)`. Possibilité de comparer le nbr de canton en augmentation et en diminution par période analysées et ensuite développer une analyse par classe de diminution ou d'augmentation. Par exemple, il y a quasiment autant de canton ayant des teneurs en C en augmentation et en diminution entre les périodes 1994-1999 et 2010-2014.
 
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
-ggplot(bdatdiff,aes(diff,fill=zonage_simple)) + geom_bar() + facet_wrap(~ period)
-
-# Sélection de la zone d'élevage B
-
-ggplot(bdatdiff,aes(diff,fill=zonage_simple)) + geom_bar(position="dodge") + facet_wrap(~ period)
-```
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
 # Histogramme des valeurs 
 
 # Sélection des cantons aux diminutions significatives
-bdatdiff_classe <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff) & complete.cases(melted.bdatdiff$classe_var_sth1979_2010) & melted.bdatdiff$diff !="Non significatif",]
+bdatdiff_classe <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff) & melted.bdatdiff$diff !="Non significatif",]
 
 # Sélection
 periodetud <- c("14","24","15","25")
 bdatdiff_classe <- bdatdiff_classe[(bdatdiff_classe$period %in% periodetud), ]
 bdatdiff_classe$diff <- as.factor(bdatdiff_classe$diff)
+#
+ggplot(bdatdiff_classe,aes(diff,fill=nom_region)) + geom_bar(position="dodge") + facet_wrap(~ period)
+#
 
-ggplot(bdatdiff_classe,aes(diff,fill=classe_var_sth1979_2010)) + geom_bar(position="dodge") + facet_wrap(~ period)
+```
+
+
+
+Dans la figures ci-dessous, on peut observer : 
+A faire
+
+```{r,highlight=TRUE,eval=TRUE,fig.height=5, fig.width=8,fig.cap = fig$cap("bar_prairie","Histogramme à commenter"),fig.align="center"}
+# Reproduire ce type de graphe par stratification
+bar_prairie <- ggplot(bdatdiff_classe,aes(diff,fill=diff_var_prairie1970_2010)) + geom_bar() + facet_wrap(~ period)
+bar_prairie
+```
+
+Dans cette figure, on s'intéresse particulièrement aux différences entre les périodes 1994-1999 et 2004-2009 et on regarde de plus près la stratification par grande région agricole.
+
+```{r,highlight=TRUE,eval=TRUE,fig.height=5, fig.width=8,fig.cap = fig$cap("histo_double","Histogramme à commenter"),fig.align="center"}
+# On s'intéresse à la période 24
+# Pour 
+p1 <- ggplot(bdatdiff_classe[bdatdiff_classe$period %in% "24" & bdatdiff_classe$zonage_cplt %in% c("A","B1","B2","C1","C2","D","E1","E2"),],aes(diff,fill=diff_var_prairie1970_2010)) + geom_bar() + facet_wrap(~ zonage_cplt)
+
+p2 <- ggplot(bdatdiff_classe[bdatdiff_classe$period %in% "24" & bdatdiff_classe$zonage_cplt %in% c("A","B1","B2","C1","C2","D","E1","E2"),],aes(diff,fill=diff_var_sfp1970_2010)) + geom_bar() + facet_wrap(~ zonage_cplt)
+
+# Ici, regarder les prairies et la sfp, il y a une relation entre ces deux variables. Certes, les prairies ont chuté en Bretagne, mais les modes de production ont évolués et ont laissé place à la stabulation. Les sfp ont augmentée...
+p.ass <- grid.arrange(p1,p2,ncol=2)
+```
+
+```{r,highlight=TRUE,eval=false,echo=FALSE,warning=FALSE}
+ggplot(bdatdiff_classe[bdatdiff_classe$period %in% "24" & bdatdiff_classe$zonage_cplt %in% c("A","B1","B2","C1","C2","D","E1","E2"),],aes(diff,fill=classe2_var_c1970_2010)) + geom_bar() + facet_wrap(~ zonage_cplt)
+
+ggplot(bdatdiff_classe[bdatdiff_classe$period %in% "24" & bdatdiff_classe$zonage_cplt %in% c("A","B1","B2","C1","C2","D","E1","E2"),],aes(diff,fill=classe2_var_sfp1970_2010)) + geom_bar() + facet_wrap(~ zonage_cplt)
+
 
 # Sélection de la zone d'élevage B
 bdatdiff_B <- bdatdiff[bdatdiff$zonage_simple %in% "B",]
 ggplot(bdatdiff_B,aes(diff,fill=nom_region)) + geom_bar(position="dodge") + facet_wrap(~ period)
 
-```
-
-
-
-
-
-```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE}
-## Revoir
-
-p <- ggplot(melted.bdatdiff) +
-            geom_boxplot(aes(x=period,y=value,col=typo_clim))+
-            #scale_color_manual(name="Années")+
-            scale_x_discrete("Années")+scale_y_continuous("Teneur en carbone (g/kg)")+
-            theme(plot.title = element_text(size = 14, face = "bold"), 
-                  text = element_text(size = 12),
-                  axis.title = element_text(face="bold"),
-                  axis.text.x=element_text(size = 11))
-p 
 
 ```
-
-
-## Cartographie
-
-oK, REVOIR LES JOINTURES AVEC LES DONNÉES, résultats à prendre avec des pincettes.
-
-```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,message=FALSE}
-tablecarto <- "dm_vecteurs.canton" 
-dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
-variablecarto <- c("diff15","diff14","diff24","diff25") #variable à spatialiser
-l_legend <- "Evolution des teneurs en C"#label de la variable
-nclasse <- 3 #Nombre de classes de valeurs pour la cartographie
-style_classe <- "fixed" #"pretty"#"jenks","fixed"
-couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
-nomfichier <- "diff12"
-
-# Lancement
-cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE)
-```
-
-
-
-
-
 
 ```{r,highlight=TRUE,eval=false,echo=FALSE,warning=FALSE}
 # Voir les graphiques de "différence" réalisés durant le M1
@@ -176,20 +193,92 @@ ggplot(bdatdiffBCD,aes(diff,fill=zonage_simple)) + geom_bar(position="dodge") + 
 ```
 
 ## Graphiques de correlation
- Rajouter les variation climatiques
+Rajouter les droites de régressions 
+Rajouter les variation climatiques
+
+Figure ci-dessous à commenter pour aller plus loin.
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+# GET EQUATION AND R-SQUARED AS STRING
+# SOURCE: http://goo.gl/K4yh
+
+
+x <- "hpluie_an"
+y <- "corgox_medequi9094"
+
+lm_eqn <- function(df,x,y){
+    m <- lm(x ~ y, df);
+    eq <- substitute(italic(x) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2, 
+         list(a = format(coef(m)[1], digits = 2), 
+              b = format(coef(m)[2], digits = 2), 
+             r2 = format(summary(m)$r.squared, digits = 3)))
+    as.character(as.expression(eq));                 
+}
 
 # Stratifier les plots par les régions et autres facteurs (voir pour la classification climatique)
-plot(dcast.bdat$hpluie_an,dcast.bdat$corgox_medequi9094)
-plot(dcast.bdat$p_sth2000,dcast.bdat$corgox_medequi9094)
+ggplot(dcast.bdat, aes(hpluie_an, corgox_medequi9094,shape=factor(classe_p_prairie2000))) +
+  geom_point(aes(colour = factor(classe_p_prairie2000)), size = 3) +
+  geom_point(colour="grey10", size = 1.5) + geom_smooth(method='lm',formula=y~x) #+ facet_wrap(~ zonage_cplt) + 
 
 
-plot(dcast.bdat$hpluie_an,dcast.bdat$corgox_medequi9094)
-
-dcast.bdat
+geom_text(data=eq,aes(x = 25, y = 300,label=V1), parse = TRUE, inherit.aes=FALSE)
 
 
+
+ggplot(dcast.bdat, aes(hpluie_an, corgox_medequi9094)) +
+  geom_point(aes(colour = factor(classe_p_prairie2000)), size = 3) +
+  geom_smooth(method='lm',formula=y~x) #+ facet_wrap(~ zonage_cplt) + 
+
+
+geom_smooth(method = "lm", se = FALSE)
+
+
+
+
+
+
+
+# Voir un peu plus G1 (bof, peut d'intérêt. Eventuellement, voir pour une figure synthétique avec une matrice présentant les coef de correlation)
+#ggplot(dcast.bdat[dcast.bdat$zonage_cplt %in% "G1",], aes(hpluie_an, corgox_medequi9094,shape=factor(classe_p_prairie2000))) +
+ # geom_point(aes(colour = factor(classe_p_prairie2000)), size = 4) +
+  #geom_point(colour="grey10", size = 1.5)
+```
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+# Plot of the change in the cantonal medians of soil OC versus the cantonal medians of soil OC content averaged over the two extreme periods (1990–1994 and 2000–2004). Triangles are significant changes. Circles are non-significant changes. Line is the regression (r 2 = 0.15) between the change in the cantonal medians of soil OC and the cantonal medians of soil OC averaged over the two extreme periods.
+
+# Ici, on reprend la figure 7 de Saby2008
+
+dcast.bdat$meancorgox9599_0409 <- rowMeans(cbind(dcast.bdat$corgox_medequi9599,dcast.bdat$corgox_medequi0409),na.rm=TRUE)
+ggplot(dcast.bdat, aes(meancorgox9599_0409,diffmedian24,shape=factor(diff24))) +
+  geom_point(aes(colour = factor(diff24)), size = 4) +
+  geom_point(colour="grey10", size = 1.5) + facet_wrap(~ zonage_cplt)
+
+```
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+#Median of baseline soil OC content (first period) versus change in median of soil OC values over the whole survey. Triangles are significant changes. Circles are non-significant changes. Line is the regression (r 2 = 0.24) between median of baseline SOC (1990–1994) and significant changes
+
+# Ici, on reprend la figure 5 de Saby2008
+# Revoir ces figures, problème avec les données
+dcast.bdat$meancorgox9599_0509 <- rowMeans(cbind(dcast.bdat$corgox_medequi9599,dcast.bdat$corgox_medequi0509),na.rm=TRUE)
+
+ggplot(dcast.bdat, aes(meancorgox9599_0409,diffmedian24,shape=factor(diff24))) +
+  geom_point(aes(colour = factor(diff24)), size = 4) +
+  geom_point(colour="grey10", size = 1.5)# + facet_wrap(~ zonage_cplt)
+
+
+ggplot(dcast.bdat, aes(ttmean,meancorgox9599_0509)) +
+  geom_point(aes(colour = factor(diff24)), size = 4) +
+  geom_point(colour="grey10", size = 1.5)# + facet_wrap(~ zonage_cplt)
+
+
+
+```
+
+
+
+```{r}
 # Voir le développement de ce type de graphique
 dcast.bdatBCD <- dcast.bdat[dcast.bdat$zonage_simple %in% c("B","C","D"),]
 
@@ -198,7 +287,7 @@ ggplot(dcast.bdatBCD, aes(var_ugb8810, diffmedian15,shape=factor(diff15))) +
   geom_point(colour="grey10", size = 1.5)
 
 
-ggplot(dcast.bdatBCD, aes(var_cereale1970_2010, diffmedian15,shape=factor(diff15))) +
+ggplot(dcast.bdatBCD, aes(var_sth1970_2010, diffmedian15,shape=factor(diff15))) +
   geom_point(aes(colour = factor(diff15)), size = 2) +
   geom_point(colour="grey10", size = 1.5)
 
@@ -206,10 +295,6 @@ ggplot(dcast.bdatBCD, aes(var_cereale1970_2010, diffmedian15,shape=factor(diff15
 ggplot(melted.bdatdiff, aes(var_cereale1970_2010, diffmedian15,shape=factor(diff15))) +
   geom_point(aes(colour = factor(diff15)), size = 2) +
   geom_point(colour="grey10", size = 1.5)
-
-
-
-
 ```
 
 

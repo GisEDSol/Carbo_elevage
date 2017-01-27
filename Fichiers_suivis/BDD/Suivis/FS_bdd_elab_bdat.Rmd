@@ -180,13 +180,14 @@ sqlSave(loc,melted.bdat,tablename=tablename)
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
 varia <- c("diffmedian","diff") # Préfixe de la variable à intégrer (varia+period)
 period <- c("12","13","14","15","23","24","25","34","35","45")
-variaoccup <- c("p_sth","p_sfp","p_prairie")
-periodoccup <- c("1970","1979","1988","2000","2010")
+variaoccup <- c("sth","sfp","prairie")
+periodra <- c("1970","1979","1988","2000","2010")
 # Classes d'occupation du sol
-id_class <- apply(expand.grid(variaoccup,periodoccup),1, function(x){paste("classe_",x[1],x[2],sep="")})
-# Classes des variations d'occupation du sol
-id_variaoccup <- c("classe_var_sth7910","classe_var_cereale7910","classe_var_sfp7910")
-id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt",id_class,id_variaoccup) #Nom des identifiants
+id_class <- apply(expand.grid(variaoccup,periodra),1,function(x){paste("classe_p_",x[1],x[2],sep="")})
+periodoccup <- c("1970_2010","1979_2010","1988_2010")
+id_varclass <- apply(expand.grid(variaoccup,periodoccup),1, function(x){paste("classe_var_",x[1],x[2],sep="")})
+id_diff <- apply(expand.grid(variaoccup,periodoccup),1, function(x){paste("diff_var_",x[1],x[2],sep="")})
+id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt",id_class,id_diff,id_varclass)
 
 # Lecture de la table dm_vecteurs.canton
 mapcanton <- sqlQuery(loc,paste("select * from ",table_dm,sep=""))
@@ -216,30 +217,14 @@ for(i in varia){
 }
 
 # Création finale de la table
-#melted.bdat_harmo <- melt(data=melt.canton,id.vars=c(id,"period"))
-melted.bdatdiff<- melt.canton
+melted.bdatdiff <- melt.canton
 melted.bdatdiff$typo_clim <- as.factor(melted.bdatdiff$typo_clim)
 
 # Enregistrement dans le schéma dm_traitements
-tablename <- paste("dm_traitements.","melted_bdatdiff",sep="")
+tablename <- paste("dm_traitements.","melted_bdatdiff2",sep="")
 sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
 sqlSave(loc,melted.bdatdiff,tablename=tablename)
 
 # Rajouter les commentaires
 
 ```
-
-### Autres calculs
-
-Voir pour calculer le nombre de valeur significative (augm, diminu) en fonction de plusieurs paramètres géographiques (type stratification) ?
-
-
-
-
-
-
-
-
-
-
-

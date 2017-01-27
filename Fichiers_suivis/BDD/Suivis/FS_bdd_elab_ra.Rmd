@@ -20,7 +20,7 @@ importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbn
 
 # Objectifs
 
-L'objectif est de réaliser l'ensemble des traitements associés à la préparation des données du recencement agricole (RA). La préparation des données du RA comprend essentiellement le développement de tables directement exploitables pour de la cartographie ou des analyses statistiques, à savoir :
+L'objectif est de réaliser l'ensemble des traitements associé à la préparation des données du recencement agricole (RA). La préparation des données du RA comprend essentiellement le développement de tables directement exploitables pour la cartographie ou les analyses statistiques :
 
 - le calcul de statistiques simples et des jointures vers une table postGIS,
 - le calcul des variations d'occupation du sol vers une table postGIS,
@@ -37,8 +37,8 @@ Le code suivant détermine la proportion de la surface d'occupation du sol par r
 
 - Superficie Toujours en Herbe (STH),
 - Surface Fourragère Princiaple (SFP),
-- Maïs Fourrage Ensilage (MFE),
-- Céréales.
+- Maïs Fourrage Ensilage (MF),
+- Céréales (c).
 
 A chaque itération, un commentaire est ajouté dans la base de données pour décrire le champs nouvellement créé. Ces commentaires sont accessibles dans la vue `public.metadata`.
 
@@ -55,7 +55,7 @@ type_RA <- "S_cultures_canton" # Nom de la table brute où les données seront p
 schema <- "ra" # Nom du schéma où est présent la table 'type_RA'
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)(table postGIS)
 
-# Calcul de la proportion de suraface dans la SAU pour chaque période et type d'occupation du sol
+# Calcul de la proportion de surface dans la SAU pour chaque période et type d'occupation du sol
 cpt <- 0
 for(v in variable){
   cpt <- cpt + 1
@@ -210,8 +210,6 @@ for(i in period){
 
 Les données des UGB proviennent de la table accessible à cette [adresse](http://agreste.agriculture.gouv.fr/IMG/xls/Donnees_principales__canton_departement_.xls). A noter qu'il sagit uniquement des UGB tous aliments et que les données sont uniquement accessibles pour 1988, 2000 et 2010. Cette section présente le calcul de la densité d'UGB tous aliments (UGBTA/SAU) pour les 3 périodes de temps disponibles.
 
-Revoir les données UGBta, il y a très peu de différence entre 1988 et 2010. NOrmal ou non?
-
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
 SAU <- "sau" # Nom de la variable correspond à la surface agricole utile
@@ -242,7 +240,7 @@ for(i in periodUGB){
 	    COMMENT ON COLUMN ",table_dm,".",UGBperiod," IS \'Densité UGBTA/SAU pour ",i,".\';",sep="")))
 }
 
-# Calcul densité des autres UGB
+# Calcul de la densité des autres UGB
 variableUGB <- "ensembledesexploitations"
 p_variable <- c("ugbh_sau","ugbgrani_sau")
 table_RA <- c("ugbherbi_canton","ugbgrani_canton")
@@ -283,53 +281,6 @@ for(v in table_RA){
 
 # Calcul des évolutions et jointure vers la table `dm_vecteurs.canton`
 
-Les évolutions d'occupation du sol et de la densité d'UGB sont calculées entre 1970-2010, 1979-2010 et 1988-2010. Le calcul de l'évolution se base sur la relation suivante  : (OccupA - OccupB)/(SAU B) avec A l'année la plus récente et B l'année la plus ancienne.
-
-## Evolution de la superficie d'occupation du sol
-
-Atester! et comparer
-
-```{r,highlight=TRUE,eval=FALSE}
-# Calcul de l'évolution des superficies pour 1970-2010;1979-2010;1988-2010
-
-# Paramètres
-SAU <- "(COALESCE(tt.superficieagricoleutilisée1,tt.superficieagricoleutiliséehorsarbresdenoël))"#Champs de la SAU : ici, l'un des deux champs est utilisé si l'un deux a une valeur nulle
-p_variable <- c("sth","cereale","sfp","mf")
-periodref <- "2010"
-period <- c("1970","1979","1988")
-variable <- c("superficietoujoursenherbesth","céréales","fourragesetsuperficiestoujoursenherbe","maïsfourrageetensilage")
-signification <- cbind("de la surface toujours en herbe","de la surface en céréales"," de la surface fourragère principale","de la surface en maîs fourrage ensilage")
-type_RA <- "s_cultures_canton"
-table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
-schema <- "ra"
-# Calcul de statistiques pour les cultures
-cpt <- 0
-for(v in variable){
-	cpt <- cpt + 1
-  for(p in period){
-  	p_variableRA <- p_variable[cpt]
-  
-	  varia <- paste("var_",p_variable[cpt],p,"_",periodref,sep="")
-  	  
-  	sqlQuery(loc,paste("alter table ",table_dm,"
-                      	drop column if exists ",varia,sep=""))
-  
-	  sqlQuery(loc,paste("alter table ",table_dm,"
-	                      add column ",varia," numeric;
-	                      update ",table_dm,"
-     	                	SET ",varia," = s1.",varia," from(
-                      	select ((cc.",v," - tt.",v,")/",SAU,")*100 as ",varia,",tt.num_canton
-                      	from ",schema,".",type_RA,p," as tt
-                      	right join ",schema,".",type_RA,periodref," as cc on cc.num_canton=tt.num_canton::text) as s1
-                      	where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
-    
-	  # Ajout d'un commentaire sur la nouvelle colonne crée
-	print(sqlQuery(loc,paste("
-		COMMENT ON COLUMN ",table_dm,".",varia," IS \'Evolution ",signification[cpt]," entre ",periodref," et ",p," par rapport à la SAU de ",p,".\';",sep="")))
-	}
-}
-```
-
 Les évolutions d'occupation du sol et de la densité d'UGB sont calculées entre 1970-2010, 1979-2010 et 1988-2010. Le calcul de l'évolution se base sur la relation suivante  : test avec (occupA/SAUA)-(occupB/SAUB) avec A l'année la plus récente et B l'année la plus ancienne. (A priori, plus intéressant car la sau peut également évoluer...)
 
 ```{r,highlight=TRUE,eval=FALSE}
@@ -347,7 +298,7 @@ cpt <- 0
 for(v in p_variable){
 	cpt <- cpt + 1
   for(p in period){
-    varia <- paste("var2_",v,p,"_",periodref,sep="")
+    varia <- paste("var_",v,p,"_",periodref,sep="")
   	  
   	variacalA <- paste("p_",v,periodref,sep="")   
   	variacalB <- paste("p_",v,p,sep="")
@@ -369,37 +320,12 @@ for(v in p_variable){
 
 ## Evolution des UGB tous aliments
 
-Pour l'estimation de l'évolution des UGB tous aliments, seul la période 1988-2010 est pris en compte, faute de données antérieures.
+Pour l'estimation de l'évolution des UGB tous aliments, seule la période 1988-2010 est pris en compte, faute de données antérieures.
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
 SAU <- "sau"
-variable <- "var_ugb8810"
-tableRA <- "ugbta_canton880010"
-table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
-
-sqlQuery(loc,paste("alter table ",table_dm,"
-                    drop column if exists ",variable,sep=""))
-  
-sqlQuery(loc,paste("alter table ",table_dm,"
-                      add column ",variable," numeric;
-                      update ",table_dm,"
-                      SET ",variable," = s1.",variable," from(
-                      select ((ugbta2010- ugbta1988)/",SAU,"1988)*100 as ",variable,",num_canton
-                      from ",schema,".",tableRA,") as s1
-                      where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
-    
-  # Ajout d'un commentaire sur la nouvelle colonne crée
-	print(sqlQuery(loc,paste("
-	COMMENT ON COLUMN ",table_dm,".",variable," IS \'Evolution des UGB tous aliment entre 2010 et 1988 par rapport à la SAU de 1988 (%).\';",sep="")))
-```
-
-### Méthode 2
-
-```{r,highlight=TRUE,eval=FALSE}
-# Paramètres
-SAU <- "sau"
-variable <- "var2_ugb1988_2010"
+variable <- "var_ugb1988_2010"
 tableRA <- "ugbta_canton880010"
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
 
@@ -411,12 +337,12 @@ sqlQuery(loc,paste("alter table ",table_dm,"
                       update ",table_dm,"
                       SET ",variable," = ugbta1988 - ugbta2010",sep=""))
     
-  # Ajout d'un commentaire sur la nouvelle colonne crée
+  # Ajout d'un commentaire sur la nouvelle colonne créée
 	print(sqlQuery(loc,paste("
 	COMMENT ON COLUMN ",table_dm,".",variable," IS \'Evolution des UGB tous aliment entre 2010 et 1988 (occupA/SAUA)-(occupB/SAUB).\';",sep="")))
 ```
 
-# Création de classes de valeur pour la stratification
+# Création de classes de valeurs pour la stratification
 
 ## Pourcentage d'occupation du sol
 ```{r,highlight=TRUE,eval=FALSE}
@@ -465,16 +391,20 @@ for(i in varia){
     sqlQuery(loc,"drop table if exists dm_vecteurs.tmp")
 
     #sqlUpdate(loc, mapcanton[,c("id_geofla",vName)], tablename=dm_table, index='id_geofla', verbose=TRUE)#trop long mais fonctionne
+
+    print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",table_dm,".",vName," IS \'Classes d\''occupation du sol calculées avec la méthode ",style_classe," et établies sur la variable ",v,".\';",sep="")))
   }
 }  
 ```
 
 ## Evolution de l'occupation du sol
+
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
 p_variable <- c("sth","c","sfp","mf","prairie")
 period <- c("1970_2010","1979_2010","1988_2010")
-varia <- apply(expand.grid(p_variable,period),1, function(x){paste("var2_",x[1],x[2],sep="")})
+varia <- apply(expand.grid(p_variable,period),1, function(x){paste("var_",x[1],x[2],sep="")})
 style_classe <- "quantile" # fixed", "sd", "equal", "pretty", "quantile", "kmeans", "hclust", "bclust", "fisher", or "jenks"
 nclasse <- 5
 dm_table <- "dm_vecteurs.canton"
@@ -489,28 +419,44 @@ for(i in varia){
   stats.value <- melt(mapcanton[,i])$value
   classe_valeur <- classIntervals(stats.value,n=nclasse,style=style_classe,digits=1,na.rm=TRUE)[[2]]
 
-  vName <- paste("classe2_",i,sep="")
-  mapcanton[,vName] <- cut(mapcanton[,i],breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
-    
-  sqlQuery(loc,paste("alter table ",table_dm,"
-                      drop column if exists ",vName,";
-                      alter table ",table_dm,"
-                      add column ",vName," text",sep=""))
-                       
-  # Création d'une table provisoire pour jointure
-  sqlSave(loc,mapcanton[,c("id_geofla",vName)],tablename="dm_vecteurs.tmp")
-    
-  # Jointure 
-  sqlQuery(loc,paste("update ",table_dm,"
-                      SET ",vName," = s1.",vName," from(
-                      select ",vName,",id_geofla
-                      from dm_vecteurs.tmp) as s1
-                      where ",table_dm,".id_geofla=s1.id_geofla",sep=""))
-    
-  # Suppression de la table temporaire
-  sqlQuery(loc,"drop table if exists dm_vecteurs.tmp")
+  vName <- paste("classe_",i,sep="")# Nom de la variable type classe
+  vNameS <- paste("diff_",i,sep="") # Nom de la variable simplifiée (augmentation,diminution, pas d'évolution)
 
-  #sqlUpdate(loc, mapcanton[,c("id_geofla",vName)], tablename=dm_table, index='id_geofla', verbose=TRUE)#trop long mais fonctionne
+  mapcanton[,vName] <- cut(mapcanton[,i],breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
+  mapcanton[,vNameS] <- ifelse(mapcanton[,i] > 10,"Augmentation",ifelse(mapcanton[,i] < -10,"Diminution","Pas d'évolution"))
+
+  # Définition des commentaires 
+  comment1 <- paste("Classes de changement d\''occupation du sol basées sur la méthode ",style_classe," pour le champ ",i,sep="")
+  comment2 <- paste("Classes de changement d\''occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d\''évolution. Pour le champ",i,sep="")
+  
+  comment <- c(comment1,comment2)
+  
+  cpt <- 0
+  for(v in c(vName,vNameS)){
+    cpt <- cpt + 1
+    print(sqlQuery(loc,paste("alter table ",table_dm,"
+                        drop column if exists ",v,";
+                        alter table ",table_dm,"
+                        add column ",v," text",sep="")))
+                       
+    # Création d'une table provisoire pour jointure
+    print(sqlSave(loc,mapcanton[,c("id_geofla",v)],tablename="dm_vecteurs.tmp"))
+    
+    # Jointure 
+    print(sqlQuery(loc,paste("update ",table_dm,"
+                        SET ",v," = s1.",v," from(
+                        select ",v,",id_geofla
+                        from dm_vecteurs.tmp) as s1
+                        where ",table_dm,".id_geofla=s1.id_geofla",sep="")))
+    
+    # Suppression de la table temporaire
+    sqlQuery(loc,"drop table if exists dm_vecteurs.tmp")
+
+    # Commentaires
+
+    print(sqlQuery(loc,paste("
+       COMMENT ON COLUMN ",table_dm,".",v," IS \'",comment[cpt],".\';",sep="")))
+    }
 }
 ```
 

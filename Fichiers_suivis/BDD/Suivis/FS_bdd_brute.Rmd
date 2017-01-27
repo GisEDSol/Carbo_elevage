@@ -1,14 +1,18 @@
 ---
-title: "BD Elevage-sol"
+title: "Création de la base de données"
 author: "Jean-Baptiste Paroissien"
-date: "06/01/2017"
+date: "26/01/2017"
 output:
-  html_notebook:
-    toc: true
-    fig_caption: true
-    highlight: zenburn
-    number_sections: yes
-    theme: spacelab
+  github_document:
+    dev: png
+    fig_height: 10
+    fig_width: 10
+    md_extensions: +autolink_bare_uris+hard_line_breaks+header_attributes+line_blocks+table_captions
+    toc: yes
+    toc_depth: 2
+  html_document:
+    toc: yes
+    toc_depth: '2'
 ---
 
 ```{r setup, include=FALSE}
@@ -56,25 +60,10 @@ postgres-# ALTER ROLE jb WITH CREATEDB;
 postgres=# CREATE DATABASE SOL_ELEVAGE OWNER jb;
 postgres-# ALTER USER jb WITH ENCRYPTED PASSWORD '******';
 postgres=# CREATE DATABASE sol_elevage OWNER jb;
---Installation de l'extension postgis--
--- Enable PostGIS (includes raster)
 CREATE EXTENSION postgis;
--- Enable Topology
 CREATE EXTENSION postgis_topology;
--- Enable PostGIS Advanced 3D 
--- and other geoprocessing algorithms
--- sfcgal not available with all distributions
-CREATE EXTENSION postgis_sfcgal;
--- fuzzy matching needed for Tiger
-CREATE EXTENSION fuzzystrmatch;
--- rule based standardizer
-CREATE EXTENSION address_standardizer;
--- example rule data set
-CREATE EXTENSION address_standardizer_data_us;
--- Enable US Tiger Geocoder
-CREATE EXTENSION postgis_tiger_geocoder;
-CREATE EXTENSION postgis_sfcgal;
 ```    
+
 Configuration du fichier `\etc\odbc.ini` pour se connecter à la base avec R grâce au paquet RODBC.
 
 ```{r, engine='bash',highlight=TRUE,eval=FALSE}
@@ -101,6 +90,7 @@ ReadOnly = 0
 | Données MAFOR                         | ShapeFiles (L93)                    | Interne IDELE                  | chritophe.perrot@idele.fr                    |
 | Données administratives               | ShapeFiles (L93)                    | IGN + Agreste                  |                                              |
 
+
 ## Caractéristiques techniques
 
 ```{r, tidy=FALSE,eval=TRUE}
@@ -110,12 +100,13 @@ sessionInfo()
 
 ## Les données de bases
 
-Les données dites de "bases" correspondent aux contours des entités administratives utilisées pour agréger certaines variables environnementales. Dans ce travail, les contours des communes, des cantons et des petites régions agricoles sont les principales échelles de travail. Les surfaces de ces échelles sont récupérées de la manière suivante :
+Les données dites de "bases" concernent les données administratives utilisées pour agréger certaines variables environnementales. Dans ce travail, les contours des communes, des cantons et des petites régions agricoles sont les principales échelles de travail utilisées. Elles ont été récupérées de la manière suivante :
 
 - Communes et Canton : La version de 2011 de base de données [Geofla](http://professionnels.ign.fr/geofla) est utilisée. Cette version a été choisie pour être en accord avec les données du dernier recencement agricole (2010)
 - Petite région agricole : Les données associées aux petites régions agricoles proviennent de [l'agreste](http://agreste.agriculture.gouv.fr/IMG/zip/comm-ra-pra2007.zip) et sont jointes aux données Geofla.
 
-```{r, engine='bash',highlight=TRUE,eval=FALSE}
+```{r,highlight=TRUE,eval=FALSE}
+
 # Intégration des données communales et cantonnales dans la base
 for(i in c("DEPARTEMENTS","CANTON","COMMUNE")){
   # Téléchargement
@@ -179,6 +170,8 @@ sqlQuery(loc,"update commune
 ```
 
 # Les données sols
+
+Présenter rapidement données sols inclusent dans la base
  
 | Catégorie                             | Type de données                     | Source                         | Contacts                                     |
 |---------------------------------------|-------------------------------------|--------------------------------|----------------------------------------------|
@@ -188,11 +181,12 @@ sqlQuery(loc,"update commune
 | Stock de carbone                      | Raster (L93)                        | Interne IDELE                  | infosol@inra.fr                              |
 | Biomasse microbienne                  | Raster (L93)                        | IGN + Agreste                  | infosol@inra.fr                              |
 
-## BDAT
+## La BDAT
 
 Deux types de données sont intégrées dans la base de données. Dans un premier temps, les données BDAT disponibles sur le XXX sont intégrées. Il s'agit de statistiques descriptives aggrégées à l'échelle du canton. Ces données ne sont pas exploitables dans le cadre d'une étude sur l'évolution temporelle car le nombre d'effectif n'est pas le même d'une année à l'autre. Le deuxième jeu de données intégrées prend en compte ce biais par un ré-échantillonnage artificiel des analyses afin d'assurer le calcul de statistiques descriptives basées sur un même nombre d'effectif.
 
-Les commandes suivantes importent les données de la BDAT non harmonisées :
+### Importation des données de la BDAT non harmonisées (obsolète)
+
 ```{r importBDAT, eval=FALSE}
 period <- c("9094","9599","0004","0509")
 # Selection des fichiers à importer
@@ -210,6 +204,7 @@ for(i in ListBDAT){
   sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
 }
 ```
+### Importation des données de la BDAT harmonisées
 
 la liste d'instructions suivante intègre les analyses de la BDAT ré-échantillonnées dans la base de données.
 
@@ -226,18 +221,52 @@ for(i in ListBDAT){
   sqlQuery(loc,paste("drop table if exists bdat.",i,sep=""))
   sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
 }
-
 ```
 
-## La BDGSF
+## La BDGSF (en cours)
 
-http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDB_data_1k_raster_intro/ESDB_1k_raster_data_intro.html
+La base de données européenne des sols a été téléchargée sur ce [cite](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDB_data_1k_raster_intro/ESDB_1k_raster_data_intro.html). 
+Le shapefiles a des soucis de topologie et son découpage pose qq problèmes avec gdal (ERROR 1: TopologyException: Input geom 1 is invalid: Self-intersection at or near point 199362.60000010004 6798705.2000011709 at 199362.60000010004 6798705.2000011709). Une solution serai d'importer la base européenne vers la base postgis, controler la topo et faire le découpage ensuite.
+
+Contrôle de la topologie avec QGis ([vérificateur de la topologie](http://smsgis.co.za/using-qgis-fix-geometry-errors/))
 
 ```{r importBDGSF, eval=FALSE}
+repbdgsf <- "/media/sf_GIS_ED/Dev/Data/Sol/bdgsf/"
+vectorname <- "sgdbe4_0.shp"
+file1 <- paste(repbdgsf,vectorname,sep="")
+file2 <- paste(repbdgsf,"L93_",vectorname,sep="")
+file3 <- paste(repbdgsf,"Fr_L93_",vectorname,sep="")
+shaperef <- "/media/sf_GIS_ED/Dev/Data/Base/DEPARTEMENT.shp"
 
+# Changement de la projection (L93) et masque pour importer uniquement les contours de la france métropolitaine
+system(paste("ogr2ogr -t_srs EPSG:2154 ",file2," ",file1," -overwrite",sep=""))
+#system(paste("ogr2ogr -clipsrc ",shaperef," ",file3," ",file2," -overwrite",sep=""))
 
+# Intégration dans la base sous forme de postGIS
+system(paste("shp2pgsql -s 2154 -c -D -W \"latin1\" -I ",file1," | psql -d sol_elevage -h localhost -U jb -s bdgdf",sep=""))#option -s ne fonctionnne pas
+
+# Suppression des fichiers temporaires
+system(paste("rm ",file1," ",file2,sep=""))
 ```
-## Les données LUCAS soil Database
+
+## Données élaborées LUCAS (en cours)
+
+```{r eval=FALSE}
+rep_rasterjrc <- "/media/sf_GIS_ED/Dev/Data/Sol/Lucas/Elaborees/"
+list.rast <- list.files(rep_rasterjrc,pattern=".tif$")#Le $ signifie la fin du pattern
+shaperef <- "/media/sf_GIS_ED/Dev/Data/Base/DEPARTEMENT.shp"
+for(i in list.rast){
+    # 
+    system(paste("gdalwarp -t_srs EPSG:2154 ",rep_rasterjrc,i," ",rep_rasterjrc,"tmp",i," -overwrite",sep=""))
+    system(paste("gdalwarp --config GDALWARP_IGNORE_BAD_CUTLINE YES -cutline ",shaperef," -crop_to_cutline ",rep_rasterjrc,"tmp",i," ",rep_rasterjrc,"fr_",i," -overwrite",sep=""))
+    system(paste("rm ",rep_rasterjrc,"tmp",i,sep=""))
+    
+    # Intégration dans la base postgis
+    #system(paste("shp2pgsql -s 2154 -c -D -W \"latin1\" -I ",rep_rasterjrc,"sgdbe4_0.shp | psql -d sol_elevage -h localhost -U jb -s bdgdf",sep=""))#option -s ne fonctionnne pas
+} 
+```
+
+## Les données LUCAS soil Database (en cours)
 
 Ici, on présente l'intégration des différentes données lucas.
 Il y a les données de bases lucas topsoil et également d'autres données élaborées en partie construite avec LucasTopsoil.
@@ -333,9 +362,11 @@ for(i in LucasData){
 
 # Les données d'occupation du sol
 
+Les données d'occupation du sol proviennent du Recencement Agricole (RA) et de la base Corine Land Cover (CLC). Cette section présente l'intégration des données brutes dans la base de données.
+
 ## Corine Land Cover (CLC)
 
-L'ensemble des feuilles excel du fichier stats_clc_commune_niveau_2.xls téléchargé à cette [adresse](http://www.statistiques.developpement-durable.gouv.fr/fileadmin/documents/Produits_editoriaux/Donnees_en_ligne/Territoires/clc-2012/stats-clc-2012-commune-niveau-2.zip) sont introduites dans la base de données dans le schéma `clc`. Les données représentent la surface des occupations du sol clc de niveau 2 par canton.
+L'ensemble des feuilles excel du fichier `stats_clc_commune_niveau_2.xls` téléchargé à cette [adresse](http://www.statistiques.developpement-durable.gouv.fr/fileadmin/documents/Produits_editoriaux/Donnees_en_ligne/Territoires/clc-2012/stats-clc-2012-commune-niveau-2.zip) est introduit dans le schéma `clc` de la base de données. Les données représentent la surface des occupations du sol clc de niveau 2 par canton.
 
 ```{r importCLC,eval=FALSE}
 # Intégration du fichier excel stats_clc_commune_niveau_2.xls
@@ -354,14 +385,13 @@ for(i in feuilles ){
 
 ## Les données du recensement agricole (RA)
 
-Les données du recensement agricole ont été extraites de requêtes lancées sur [Disard](http://cybergeo.revues.org/23155). L'ensemble des tables intégrées dans la base de données est présenté dans le tableau ci-dessous.
+Les données du recensement agricole ont été extraites de requêtes lancées sur [Disard](http://cybergeo.revues.org/23155). L'ensemble des tables intégré dans la base de données est présenté dans le tableau ci-dessous.
 
 ```{r,eval=TRUE,warning=FALSE}
 # Description des tables (voir pour rajouter les métadonnées dans les commentaires de table)
 metatable <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=";")
 pander(metatable)
 ```
-
 Dans les tables de sorties de Disard, le numéro de canton et le nom du chef lieu sont enregistrés dans le même champs. Dans les commandes suivantes, le numéro de canton et le nom du chef lieu sont dissociés dans un champs qui leur est propre pour faciliter les jointures futures.  
 
 ```{r importagreste,eval=TRUE,warning=FALSE,}
@@ -426,7 +456,10 @@ for(i in Liste_fichiers){
 
 ## Les grandes régions d'élevage
 
-Ici, on importe le fichier excel fournit par Christophe Perrot
+Les grandes régions d'élevage représentent un zonage basé sur l'utilisation du sol (part de la SFP/des cultures et dans la SFP part de la STH, des PT et du maïs, et recroisement avec les zones à contraintes naturelles (montagne et zones sèches)). Le zonage a évolué depuis 1995, avec des correctifs dans certaines zones (Limousin notamment) et surtout un redécoupage en fonction de l’orientation des productions d’élevage, notamment bovin (lait ou viande) et du contexte pédoclimatique (séparer la Bretagne et les piémonts, les Bassin parisien et aquitain par exemple).
+
+Le zonage intégré dans la base a été fourni par Christophe Perrot. Pour plus d'information sur la construction, contacter l'auteur.
+Pour faciliter la distinction des différents niveaux de régions, une nomenclature a été créée. Elle est consultable [ici](https://github.com/Rosalien/GISEDSol/tree/master/Documentation/Metadonnees/Nomenclature_regionelevage.csv)
 
 ```{r importRegionElevage,eval=FALSE}
 repRegionElevage <- "/media/sf_GIS_ED/Dev/Data/Regions_elevages/"
@@ -486,18 +519,13 @@ for(i in c("zonage_simple","zonage_cplt")){
 }
 ```
 
-
-
-
 # Les données climatiques
 
-Plusieurs sources de données climatiques sont disponibles.
-
-Pour le moment, seul le travail de [Joly et al., 2010](http://cybergeo.revues.org/23155) est exploité. Les autres sources de données pourront être intégrées ultérieurement dans la base de données, dans le schéma `climato`.
+Plusieurs sources de données climatiques sont disponibles. Pour le moment, seul le travail de [Joly et al., 2010](http://cybergeo.revues.org/23155) est exploité. Les autres sources de données pourront être intégrées ultérieurement dans la base de données, dans le schéma `climato`.
 
 ## Topologie du climat en France
 
-Les données climatiques utilisées proviennnent du travail de Joly et al., 2010 sur la typologie du climat en France (rajouter la référence) et un bref descriptif. Les commandes suivantes importent la table `table_commun.txt` disponible à cette adresse. Les données climatiques sont ensuite aggrégées par canton dans le fichier de suivie [Traitement_climato.Rmd](https://github.com/Rosalien/GISEDSol/blob/master/Fichiers_suivis/Traitements/Suivis/Traitements_climato.Rmd). 
+Les données climatiques utilisées proviennnent du travail de [Joly et al., 2010](http://cybergeo.revues.org/23155) sur la typologie du climat en France. Les commandes suivantes importent la table `table_commun.txt` disponible à cette [adresse](Rajouter adresse). Les données climatiques sont ensuite aggrégées par canton dans le fichier de suivie [Traitement_climato.Rmd](https://github.com/Rosalien/GISEDSol/blob/master/Fichiers_suivis/Traitements/Suivis/Traitements_climato.Rmd). 
 
 ```{r importClimatL,eval=FALSE}
 ##Paramètres
@@ -523,6 +551,120 @@ L’usage de ces fichiers est strictement limité au domaine des services public
 Source : Base de données climatiques communales 2009. THEMA Université de Franche-Comté, CNRS UMR6049 (F-25000 Besançon) /CESAER INRA UMR1041 (F-21000 Dijon) ; d’après Météo France 1971-2000.';")
 ```
 
+# La topographie
+
+## Données SRTM
+
+Le téléchargement des données du SRTM a été réalisé sur [earthexplorer](https://earthexplorer.usgs.gov/) de la manière suivante :
+
+- Inscription,
+- Sélection la zone géographique (search criteria >> Use Map). **Attention,** le nombre de tuile est limité à 100. Bien sélectionner la zone désirée ou le faire en deux fois.
+- Sélection du type de données souhaité (Data Sets >> Digital Elevation >> SRTM >> SRTM 1 Arc-Second Global),
+- Cliquer sur 'Results' et sélectionner l'ensemble des tuiles à télécharger (add to bulk download >> submit standing request),
+- Utilisation du logiciel [BDT](https://earthexplorer.usgs.gov/bulk) pour télécharger les tuiles commandées. **Attention**, il est nécessaire d'ouvrir les ports 4448 pour utiliser le logiciel.
+
+
+```{r,eval=FALSE}
+# Décompression de tous les fichiers zip présent dans le répertoire repSRTM
+repSRTM <- "/media/sf_GIS_ED/Dev/Data/Topographie/SRTM/SRTM_1_Arc_Second_Global/"
+#system(paste("unzip ",repSRTM,"'*.zip' -d ",repSRTM,sep=""))
+
+shaperef3035 <- "/media/sf_GIS_ED/Dev/Data/Base/DEPARTEMENT.shp"
+vrtname <- paste(repSRTM,"mergebil.vrt",sep="")
+file1tmp <- paste(repSRTM,"tmp1.tif",sep="")
+file2tmp <- paste(repSRTM,"tmp2.tif",sep="")
+srtmName <- paste(repSRTM,"Fr_L93_srtm.tif",sep="") #Nom du raster final
+
+# Liste des tuiles à assembler
+listbil <- paste(repSRTM,list.files(repSRTM,pattern="\\.bil$"),sep="",collapse=" ")#gsub("\\.bil$","", list.files(repSRTM,pattern="\\.bil$"))
+
+# Création d'un raster virtuel pour assembler les rasters (plus rapide que gdal_merge.py)
+system(paste("gdalbuildvrt ",vrtname," ",listbil,sep=""))
+
+# Conversion au format tif
+system(paste("gdal_translate -co TILED=YES -co 'COMPRESS=LZW' -co BIGTIFF=YES -a_srs EPSG:4326 ",vrtname," ",file1tmp,sep=""))#testvrt.tif
+
+# Reprojection
+system(paste("gdalwarp -co 'COMPRESS=LZW' -t_srs EPSG:2154 ",file1tmp, " ",file2tmp," -overwrite",sep=""))
+
+# Découpage 
+system(paste("gdalwarp --config GDALWARP_IGNORE_BAD_CUTLINE YES -cutline ",shaperef2154," -crop_to_cutline -co 'COMPRESS=LZW' ",file2tmp," ",srtmName," -overwrite",sep=""))
+
+# Création de pyramides pour faciliter la visualisation
+systemp(paste("gdaladdo -r average ",srtmName," 2 4 8 16",sep=""))
+
+# Suppression des fichiers temporaires
+system(paste("rm ",file1tmp," ",file2tmp,sep=""))
+```
+
+Voir la pertinence de mettre le raster sur PostGIs (et penser aussi à la conversion vers spatialite)
+
+## Données européennes
+
+Le modèle numérique de terrain provient du programme Européen Copernic. Les données ont été téléchargées à cette [adresse](http://www.eea.europa.eu/data-and-maps/data/eu-dem). Pour l'exploitation des données, le fichier au format GeoTIFF est découpé aux contours de la France et projeté en Lambert 93 (EPSG 2154). Le raster est ensuite intégré dans le serveur postgis. Ces procédures sont réalisées avec la fonction `gdalwarp` et XXX dans les listes d'instructions ci-dessous. Les statistiques calculées avec ces données sont réalisées dans le fichier de suivi 
+[FS_bdd_elab_topo.Rmd](https://github.com/Rosalien/GISEDSol/blob/master/Fichiers_suivis/BDD/Suivis/FS_bdd_elab_topo.Rmd).
+
+Les tuiles téléchargées sont les suivantes : E30N20; E40N20;E30N30 (Pour connaître les tuiles, voir les webservices à cette adresse :http://image.discomap.eea.europa.eu/arcgis/services/Elevation/DEM_v_1_1/MapServer/WMSServer?version=1.3.0 ).
+Les instructions suivantes permettent d'assembler les 3 rasters, de les découper aux contours de la France et de projeter le dernier fichier en Lambert 93 (epsg:2154).
+
+
+```{r,eval=FALSE}
+reptopo <- "/media/sf_GIS_ED/Dev/Data/Topographie/dem_copernicus/" #répertoire contenant les rasters à assembler
+shaperef3035 <- "/media/sf_GIS_ED/Dev/Data/Base/DEPARTEMENT_3035.shp" #Shapefiles utilisé pour le découpage aux contours de la France
+listtif <- paste(reptopo,c("eu_dem_v11_E40N20.tif","eu_dem_v11_E30N30.tif","eu_dem_v11_E30N20.tif"),sep="",collapse=" ")
+vrtname <- "europ_dem.vrt"
+file1tmp <- paste(reptopo,"tmp1.tif",sep="")
+file2tmp <- paste(reptopo,"tmp2.tif",sep="")
+Fr_demName <- paste(reptopo,"Fr_L93_eudem.tif",sep="")
+Fr_demNamelight <- paste(reptopo,"Fr_L93_90eudem.tif",sep="")
+
+# Création d'un raster virtuel pour assembler les rasters (plus rapide que gdal_merge.py)
+system(paste("gdalbuildvrt ",reptopo,vrtname," ",listtif,sep=""))
+
+# Conversion au format tiff
+system(paste("gdal_translate -co TILED=YES -co 'COMPRESS=LZW' -co BIGTIFF=YES -a_srs EPSG:3035 ",reptopo,vrtname," ",file1tmp,sep=""))#testvrt.tif
+
+# Découpage aux contours de la France
+system(paste("gdalwarp --config GDALWARP_IGNORE_BAD_CUTLINE YES -cutline ",shaperef3035," -crop_to_cutline -co TILED=YES -co BIGTIFF=YES -co 'COMPRESS=LZW' ",file1tmp," ",file2tmp," -overwrite",sep=""))
+
+# Reprojection en Lambert 93
+system(paste("gdalwarp -co BIGTIFF=YES -co TILED=YES -co 'COMPRESS=LZW' -t_srs EPSG:2154 ",file2tmp," ",Fr_demName," -overwrite",sep=""))
+
+# Création de pyramides pour faciliter la visualisation
+systemp(paste("gdaladdo -r average ",Fr_demName," 2 4 8 16",sep=""))
+
+# Nettoyage des fichiers temporaires
+system(paste("rm ",file1tmp," ",file2tmp,sep=""))
+
+# Création d'un raster plus léger pour les analyses
+system(paste("gdalwarp -tr 90 90 -co BIGTIFF=YES -co TILED=YES -co 'COMPRESS=LZW' -t_srs EPSG:2154 ",Fr_demName," ",Fr_demNamelight," -overwrite",sep=""))
+
+```
+
+Le raster est ensuite intégré sur le serveur PostGIS (voir la pertinence). Si celà ne fonctionne pas, revoir les scripts pour calculer les moyennes entre vecteurs et rasters avec R.
+
+```{r demtopostgis,eval=FALSE}
+rastername <- paste(reptopo,"Fr_L93_",rastername,sep="")
+rpostgisname <- "m_rasters.dem_copernicus"
+
+system(paste("raster2sql -s 2154 -t 30x30 -f -I -Y myRaster.tif ",rpostgisname," > raster.sql`
+psql -h localhost -U jb -d sol_elevage -f raster.sql",sep=""))
+
+
+
+
+rep_rasterjrc <- "/media/sf_GIS_ED/Dev/Data/Sol/Lucas/Elaborees/"
+list.rast <- list.files(rep_rasterjrc,pattern=".tif$")#Le $ signifie la fin du pattern
+shaperef <- "/media/sf_GIS_ED/Dev/Data/Base/DEPARTEMENT.shp"
+for(i in list.rast){
+    # 
+    system(paste("gdalwarp -t_srs EPSG:2154 ",rep_rasterjrc,i," ",rep_rasterjrc,"tmp",i," -overwrite",sep=""))
+    system(paste("gdalwarp --config GDALWARP_IGNORE_BAD_CUTLINE YES -cutline ",shaperef," -crop_to_cutline ",rep_rasterjrc,"tmp",i," ",rep_rasterjrc,"fr_",i," -overwrite",sep=""))
+    system(paste("rm ",rep_rasterjrc,"tmp",i,sep=""))
+
+
+
+```
 
 # Les métadonnées
 
@@ -547,8 +689,55 @@ system(paste("sh ",repfonctions,"bash/create_view_metada.sh",sep=""))
 ```
 
 
+# Export de la base
 
+Deux formats sont proposés pour exploiter la base de données :
 
+- une base SQLite/Spatialite sous forme de fichier `.sqlite`,
+- une sauvegarde de la base PostgreSQL/PostGIS sous forme de fichier texte (`sql`).
 
+## Export vers SQLite/Spatialite
 
+L'export de la base sous forme SQLite/Spatialite offre l'opportunité d'exploiter la base rapidement à travers l'ouverture du fichier directement connectable avec des clients de données géographiques (comme QGIS) ou de base de données (sqlitebrower). Lors de la conversion, l'arborescence des tables n'est pas maintenue et les commentaires des champs faisant office de métadonnées ont disparu.
+Le fichier est néanmoins utile pour visualiser rapidement les données géographiques.
+Rajouter lien vers des modes opératoires pour lire les données vers qgis.
 
+```{r,eval=FALSE}
+# Vérification (selon http://gis.stackexchange.com/questions/168819/fixing-ogr2ogr-without-spatialite-support)
+ogrinfo --formats sqlite | grep 'spatialite' -i
+ogrinfo --format sqlite | grep 'spatialite' -i
+databasename <- "sol_elevage"
+
+system(paste("ogr2ogr --config PG_LIST_ALL_TABLES YES --config PG_SKIP_VIEWS YES -f \"SQLite\" ",databasename,".sqlite -progress PG:\"dbname='",databasename,"' \
+host='localhost' port='5432' user='jb' password='170284'\" -lco LAUNDER=yes \
+  -dsco SPATIALITE=yes -lco SPATIAL_INDEX=yes -gt 65536",sep=""))
+```
+
+## Export de la base en PostgreSQL/PostGIS
+
+La base de données est sauvegardée au format PostgreSQL/PostGIS avec la commande `pg_dump`. Cette commande permet de garder l'ensemble de la base de données mais pour être restaurer, l'utilisateur doit créer un serveur local Postgresql/PostGIS en suivant la procédure présentée dans le mode opératoire...
+Les commandes suivantes présentent les instructions données pour sauvegarder la base de données.
+
+```{r,eval=FALSE}
+#pd_dump sol_elevage > test
+
+pg_dump -Ft -b mabase > base.tar
+pg_restore -d nouvellebase base.tar
+
+pg_dump --inserts db_name -t table_name > pg_dump.sql
+
+# http://sqlite.com/cvstrac/wiki?p=ConverterTools
+
+#Export the data from your database as tab delimited text. Create one text file for every table in your database:
+$ pg_dump -a <dbname> -t <tablename> > /tmp/<dumpfile> ...and so on...
+
+#Trim off crap from header and footer from each file, eg:
+
+$ nano -w /tmp/<dumpfile>
+
+#If required, create SQLite file and tables corresponding to tables in the original PostgreSQL database:
+$ sqlite3 <dbname> sqlite> CREATE TABLE ...etc...
+
+#Finally, import the dump files into SQLite, remembering to change the default import separator to a <tab>:
+$ sqlite3 <dbname> sqlite> .separator "\t" sqlite> .import <dumpfile> <tablename> 
+```

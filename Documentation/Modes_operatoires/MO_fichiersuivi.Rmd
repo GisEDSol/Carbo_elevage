@@ -1,0 +1,89 @@
+---
+title: "Mode opératoire pour l'écriture d'un fichier de suivi avec RStudio"
+author: "Jean-Baptiste Paroissien"
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
+    fig_width: 10
+    fig_height: 10
+    dev: png
+    md_extensions: +autolink_bare_uris+hard_line_breaks+header_attributes+line_blocks+table_captions
+---
+
+```{r, tidy=FALSE,eval=TRUE,echo=FALSE}
+mo_url <- "https://forge.orleans.inra.fr/projects/infosol/repository/entry/Modes_operatoires/"
+pro_url <- "https://forge.orleans.inra.fr/projects/infosol/repository/entry/Procedure/"
+tmp_url <- "https://forge.orleans.inra.fr/projects/infosol/repository/entry/Template/"
+```
+
+# Objectif et domaine d'application
+Ce mode opératoire décrit la méthode d'écriture d'un fichier de suivi en langage `R+markdown`. Il s'adresse à n'importe quel utilisateur souhaitant associer du code `R` avec du texte codé en `markdown`. Dans le cadre du projet sur l'étude des e la publication des webservices, la mise en place d'un fichier de suivi respectant les consignes du document est fortement conseillée pour maintenir la traçabilité du projet et facilité sa prise en main.
+
+| Type utilisateur          | Systèmes d'exploitation | Langages                           |
+|---------------------------|-------------------------|------------------------------------|
+| Producteurs & utilisateur | Linux & Windows         | Bash, R (paquet KnitR) et Markdown |
+
+# Démarche générale
+La création du fichier de suivi est une étape préalable indispensable à la publication d'un webservice. La construction des données publiées sur internet doit être reproductible et l'ensemble de la chaîne de traitement doit être retranscrite. L'utilisation du logiciel de programmation lettrée `KnitR` (voir le [site web](http://yihui.name/knitr/)) répond à ces attentes. Il permet d'associer l'écriture d'un document en `markdowns` avec du code `R`. Pour plus d'informations, [voir](https://rstudio-pubs-static.s3.amazonaws.com/32239_0956f02cef24443abd9525551368ef12.html#1) cette présentation.
+
+# Présentation de KnitR
+
+KnitR est un paquet R qui permet de créer des fichiers de suivi comportant à la fois l'écriture d'un rapport structuré en `markdown` avec des balises incluant du code `R`. Son installation (ainsi que d'autres paquets R) est nécessaire pour continuer ce mode opératoire.
+
+## Installation
+L'installation du paquet KnitR est native sur RstudioServer. Pour plus d'informations concernant la configuration de `KnitR` et de RstudioServer, vous pouvez vous référer au mode opératoire de la création de [Rodas](`r mo_url`MO_accesrodas.html) ou à celui concernant le travail en [local](`r mo_url`MO_acceslocal.html)
+
+## Langage
+L'écriture du fichier de suivi est en `markdown` avec des balises permettant d'inclure du code `R` (les chunks). C'est un langage en balisage léger qui offre une syntaxe facile à lire et à écrire (comme le langage wiki). Pour plus d'informations, vous pouvez consulter ce [site](https://michelf.ca/projets/php-markdown/syntaxe/) (en français) et la [documentation officielle](https://daringfireball.net/projects/markdown/syntax) (en anglais).
+
+## Sorties de document 
+
+Le paquet KnitR propose par défaut une sortie de fichier en HTML. Si vous souhaitez créer un fichier pdf, vous devez installer une distribution latex.
+
+## Utilisation du modèle de fichier de suivi
+Un modèle de document est disponible [ici](`r tmp_url`Modele_FichierSuivi.Rmd). Il contient l'entête et les différents éléments permettant de structurer correctement le fichier de suivi. Il s'adresse à différents utilisateurs : 
+
+- Dans le cas d'un producteur de webservices, l'ensemble des en-têtes est à respecter pour assurer pleinement la reproductibilité du fichier de suivi
+- Dans le cas d'un utilisateur 'lambda', rien n'est obligatoire. Nous conseillons toutefois d'organiser votre script de cette manière pour gagner en lisibilité.
+
+# Exemple d'application (pour linux)
+
+Pour prendre en main cette méthode de travail, voici un exemple d'application.
+
+## Préparation/installation des paquets
+
+1. Télécharger et installer la dernière version de Rstudio :
+
+- Ouvrir un terminal linux est taper `sudo apt-get install libjpeg62`	
+- Ouvrir un terminal linux et taper `wget http://download1.rstudio.org/rstudio-0.98.1080-amd64.deb` pour une machine en 64-bit ou `wget http://download1.rstudio.org/rstudio-0.98.1080-i386.deb` pour une machine en 32-bit (voir [le site web](http://www.rstudio.com/products/rstudio/download/) pour récupérer le nom de la dernière version de Rstudio)
+- Lancer la commande suivante dans le même terminal en fonction du nom du fichier que vous venez de télécharger : `sudo dpkg -i rstudio-0.98.1080-amd64.deb`
+
+2. Configurer le système et installer les paquets R nécessaires :
+- Toujours dans un terminal, lancer les commandes suivantes pour créer un lien symbolique : `sudo ln -s /usr/lib/rstudio/bin/pandoc/pandoc /usr/local/bin` et `sudo ln -s /usr/lib/rstudio/bin/pandoc/pandoc-citeproc /usr/local/bin`
+- Dans une console `R`, installer les paquets suivants avec la commande : `install.packages(c("knitr","htmltools","caTools","bitops","rmarkdown"))`
+
+3. Télécharger le modèle de fichier de suivi de la forge
+- Télécharger ce [document](`r tmp_url`Modele_FichierSuivi.Rmd) et copier dans un répertoire de travail.
+
+## Création d'un fichier dans Rstudio
+Une fois le modèle de fichier de suivi importé dans votre espace de travail (plus d'infos sur l'organisation d'un projet [ici](`r mo_url`MO_accesdepot.html)) :
+
+- Double clics sur le fichier `.Rmd`
+- Assurez-vous que `KnitR` soit bien configuré par défault (Tools>>Global Options>> Sweave >> sélectionnez KnitR)
+- Essayez de compiler le document : 
+	* cliquez sur knitHTML pour compiler le document en html
+![](Figures/compilation_markdown.png)
+
+## Création d'un fichier en dehors de Rstudio (en ligne de commande pour linux)
+Si vous souhaitez utiliser ces fonctionnalités en dehors de Rstudio (le logiciel peut se révéler parfois très lent lors de la génération de rapport complexe et long), il est possible de créer les fichiers de suivi à travers une ligne de commande (en **bash**). Le rendu est identique aux sorties de Rstudio (selon https://stat.ethz.ch/pipermail/r-help/2014-August/421215.html) :
+
+- Ouvrir un terminal linux et lancer la commande suivante dans le répertoire où se trouve le fichier `.Rmd` : `echo "rmarkdown::render('nomfichier.Rmd')" | R --vanilla`
+
+- Vous pouvez également utiliser cette ligne dans une boucle afin de créer à la volée les fichiers de suivi présent dans un répertoire : 
+
+```{r, tidy=FALSE,eval=TRUE,echo=FALSE}
+for i in *.Rmd; do
+	echo "rmarkdown::render('$i')" | R --vanilla
+done
+```

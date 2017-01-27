@@ -208,9 +208,15 @@ melted.radiff$classe <- ifelse(melted.radiff$value > 10,"Aug",ifelse(melted.radi
 melted.radiff$classe <- as.factor(melted.radiff$classe)
 melted.radiff$periode <- as.factor(melted.radiff$periode)
 # Sélection des évolutions > 10% ou < -10%
+
 melted.radiff_select <- melted.radiff[melted.radiff$classe != "Pas d'évolution",]
 
 p <- ggplot(melted.radiff_select,aes(classe,fill=variable))+geom_bar(position="dodge")+facet_wrap(~zonage_cplt,scales="free")
+     
+
+##
+ggplot(melted.radiff_select[melted.radiff_select$variable %in% c("prairie","sth","c"),],aes(classe,fill=nom_region))+geom_bar(position="dodge")+facet_wrap(~variable,scales="free")
+
 p
 ```       
 
