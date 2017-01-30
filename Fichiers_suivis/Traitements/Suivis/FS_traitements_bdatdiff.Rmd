@@ -18,7 +18,7 @@ output:
 source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
 repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
 importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
-repsortie <- paste(repmaster,"Scripts/master/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
+repsortie <- paste(repmaster,"/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
 ```
 ```{r,eval=TRUE,echo=FALSE}
 ## This chunck will read through *this* Rmd file, and attempt to extract all of the 
@@ -124,7 +124,7 @@ Dans la figure ci-dessous,
 Analyser la figure en la confrontant avec des graphiques similaires basés sur les données du RA et de CLC.
 Ce serait intéressant de développer un indice de changement d'occupation du sol pour faciliter les analyses.
 
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("histo_evolution",""),fig.align="center"}
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("histo_evolution",""),fig.align="center"}
 # Histogramme des valeurs 
 
 # Sélection des cantons aux diminutions significatives
@@ -149,7 +149,7 @@ histo_regelevage
 Présenter dans le détail les histogrammes `r fig$ref("histo_evolution",link=TRUE)`. Possibilité de comparer le nbr de canton en augmentation et en diminution par période analysées et ensuite développer une analyse par classe de diminution ou d'augmentation. Par exemple, il y a quasiment autant de canton ayant des teneurs en C en augmentation et en diminution entre les périodes 1994-1999 et 2010-2014.
 
 
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("histo_evolution",""),fig.align="center"}
 # Histogramme des valeurs 
 # Revoir, pas très bien visible
 
@@ -161,23 +161,25 @@ periodetud <- c("14","24","15","25")
 bdatdiff_classe <- bdatdiff_classe[(bdatdiff_classe$period %in% periodetud), ]
 bdatdiff_classe$diff <- as.factor(bdatdiff_classe$diff)
 #
-ggplot(bdatdiff_classe,aes(diff,fill=nom_region)) + geom_bar(position="dodge") + facet_wrap(~ period) + 
+histo_regionadmin <- ggplot(bdatdiff_classe,aes(diff,fill=nom_region)) + geom_bar(position="dodge") + facet_wrap(~ period) + 
                     xlab("Classe d'évolution des teneurs en carbone organique")+ylab("Nombre de canton")+
                     theme(plot.title = element_text(size = 14, face = "bold"), 
                     text = element_text(size = 12),
                     axis.title = element_text(face="bold"),
                     axis.text.x=element_text(size = 11))                      
+histo_regionadmin
 ```
-
-
 
 Dans la figures ci-dessous, on peut observer : 
 A faire
 
 ```{r,highlight=TRUE,eval=TRUE,fig.height=5, fig.width=8,fig.cap = fig$cap("bar_prairie","Histogramme à commenter"),fig.align="center"}
 # Reproduire ce type de graphe par stratification
-bar_prairie <- ggplot(bdatdiff_classe,aes(diff,fill=diff_var_prairie1970_2010)) + geom_bar() + facet_wrap(~ period)
+
+bar_prairie <- ggplot(bdatdiff_classe,aes(diff,fill=diff_var_sfp1970_2010)) + geom_bar() + facet_wrap(~ period)
 bar_prairie
+
+
 
 # Faire une sélection sur les principales années 
 
@@ -379,16 +381,170 @@ ggplot(melted.bdatdiff, aes(var_cereale1970_2010, diffmedian15,shape=factor(diff
   geom_point(aes(colour = factor(diff15)), size = 2) +
   geom_point(colour="grey10", size = 1.5)
 ```
+# Analyse avec une ACP
 
 
+```{r,highlight=TRUE,eval=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("acp_evolution_fr","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
+
+########################
+Rcovarclimato <- c("std_temp_janv","std_temp_juil","std_pluie_janv","std_pluie_juil")
+typeclimato <- replicate(length(Rcovarclimato), "climat")
+#
+Rcovaroccup <- c("var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010")
+typeoccup <- replicate(length(Rcovaroccup), "occup")
+
+type <- c(typeclimato,typeoccup)
+Rcovar <- c(Rcovarclimato,Rcovaroccup,"diff24")
+vNames <- c("diffmedian24",Rcovar) #9599 car meilleure représentation spatiale
+########################
+
+# Lecture de la table sans les NA
+lvNames <- length(vNames)
+dcast.bdat_variables <- dcast.bdat[complete.cases(dcast.bdat[,vNames]),]
+
+res.pca <- PCA(dcast.bdat_variables[,!names(dcast.bdat_variables) %in% "diff24"], graph = FALSE)
+#fviz_screeplot(res.pca, ncp=10)
+
+pca <- fviz_pca_var(res.pca, axes = c(1,2),col.var="contrib") +
+scale_color_gradient2(low="white", mid="blue", 
+                  high="red", midpoint=50) + theme_minimal()
+pca
+
+fviz_pca_biplot(res.pca, label="var",habillage=dcast.bdat_variables$diff24,axes=c(1,2),
+     addEllipses=FALSE, ellipse.level=0.95, ggtheme = theme_minimal())
+```
 
 
+# Modélisation de l'évolution des teneurs ?
+
+```{r,highlight=TRUE,eval=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("gbm_evolution_fr","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
+
+######################
+Rcovarclimato <- c("std_temp_janv","std_temp_juil","std_pluie_janv","std_pluie_juil")
+typeclimato <- replicate(length(Rcovarclimato), "climat")
+
+Rcovaroccup <- c("var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010")
+typeoccup <- replicate(length(Rcovaroccup), "occup")
+
+type <- c(typeclimato,typeoccup)
+Rcovar <- c(Rcovarclimato,Rcovaroccup)
+vNames <- c("diffmedian24",Rcovar) #9599 car meilleure représentation spatiale
+######################
+
+# Sélection du jeu de données
+id <- "id_geofla"# Nom du champs présentant un identifiant unique
+dcast.bdat_gbm <- dcast.bdat[complete.cases(dcast.bdat[,vNames]),c(vNames,id)] # Pour supprimer les NA
+datax <- dcast.bdat_gbm[, vNames[-1]]
+datay <- dcast.bdat_gbm[, vNames[1]]
+
+tuneGrid <- expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:20)*150,shrinkage = 0.1,n.minobsinnode = 20)
+trControl <- trainControl(method = "cv",p=0.8)
+
+#registerDoMC(4) # Nombre de processeurs activés
+#mgbm <- train(x = datax , y = datay,method="gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
+#plot(varImp(mgbm), top = 10)
+
+set.seed(157)#Pour assurer la reproductibilité
+nbl <- 2
+prob <- 0.8
+model <- "gbm"
+
+# Pour le stockage des résultats
+rest <- array(NA, dim = c(length(datay), nbl, 1),list(id = dcast.bdat_gbm[,id], loop = 1:nbl, mod = model))
+  
+for (j in 1:nbl){
+  gc()  
+  # randomizes the mask 
+  print(j)
+  masko <- createDataPartition(dcast.bdat_gbm[,1],p = prob, list = FALSE)
+  
+  donneeL <- dcast.bdat_gbm[masko,]
+  donneeV <- dcast.bdat_gbm[-masko,]
+  learningx <- datax[masko,]
+  learningy <- datay[masko]
+  indepx <- datax[-masko,]
+  indepy <- datay[-masko]
+
+  mgbm <- train(x = learningx , y = learningy,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
+  #best.iter <- gbm.perf(mgbm,method="cv")
+  #save(mgbm,file=paste(fold,"mfinal",titre,"_",model,"_",j,".RData",sep=""))
+                  
+  f.predict <- predict(mgbm$finalModel, learningx , n.trees = mgbm$bestTune$n.trees)
+  #save(f.predict,file=paste("fpredict",titre,"_",model,".RData",sep=""))
+
+  indep.pred <- predict(mgbm$finalModel, indepx , n.trees=mgbm$bestTune$n.trees)
+
+  # Si transformation log du c        
+  #indep.pred <- exp(indep.pred)
+        
+  rest[-masko, j, model] <- indep.pred  
+  residue <- learningy - f.predict
+  donneeL$residues <- residue
+        
+  # Construire la moyenne des résidus dans un dataframe!
+  write.csv(donneeL,paste(repsortie,"donneeL",model,"_",j,".csv",sep=""))  
+}
+
+#Calcul de la moyenne des résidus
+restResidues <- array(NA, dim = c(nrow(donneeL),nbl,2),list(idresidues = seq(1,nrow(donneeL),1),loop=1:nbl,data=c("residues","idresidues")))
+
+for(i in 1:nbl){
+  print(i)
+  donnee <- read.csv(paste(repsortie,"donneeL",model,"_",i,".csv",sep=""))
+
+  donnee <- donnee[with(donnee, order(id)),]# revoir ce point
+
+  residues <- donnee$residues
+  id <- donnee$id
+  restResidues[,i,"residues"] <- residues
+  restResidues[,i,"idresidues"] <- id
+}
+restResidues <- as.data.frame(restResidues)
+
+dfcomplet <- as.data.frame(pt@data["id"][with(pt@data["id"],order(id)),])
+colnames(dfcomplet) <- "id"
+
+# Revoir...      
+dfcomplet <- as.data.frame(dcast.bdat_gbm[id][with(dcast.bdat_gbm[id],order(id)),])
+colnames(dfcomplet) <- "id"
+
+restMeanResidues <- array(NA, dim = c(nrow(pt),nbl+1),list(id=1:nrow(pt@data["id"]),data=c("idresidues",paste(1:nbl,".residues",sep=""))))
+
+for(i in 1:nbl){
+  print(i)
+  dtmerge <- merge(restResidues[c(paste(i,".residues",sep=""),paste(i,".idresidues",sep=""))],dfcomplet,by.x=paste(i,".idresidues",sep=""),by.y="id",all=TRUE)
+  restMeanResidues[,paste(i,".residues",sep="")] <- dtmerge[[2]]
+}
+
+restMeanResidues[,"idresidues"] <- dfcomplet[["id"]]
+dfMeanResidues <- as.data.frame(restMeanResidues)
+dfMeanResidues <- rowMeans(dfMeanResidues,na.rm=TRUE)
+##>> export!
+
+rest <- cbind(as.data.frame(rest),pt@data[vNames[1]])
+
+```
 
 
+# Modélisation spatio-temporelle
 
+Regarder :
 
+multivariate regression-kriging and generalized linear models par Nickel2014;
+et generalized least squares regression par Begueria2013.
 
+```{r,highlight=TRUE,eval=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("glm_evolution_fr","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
 
+# Logistic Regression
+# where F is a binary factor and
+# x1-x3 are continuous predictors
+fit <- glm(F~x1+x2+x3,data=mydata,family=binomial())
+summary(fit) # display results
+confint(fit) # 95% CI for the coefficients
+exp(coef(fit)) # exponentiated coefficients
+exp(confint(fit)) # 95% CI for exponentiated coefficients
+predict(fit, type="response") # predicted values
+residuals(fit, type="deviance") # residuals 
 
-
+```
 

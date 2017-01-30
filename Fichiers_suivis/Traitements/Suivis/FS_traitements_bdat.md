@@ -2,19 +2,6 @@ Analyse des teneurs en carbone organique de la BDAT
 ================
 Jean-Baptiste Paroissien
 
--   [Objectifs](#objectifs)
--   [Analyse des teneurs en carbone organique par période (France métropolitaine)](#analyse-des-teneurs-en-carbone-organique-par-periode-france-metropolitaine)
-    -   [France entière](#france-entiere)
-    -   [Par type de climat](#par-type-de-climat)
-    -   [Par régions d'élevage](#par-regions-delevage)
-    -   [Par classe de pourcentage d'occupation du sol (données du recensement agricole)](#par-classe-de-pourcentage-doccupation-du-sol-donnees-du-recensement-agricole)
--   [Résumé des statistiques](#resume-des-statistiques)
-    -   [Graphique de correlation](#graphique-de-correlation)
-    -   [Cartographie](#cartographie)
--   [test avec les différences](#test-avec-les-differences)
-    -   [Graphique de correlation](#graphique-de-correlation-1)
--   [Autres graphiques](#autres-graphiques)
-
     ## Warning in readLines(rmdCon): ligne finale incomplète trouvée dans
     ## 'FS_traitements_bdat.Rmd'
 
@@ -24,9 +11,10 @@ Objectifs
 Dans ce fichier, les analyses cantonales de la BDAT sont analysées afin appréhender la distribution statistique et géographique des teneurs en carbone organique regroupées en 5 périodes : 1990-1994, 1995-1999, 2000-2004, 2005-2009 et 2010-2014. Les résultats présentés font suite à différents scripts de préparations de données dont la chaîne de traitements générale est consultable à cette [adresse](https://github.com/Rosalien/GISEDSol/tree/master/Documentation/Modes_operatoires/Figures/workflow.html)
 
 Globalement, le travail est organisé de la manière suivante :
-- **Statistiques descriptives** : Analyse des histogrammes de fréquence et tests statistiques pour chacune des périodes de temps analysées,
-- **Représentation cartographique** : Plusieurs cartes sont proposées pour visualiser la répartition géographiques des données
-- **Analyse des facteurs explicatifs** : Analyse des facteurs explicatifs.
+
+-   **Statistiques descriptives** : Analyse des histogrammes de fréquence et tests statistiques pour chacune des périodes de temps analysées,
+-   **Représentation cartographique** : Plusieurs cartes sont proposées pour visualiser la répartition géographiques des données
+-   **Analyse des facteurs explicatifs** : Analyse des facteurs explicatifs.
 
 Analyse des teneurs en carbone organique par période (France métropolitaine)
 ============================================================================
@@ -44,64 +32,14 @@ La figure <A HREF="#cdf_fr">1</A> présente les courbes de fréquences cumulées
 
 **Ces observations mettent en évidence une diminution des teneurs en carbone entre les périodes 1990-1999 et 2000-2009 et une légère augmentation pour la période 2010-2014.**
 
-``` r
-melted.bdat <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdat",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE))
-dcast.bdat <- sqlQuery(loc,paste("select * from dm_vecteurs.canton",sep=""))
-
-melted.bdat <- melted.bdat[complete.cases(melted.bdat$value),]
-melted.bdat$annees <- factor(melted.bdat$annees,levels=period)
-
-
-period <- c("9094","9599","0004","0509","1014")
-xlabel <- "Carbone organique (g/kg)"
-ylabel <- "Fréquence"
-nperiod <- length(period)
-colors <- brewer.pal(nperiod,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
-
-# Courbe de fréquence cumulée
-cdf <- ggplot(melted.bdat, aes(x=value))+
-       stat_ecdf(aes(colour=annees))+
-       scale_color_manual(values=colors, 
-                          name="Périodes")+
-       scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
-       theme(plot.title = element_text(size = 14, face = "bold"), 
-             text = element_text(size = 12),
-             axis.title = element_text(face="bold"),
-             axis.text.x=element_text(size = 11))
-cdf
-```
-
 <figure style="text-align:center;">
 <a name="cdf_fr"></a><img src="FS_traitements_bdat_files/figure-markdown_github/cdf_fr-1.png">
 <figcaption>
 </figcaption>
 </figure>
-``` r
-# Ajout d'un zoom
-zoomtheme <- theme(legend.position="none", axis.line=element_blank(),axis.text.x=element_blank(),
-            axis.text.y=element_blank(),axis.ticks=element_blank(),
-            axis.title.x=element_blank(),axis.title.y=element_blank(),
-            panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-            panel.background = element_rect(color='red', fill="white"),
-            plot.margin = unit(c(0,0,-6,-6),"mm"))
+La distribution des teneurs en carbone organique par période est présentée dans la figure <A HREF="#boxplot_fr">2</A> et les principales statistiques sont présentées dans le tableau ci-dessus. La tendance de diminution des teneurs observée dans la figure <A HREF="#cdf_fr">1</A> est également constatée dans ces deux éléments. La période 2000-2004 montre la valeur médiane la plus faible avec une valeur de 13.81 g/kg. Les valeurs les plus importantes sont observées pour les périodes 1990-1994 et 1995-1999 avec respectivement des teneurs en carbone organique de 14.06 et 14.53. En terme de tendance, on remarque une augmentation des teneurs pour la période 2010-2014 avec une médiane des valeurs de . Ces évolutions sont très légèrement marquées sur la figure <A HREF="#boxplot_fr">2</A> où la ligne noire représente XX. Celle-ci baisse légèrement après la période 1995-1999.
 
-cdf_zoom <- ggplot(melted.bdat, aes(x=value))+
-       stat_ecdf(aes(colour=annees))+
-       scale_color_manual(values=colors,name="Années")+zoomtheme+
-       coord_cartesian(xlim=xlim, ylim=ylim)
-
-# Problème lors de la compilation avec knit     
-#cdf_zoom_grob <- ggplotGrob(cdf_zoom)
-#cdfcpt <- cdf + annotation_custom(grob = cdf_zoom_grob, xmin = 65, xmax = 90, ymin = 0.1, ymax = 0.50)  
-#cdfcpt
-```
-
-``` r
-# Résumé des statistiques 
-bdatsummary <- apply(melted.bdat["value"],2, function(x) tapply(x, melted.bdat[,"annees"],summary))
-bdatsummary <- lapply(bdatsummary, do.call, what = rbind)
-pander(bdatsummary[[1]],caption = "Statistiques descriptives des teneurs en carbone organique par périodes")
-```
+13.81revoir avec le 1014
 
 <table style="width:83%;">
 <caption>Statistiques descriptives des teneurs en carbone organique par périodes</caption>
@@ -162,41 +100,27 @@ pander(bdatsummary[[1]],caption = "Statistiques descriptives des teneurs en carb
 <td align="center">18</td>
 <td align="center">78.37</td>
 </tr>
+<tr class="odd">
+<td align="center"><strong>1014</strong></td>
+<td align="center">4.7</td>
+<td align="center">11</td>
+<td align="center">14</td>
+<td align="center">15.7</td>
+<td align="center">18.27</td>
+<td align="center">63.75</td>
+</tr>
 </tbody>
 </table>
-
-La distribution des teneurs en carbone organique par période est présentée dans la figure <A HREF="#boxplot_fr">2</A> et les principales statistiques sont présentées dans le tableau XX. La tendance de diminution des teneurs observée dans la figure <A HREF="#cdf_fr">1</A> est également constatée dans ces deux éléments. La période 2000-2004 montre la valeur médiane la plus faible avec une valeur de 13.81 g/kg. Les valeurs les plus importantes sont observées pour les périodes 1990-1994 et 1995-1999 avec respectivement des teneurs en carbone organique de 14.06 et 14.53. En terme de tendance, on remarque une augmentation des teneurs pour la période 2010-2014 avec une médiane des valeurs de . Ces évolutions sont très légèrement marquées sur la figure <A HREF="#boxplot_fr">2</A> où la ligne noire représente XX. Celle-ci baisse légèrement après la période 1995-1999.
-
-13.81revoir avec le 1014
-
-``` r
-p <- ggplot(melted.bdat, aes(x=annees,y=value)) + 
-  geom_violin(trim=FALSE)+
-  geom_boxplot(width=0.1, fill="white")+
-  #scale_color_manual(values=colors,name="Années")+
-  geom_smooth(method = "loess", se=FALSE, color="black", aes(group=1))+
-  scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone organique (g/kg)")+
-  theme(plot.title = element_text(size = 14, face = "bold"), 
-        text = element_text(size = 12),
-        axis.title = element_text(face="bold"),
-        axis.text.x=element_text(size = 11))
-p  
-```
 
 <figure style="text-align:center;">
 <a name="boxplot_fr"></a><img src="FS_traitements_bdat_files/figure-markdown_github/boxplot_fr-1.png">
 <figcaption>
 </figcaption>
 </figure>
-``` r
-#ggsave(p,file = paste(repsortie,"boxplotbdat.png",sep=""), width = 6, height = 5)  
-```
-
 Les résultats du test de Wilcoxon présentés ci-dessous montrent que **les différences globales entre les périodes sont significatives entre les périodes \[1990-1994 et 2000-2004\], \[1995-1999 et 2000-2004\], \[1995-1999 et 2005-2009\] et \[2000-2004 et 2010-2014\]**. Ces résulats sont à prendre avec mesure, car réalisé sur l'ensemble des cantons. Des résultats de significacité seront présentés plus loin, basés sur les analyses à l'échelle des cantons. Ils montrent toutefois que...
 
 ``` r
-tt <- pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"])
-tt
+pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"])
 ```
 
     ## 
@@ -204,22 +128,19 @@ tt
     ## 
     ## data:  melted.bdat[, "value"] and melted.bdat[, "annees"] 
     ## 
-    ##      9094    9599    0004   
-    ## 9599 0.17550 -       -      
-    ## 0004 0.02498 6.3e-06 -      
-    ## 0509 0.17550 0.00026 0.37921
+    ##      9094    9599    0004    0509   
+    ## 9599 0.29250 -       -       -      
+    ## 0004 0.04997 1.1e-05 -       -      
+    ## 0509 0.29250 0.00047 0.75842 -      
+    ## 1014 0.77627 0.11941 0.04997 0.29250
     ## 
     ## P value adjustment method: holm
-
-``` r
-#pander(c(tt[1],tt[2],tt[3],tt[4]))
-```
 
 ### Cartographie des teneurs en carbone organique
 
 Bien que l'hétérogénéité spatiale et temporelle des analyses de la BDAT soient assez importante (certaines zones souffrent de manque de données), la cartographie des teneurs en carbone organique (figure XX) montre une distribution spatiale organisée et globalement similaire pour les différentes périodes analysées. De façon générale, cette organisation suit la lithologie du pays avec de fortes teneurs en carbone organique présentes dans les zones de socles et de piemond et des valeurs plus faibles dans les principaux bassins sédimentaires (parisien et aquitain).
 
-![This is myfile\_1.png](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/corgoxmed_period_fr.png)
+![](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/corgoxmed_period_fr.png)
 
 ### Analyse des facteurs contrôlant la distribution spatiale
 
@@ -281,35 +202,126 @@ Bien spécifier que GBM est utilisé juste pour appréhender l'importance et le 
 
 L'application de ces modèles demande une bonne configuration de leurs paramètres. Pour déterminer la meilleur combinaison de paramètres, la fonction *train* du package *caret* est utilisée.
 
-1.  Boosted regression tree (BRT)
-    Les modèles d'arbres de régression boostés sont connus pour améliorer la précision de prédiction par rapport aux simples arbres de régression.
-    L'algo permet d'ajuster un modèle en fonction d'un processus itératif. A chaque itération, les arbres de régresssions sont ajustés et montés sur une fraction de l'ensemble des données échantillongées. Les principaux paramètres d'un modèle sont :
+1.  Boosted regression tree (BRT) Les modèles d'arbres de régression boostés sont connus pour améliorer la précision de prédiction par rapport aux simples arbres de régression. L'algo permet d'ajuster un modèle en fonction d'un processus itératif. A chaque itération, les arbres de régresssions sont ajustés et montés sur une fraction de l'ensemble des données échantillongées. Les principaux paramètres d'un modèle sont :
     1.  le taux d'apprentissage *(skrinkage)* : il correspond à une constante déterminant l'influence de la combinaison individuelle des arbres qui forme le forme le modèle final. Lorsque ce coefficient est faible, le modèle est très spécialisé et est difficilement applicable sur un autre jeu de données.
     2.  la taille des arbres *(interaction depth)* correspond à la taille des arbres de régression. Lorsque la taille est égale à 1, chaque arbre est constitué d'un seul noeud, on modélise l'effet d'une seule variable prédictive. Ainsi, le modèle final additionne séparément l'effet prédictif des variables et les intéractions des variables ne sont pas explicitement prise en compte. Lorsque la taille des arbres est supérieur à 1, chaque arbre de régression individuelle modélise l'interaction d'au moins deux variables prédictives. Celà permet l'utilisation de modèle prenant en compte les intéractions d'ordre i entre les variables prédictives. La capacité de représenter les interactions entre les variables prédictives sans connaissance a priori est l'un des avantages des arbres de régression.
     3.  le nombre d'arbre *(n.tree)*correspond au nombre d'arbre pour l'ajustement. C'est l'équivalent du nombre d'itérations.
 
-Pour ce travail, rajouter la topographie (altitude moyenne par canton) + l'argile
-Faire une boucle et présenter les graphs d'importances pour les différentes périodes de temps analysées. Si il n'y a pas de différences dans l'ordre d'importance des variables, on pourra en conclure que la stratification est pertinente (pourquoi?)
+Pour ce travail, rajouter la topographie (altitude moyenne par canton) + l'argile Faire une boucle et présenter les graphs d'importances pour les différentes périodes de temps analysées. Si il n'y a pas de différences dans l'ordre d'importance des variables, on pourra en conclure que la stratification est pertinente (pourquoi?)
 
 ``` r
 ##### Sélection des variables explicatives (revoir cette sélection, se baser sur un tableau à charger en fonction des périodes à analyser)
-Rcovar <- c("hpluie_an","jchauds_an","jfroids_an","ttemp_an","altimean","p_sfp1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_c1988","p_c1970","p_c1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbgrani_sau2010","ugbta1988")
-type <- c("climat","climat","climat","climat","topo","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup")
-vNames <- c("corgox_medequi9599",Rcovar) #9599 car meilleure représentation spatiale
-#####
 
-#  Sélection du jeu de données
+Rcovarclimato <- c("hpluie_an","jchauds_an","jfroids_an","ttemp_an","pluie_ecart_janv","pluie_ecart_juil","ampli_t_juil_janv","jpluie_janv","jpluie_juil")
+typeclimato <- replicate(length(Rcovarclimato), "climat")
+
+Rcovartopo <- "altimean"
+typetopo <- replicate(length(Rcovartopo), "topographie")
+
+Rcovaroccup <- c("p_sfp1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_c1988","p_c1970","p_c1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbgrani_sau2010","ugbta1988")
+typeoccup <- replicate(length(Rcovaroccup), "occup")
+
+type <- c(typeclimato,typetopo,typeoccup)
+Rcovar <- c(Rcovarclimato,Rcovartopo,Rcovaroccup)
+vNames <- c("corgox_medequi9599",Rcovar) #9599 car meilleure représentation spatiale
+#####################
+
+# Sélection du jeu de données
 dcast.bdat_gbm <- dcast.bdat[complete.cases(dcast.bdat[,vNames]),vNames] # Pour supprimer les NA
 datax <- dcast.bdat_gbm[, vNames[-1]]
 datay <- dcast.bdat_gbm[, vNames[1]]
 
-#tuneGrid <- expand.grid(.interaction.depth = c(1,5,9,13),.n.trees = c(150,500,1000,1500),.shrinkage = 0.05)
-#trControl <- trainControl(method = "cv",p=0.8)
-#tuneGrid <-  expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:30)*10,shrinkage = 0.1,n.minobsinnode = 20)
+# France entière
 
-#registerDoMC(4) # Nombre de processeurs activés
-#mgbm <- train(x = datax , y = datay,method="gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
-#plot(varImp(mgbm), top = 10)
+trControl <- trainControl(method = "cv",p=0.8)
+tuneGrid <-  expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 20)
+
+# Pour le stockage des résultats
+rest <- array(NA, dim = c(length(datay), nbl, 1),list(id = 1:length(datay), loop = 1:nbl, mod = model))
+
+set.seed(157)#Pour assurer la reproductibilité
+model <- "gbm"
+nbl <- 10
+prob <- 0.8
+
+# Rajouter la stratification dans cette boucle
+
+# Stratification par zonage des grandes régions d'élevage
+p <- list()
+for(i in levels(dcast.bdat$zonage_simple)){
+
+  for (j in 1:nbl){
+    gc()  
+    # randomizes the mask 
+    print(j)
+    masko <- createDataPartition(dcast.bdat_gbm[,1],p = prob, list = FALSE)
+  
+    donneeL <- dcast.bdat_gbm[masko,]
+    donneeV <- dcast.bdat_gbm[-masko,]
+    learningx <- datax[masko,]
+    learningy <- datay[masko]
+    indepx <- datax[-masko,]
+    indepy <- datay[-masko]
+
+    mgbm <- train(x = learningx , y = learningy,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
+    #best.iter <- gbm.perf(mgbm,method="cv")
+    #save(mgbm,file=paste(fold,"mfinal",titre,"_",model,"_",j,".RData",sep=""))
+                  
+    f.predict <- predict(mgbm$finalModel, learningx , n.trees = mgbm$bestTune$n.trees)
+    #save(f.predict,file=paste("fpredict",titre,"_",model,".RData",sep=""))
+
+    indep.pred <- predict(mgbm$finalModel, indepx , n.trees=mgbm$bestTune$n.trees)
+
+    # Si transformation log du c        
+    #indep.pred <- exp(indep.pred)
+          
+    rest[-masko, j, model] <- indep.pred  
+    residue <- learningy - f.predict
+    donneeL$residues <- residue
+        
+    # Construire la moyenne des résidus dans un dataframe!
+    write.csv(donneeL,paste(repsortie,"donneeL",model,"_",j,".csv",sep=""))  
+}
+
+  #Calcul de la moyenne des résidus
+  restResidues <- array(NA, dim = c(nrow(donneeL),nbl,2),list(idresidues = seq(1,nrow(donneeL),1),loop=1:nbl,data=c("residues","idresidues")))
+
+  for(i in 1:nbl){
+    print(i)
+    donnee <- read.csv(paste(repsortie,"donneeL",model,"_",i,".csv",sep=""))
+    donnee <- donnee[with(donnee, order(id)),]# revoir ce point
+
+    residues <- donnee$residues
+    id <- donnee$id
+    restResidues[,i,"residues"] <- residues
+    restResidues[,i,"idresidues"] <- id
+  }
+  restResidues <- as.data.frame(restResidues)
+
+  dfcomplet <- as.data.frame(pt@data["id"][with(pt@data["id"],order(id)),])
+  colnames(dfcomplet) <- "id"
+
+  # Revoir...      
+  dfcomplet <- as.data.frame(dcast.bdat_gbm[id][with(dcast.bdat_gbm[id],order(id)),])
+  colnames(dfcomplet) <- "id"
+
+  restMeanResidues <- array(NA, dim = c(nrow(pt),nbl+1),list(id=1:nrow(pt@data["id"]),data=c("idresidues",paste(1:nbl,".residues",sep=""))))
+
+  for(i in 1:nbl){
+    print(i)
+    dtmerge <- merge(restResidues[c(paste(i,".residues",sep=""),paste(i,".idresidues",sep=""))],dfcomplet,by.x=paste(i,".idresidues",sep=""),by.y="id",all=TRUE)
+    restMeanResidues[,paste(i,".residues",sep="")] <- dtmerge[[2]]
+  }
+
+  restMeanResidues[,"idresidues"] <- dfcomplet[["id"]]
+  dfMeanResidues <- as.data.frame(restMeanResidues)
+  dfMeanResidues <- rowMeans(dfMeanResidues,na.rm=TRUE)
+  ##>> export!
+
+  rest <- cbind(as.data.frame(rest),pt@data[vNames[1]])
+#####continuer pour stratification...
+
+
 
 # Stratification par zonage des grandes régions d'élevage
 p <- list()
@@ -472,8 +484,7 @@ cdf_clim
 <figcaption>
 </figcaption>
 </figure>
-Pour le climat, on pourra s'intéresser à quelques zones, en fonction de la densité des données que nous avons à disposition.
-Voir la figure <A HREF="#cdf_clim">6</A> présente les courbes de fréquence cumulées pour les différents types de climats.
+Pour le climat, on pourra s'intéresser à quelques zones, en fonction de la densité des données que nous avons à disposition. Voir la figure <A HREF="#cdf_clim">6</A> présente les courbes de fréquence cumulées pour les différents types de climats.
 
 ``` r
 ylim1 <- boxplot.stats(melted.bdat_clim$value)$stats[c(1, 5)]
@@ -497,8 +508,7 @@ Voir aussi pour rajouter la figure <A HREF="#boxplot_clim">8</A>. Sur cette figu
 Par régions d'élevage
 ---------------------
 
-Egalement, ce concentrer sur les zones où les données sont importantes. On peut supprimer les zones de hautes de montagnes...
-Test également en fonction des différentes régions d'élevage
+Egalement, ce concentrer sur les zones où les données sont importantes. On peut supprimer les zones de hautes de montagnes... Test également en fonction des différentes régions d'élevage
 
 Regard sur les courbes de fréquences cumulées avec la figure <A HREF="#cdf_regelevage">9</A>
 

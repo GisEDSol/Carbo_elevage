@@ -3,13 +3,12 @@ title: "Analyse des teneurs en carbone organique de la BDAT"
 author: "Jean-Baptiste Paroissien"
 output:
   github_document:
-    number_sections: true
-    toc: true
-    toc_depth: 2
-    fig_width: 10
-    fig_height: 10
-    dev: png
-    md_extensions: +autolink_bare_uris+hard_line_breaks+header_attributes+line_blocks+table_captions
+  toc: true
+  toc_depth: 2
+  fig_width: 10
+  fig_height: 10
+  dev: png
+  md_extensions: +autolink_bare_uris+hard_line_breaks+header_attributes+line_blocks+table_captions
 ---
 
 ```{r setup, include=FALSE,warning=FALSE,echo=FALSE,message=FALSE,eval=TRUE}
@@ -245,23 +244,117 @@ Faire une boucle et présenter les graphs d'importances pour les différentes p�
 ```{r,highlight=TRUE,eval=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("gbm_fr","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
 
 ##### Sélection des variables explicatives (revoir cette sélection, se baser sur un tableau à charger en fonction des périodes à analyser)
-Rcovar <- c("hpluie_an","jchauds_an","jfroids_an","ttemp_an","altimean","p_sfp1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_c1988","p_c1970","p_c1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbgrani_sau2010","ugbta1988")
-type <- c("climat","climat","climat","climat","topo","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup","occup")
-vNames <- c("corgox_medequi9599",Rcovar) #9599 car meilleure représentation spatiale
-#####
 
-#  Sélection du jeu de données
+Rcovarclimato <- c("hpluie_an","jchauds_an","jfroids_an","ttemp_an","pluie_ecart_janv","pluie_ecart_juil","ampli_t_juil_janv","jpluie_janv","jpluie_juil")
+typeclimato <- replicate(length(Rcovarclimato), "climat")
+
+Rcovartopo <- "altimean"
+typetopo <- replicate(length(Rcovartopo), "topographie")
+
+Rcovaroccup <- c("p_sfp1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_c1988","p_c1970","p_c1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbgrani_sau2010","ugbta1988")
+typeoccup <- replicate(length(Rcovaroccup), "occup")
+
+type <- c(typeclimato,typetopo,typeoccup)
+Rcovar <- c(Rcovarclimato,Rcovartopo,Rcovaroccup)
+vNames <- c("corgox_medequi9599",Rcovar) #9599 car meilleure représentation spatiale
+#####################
+
+# Sélection du jeu de données
 dcast.bdat_gbm <- dcast.bdat[complete.cases(dcast.bdat[,vNames]),vNames] # Pour supprimer les NA
 datax <- dcast.bdat_gbm[, vNames[-1]]
 datay <- dcast.bdat_gbm[, vNames[1]]
 
-#tuneGrid <- expand.grid(.interaction.depth = c(1,5,9,13),.n.trees = c(150,500,1000,1500),.shrinkage = 0.05)
-#trControl <- trainControl(method = "cv",p=0.8)
-#tuneGrid <-  expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:30)*10,shrinkage = 0.1,n.minobsinnode = 20)
+# France entière
 
-#registerDoMC(4) # Nombre de processeurs activés
-#mgbm <- train(x = datax , y = datay,method="gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
-#plot(varImp(mgbm), top = 10)
+trControl <- trainControl(method = "cv",p=0.8)
+tuneGrid <-  expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 20)
+
+# Pour le stockage des résultats
+rest <- array(NA, dim = c(length(datay), nbl, 1),list(id = 1:length(datay), loop = 1:nbl, mod = model))
+
+set.seed(157)#Pour assurer la reproductibilité
+model <- "gbm"
+nbl <- 10
+prob <- 0.8
+
+# Rajouter la stratification dans cette boucle
+
+# Stratification par zonage des grandes régions d'élevage
+p <- list()
+for(i in levels(dcast.bdat$zonage_simple)){
+
+  for (j in 1:nbl){
+    gc()  
+    # randomizes the mask 
+    print(j)
+    masko <- createDataPartition(dcast.bdat_gbm[,1],p = prob, list = FALSE)
+  
+    donneeL <- dcast.bdat_gbm[masko,]
+    donneeV <- dcast.bdat_gbm[-masko,]
+    learningx <- datax[masko,]
+    learningy <- datay[masko]
+    indepx <- datax[-masko,]
+    indepy <- datay[-masko]
+
+    mgbm <- train(x = learningx , y = learningy,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
+    #best.iter <- gbm.perf(mgbm,method="cv")
+    #save(mgbm,file=paste(fold,"mfinal",titre,"_",model,"_",j,".RData",sep=""))
+                  
+    f.predict <- predict(mgbm$finalModel, learningx , n.trees = mgbm$bestTune$n.trees)
+    #save(f.predict,file=paste("fpredict",titre,"_",model,".RData",sep=""))
+
+    indep.pred <- predict(mgbm$finalModel, indepx , n.trees=mgbm$bestTune$n.trees)
+
+    # Si transformation log du c        
+    #indep.pred <- exp(indep.pred)
+          
+    rest[-masko, j, model] <- indep.pred  
+    residue <- learningy - f.predict
+    donneeL$residues <- residue
+        
+    # Construire la moyenne des résidus dans un dataframe!
+    write.csv(donneeL,paste(repsortie,"donneeL",model,"_",j,".csv",sep=""))  
+}
+
+  #Calcul de la moyenne des résidus
+  restResidues <- array(NA, dim = c(nrow(donneeL),nbl,2),list(idresidues = seq(1,nrow(donneeL),1),loop=1:nbl,data=c("residues","idresidues")))
+
+  for(i in 1:nbl){
+    print(i)
+    donnee <- read.csv(paste(repsortie,"donneeL",model,"_",i,".csv",sep=""))
+    donnee <- donnee[with(donnee, order(id)),]# revoir ce point
+
+    residues <- donnee$residues
+    id <- donnee$id
+    restResidues[,i,"residues"] <- residues
+    restResidues[,i,"idresidues"] <- id
+  }
+  restResidues <- as.data.frame(restResidues)
+
+  dfcomplet <- as.data.frame(pt@data["id"][with(pt@data["id"],order(id)),])
+  colnames(dfcomplet) <- "id"
+
+  # Revoir...      
+  dfcomplet <- as.data.frame(dcast.bdat_gbm[id][with(dcast.bdat_gbm[id],order(id)),])
+  colnames(dfcomplet) <- "id"
+
+  restMeanResidues <- array(NA, dim = c(nrow(pt),nbl+1),list(id=1:nrow(pt@data["id"]),data=c("idresidues",paste(1:nbl,".residues",sep=""))))
+
+  for(i in 1:nbl){
+    print(i)
+    dtmerge <- merge(restResidues[c(paste(i,".residues",sep=""),paste(i,".idresidues",sep=""))],dfcomplet,by.x=paste(i,".idresidues",sep=""),by.y="id",all=TRUE)
+    restMeanResidues[,paste(i,".residues",sep="")] <- dtmerge[[2]]
+  }
+
+  restMeanResidues[,"idresidues"] <- dfcomplet[["id"]]
+  dfMeanResidues <- as.data.frame(restMeanResidues)
+  dfMeanResidues <- rowMeans(dfMeanResidues,na.rm=TRUE)
+  ##>> export!
+
+  rest <- cbind(as.data.frame(rest),pt@data[vNames[1]])
+#####continuer pour stratification...
+
+
 
 # Stratification par zonage des grandes régions d'élevage
 p <- list()
