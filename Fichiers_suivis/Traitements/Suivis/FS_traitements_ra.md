@@ -86,6 +86,7 @@ for(v in variablecarto){
 ```
 
 Ici, on rajoute la carte sur les ugb tout aliments
+
 ![This is myfile\_1.png](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/ugbtaquantile.png)
 
 Statistiques descriptives
@@ -94,8 +95,11 @@ Statistiques descriptives
 Courbes des fréquences cumulées et boxplot
 ------------------------------------------
 
-![](FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-4-1.png)
-
+<figure>
+<img src="FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-4-1.png">
+<figcaption>
+</figcaption>
+</figure>
 La distribution des valeurs par années et par type d'occupation du sol présentée dans la figure ci-dessous illustre également les même tendances.
 
 ``` r
@@ -112,8 +116,11 @@ p <- ggplot(melted.ra_occup) +
 p  
 ```
 
-![](FS_traitements_ra_files/figure-markdown_github/summarybdatfrance-1.png)
-
+<figure>
+<img src="FS_traitements_ra_files/figure-markdown_github/summarybdatfrance-1.png">
+<figcaption>
+</figcaption>
+</figure>
 Résumé des statistiques
 -----------------------
 
@@ -176,20 +183,34 @@ Commenter les statistiques par périodes et type d'occupation du sol
 Analyse de l'évolution par stratification
 =========================================
 
-![](FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-6-1.png)
-
+<figure>
+<img src="FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-6-1.png">
+<figcaption>
+</figcaption>
+</figure>
 Analyse des différences d'occupation
 ------------------------------------
 
 Le graphique ci-dessous n'est pas très parlant. Pour mieux appréhender les zones où il y a eu pas mal de changements, nous pourrions sélectionner uniquement les cantons ayant connun un bouleversement de plus de X% (par exemple 25 ou 50%) et compter ces cantons par zones de stratification (façon histogramme, avec diminution ou augmentation de plus de X%).Il faudra également rajouter les UGB
 
-![](FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-7-1.png)
-
+<figure>
+<img src="FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-7-1.png">
+<figcaption>
+</figcaption>
+</figure>
+<figure>
+<img src="FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-7-2.png">
+<figcaption>
+</figcaption>
+</figure>
 Zoom sur les principales régions concernées par les évolutions
 --------------------------------------------------------------
 
-![](FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-9-1.png)
-
+<figure>
+<img src="FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-9-1.png">
+<figcaption>
+</figcaption>
+</figure>
     ## <ggproto object: Class CoordCartesian, Coord>
     ##     aspect: function
     ##     distance: function
@@ -206,8 +227,11 @@ Zoom sur les principales régions concernées par les évolutions
     ##     transform: function
     ##     super:  <ggproto object: Class CoordCartesian, Coord>
 
-![](FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-10-1.png)
-
+<figure>
+<img src="FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-10-1.png">
+<figcaption>
+</figcaption>
+</figure>
 Ici, prendre du recul sur l'occupation du sol et son évolution. On pourra s'appuyer sur d'autres types de graphiques, comme les boxplots avec des stats du type (% de prairies retournées...?)
 
 ``` r

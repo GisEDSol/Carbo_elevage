@@ -185,7 +185,7 @@ cat(paste("![](",fichiers,")",sep=""))
 
 ### Analyse des facteurs contrôlant la distribution spatiale
 
-Dans cette partie, les facteurs contrôlant la distribution spatiale des teneurs en carbone organique des différentes périodes est analysée. Le travail est dans un premier porté par une analyse en composante principale pour appréhender les relations entre les facteurs et dans un deuxième temps, 
+Dans cette partie, les facteurs contrôlant la distribution spatiale des teneurs en carbone organique des différentes périodes sont analysés. Le travail est dans un premier porté par une analyse en composante principale pour appréhender les relations entre les facteurs et dans un deuxième temps par une modélisation avec la méthode des arbres de régression boostés. 
 
 #### Analyse en composante principale
 
@@ -194,6 +194,22 @@ Dans cette partie, les facteurs contrôlant la distribution spatiale des teneurs
 Rcovar <- c("ttemp_an","jfroids_an","jchauds_an","hpluie_an","ugbta1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sth1970","p_sth1979","p_sth1988","p_sfp1970","p_sfp1979","p_sfp1988","p_mf1970","p_mf1979","p_mf1988","p_c1970","p_c1979","p_c1988","altimean","classe_C")#,"grdcultures1988","elevagehorsol1988","polyelevage1988","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90")
 vNames <- c("corgox_medequi9094",Rcovar)
 #vNames <- c("corgox_medequi9094","corgox_medequi9599","corgox_medequi0004","corgox_medequi0509","corgox_medequi1014",Rcovar)
+
+
+
+Rcovarclimato <- c("hpluie_an","jchauds_an","jfroids_an","ttemp_an","pluie_ecart_janv","pluie_ecart_juil","ampli_t_juil_janv","jpluie_janv","jpluie_juil")
+typeclimato <- replicate(length(Rcovarclimato), "climat")
+
+Rcovartopo <- "altimean"
+typetopo <- replicate(length(Rcovartopo), "topographie")
+
+Rcovaroccup <- c("p_sfp1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_c1988","p_c1970","p_c1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbgrani_sau2010","ugbta1988")
+typeoccup <- replicate(length(Rcovaroccup), "occup")
+
+type <- c(typeclimato,typetopo,typeoccup)
+Rcovar <- c(Rcovarclimato,Rcovartopo,Rcovaroccup,"classe_C")
+vNames <- c("corgox_medequi9094",Rcovar)
+
 # Lecture de la table sans les NA
 lvNames <- length(vNames)
 dcast.bdat_variables <- dcast.bdat[complete.cases(dcast.bdat[,vNames[-lvNames]]),vNames[-lvNames]]
@@ -217,7 +233,7 @@ fviz_pca_biplot(res.pca, label="var",habillage=dcast.bdat_variables$classe_C,
 La figure `r fig$ref("pca_fr",link=TRUE)` présente la distribution des variables sur les axes 1 et 2 de l'ACP. Environ `r round(res.pca$eig[1,2]+res.pca$eig[2,2])` pourcent de l'information est contenu dans ces deux premiers axes. Description de la distribution des variables dans l'espace des ACP : 
 
 - STH, Prairie et SFP suivent la même dynamique et sont opposées aux variables associées aux grandes cultures. Ces différentes variables sont très bien représentées et ont une forte contribution dans la variance du jeu de données,
-- Le mais fourrage est également lié aux UGB. Ces 2 types de variables sont liés à l'axe 2,
+- Le mais fourrage est également lié aux UGB. Ces 2 types de variables sont liés à l'axe 1,
 - Les variables climatiques semblent être liées à l'axe 3 (à vérifier).
 
 Dans cet espace, la variable carbone est peu contributrice et n'est pas nettement liée à un axe (1 ou 2). Il faudra regarder la répartition de ces variables sur les axes 1-3 et 2-3.
@@ -244,7 +260,6 @@ Faire une boucle et présenter les graphs d'importances pour les différentes p�
 ```{r,highlight=TRUE,eval=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("gbm_fr","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
 
 ##### Sélection des variables explicatives (revoir cette sélection, se baser sur un tableau à charger en fonction des périodes à analyser)
-
 Rcovarclimato <- c("hpluie_an","jchauds_an","jfroids_an","ttemp_an","pluie_ecart_janv","pluie_ecart_juil","ampli_t_juil_janv","jpluie_janv","jpluie_juil")
 typeclimato <- replicate(length(Rcovarclimato), "climat")
 
@@ -260,29 +275,69 @@ vNames <- c("corgox_medequi9599",Rcovar) #9599 car meilleure représentation spa
 #####################
 
 # Sélection du jeu de données
-dcast.bdat_gbm <- dcast.bdat[complete.cases(dcast.bdat[,vNames]),vNames] # Pour supprimer les NA
+id <- "id_geofla"# Nom du champs présentant un identifiant unique
+dcast.bdat_gbm <- dcast.bdat[complete.cases(dcast.bdat[,vNames]),c(vNames,id)] # Pour supprimer les NA
 datax <- dcast.bdat_gbm[, vNames[-1]]
 datay <- dcast.bdat_gbm[, vNames[1]]
 
 # France entière
-
 trControl <- trainControl(method = "cv",p=0.8)
 tuneGrid <-  expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 20)
+mgbm <- train(x = learningx , y = learningy,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
+plot(varImp(mgbm), top = 10)
+
+# Stratification par zonage des grandes régions d'élevage
+set.seed(157) #Pour assurer la reproductibilité
+p <- list()
+for(i in levels(as.factor(dcast.bdat$typo_clim))){
+  print(i)
+  dcast.bdat_zonage <- dcast.bdat[complete.cases(dcast.bdat[,c(vNames,"zonage_cplt")]) & dcast.bdat$typo_clim %in% i,vNames] # Pour supprimer les NA
+  
+  datax <- dcast.bdat_zonage[, vNames[-1]]
+  datay <- dcast.bdat_zonage[, vNames[1]]
+
+  #tuneGrid <- expand.grid(.interaction.depth = c(1,5,9,13),.n.trees = c(150,500,1000,1500),.shrinkage = 0.05)
+  trControl <- trainControl(method = "cv",p=0.9)
+  tuneGrid <-  expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:50)*10,shrinkage = 0.1,n.minobsinnode = 20)
+
+  mgbm <- train(x = datax , y = datay,method="gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
+
+  varimport <- varImp(mgbm)
+  varimport <- as.data.frame(varimport[[1]])
+  varimport$variable <- rownames(varimport)
+  colnames(varimport) <- c("importance","variable")
+  #varimport <- varimport[order(varimport$importance,decreasing = TRUE),]
+  varimport$variable <- reorder(varimport$variable, varimport$importance)
+  varimport <- varimport[1:10,]
+  varimport$type <- gsub2(Rcovar,type,varimport$variable)#Ajout du type de facteurs
+
+  p[[i]] <- ggplot(varimport, aes(x = variable, y = importance,fill=type)) + 
+  geom_bar(stat = "identity") + coord_flip() + labs(title=i)
+}
+
+
+do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=3,position="bottom")))
+#do.call(grid.arrange,c(p,list(ncol=2,nrow=3))) #Figure finale
+```
+
+
+
+```{r,highlight=TRUE,eval=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("gbm_fr_prediction","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
+
+set.seed(157) #Pour assurer la reproductibilité
+model <- "gbm"
+nbl <- 2
+prob <- 0.8
 
 # Pour le stockage des résultats
 rest <- array(NA, dim = c(length(datay), nbl, 1),list(id = 1:length(datay), loop = 1:nbl, mod = model))
 
-set.seed(157)#Pour assurer la reproductibilité
-model <- "gbm"
-nbl <- 10
-prob <- 0.8
-
 # Rajouter la stratification dans cette boucle
 
 # Stratification par zonage des grandes régions d'élevage
+registerDoMC(4)
 p <- list()
 for(i in levels(dcast.bdat$zonage_simple)){
-
   for (j in 1:nbl){
     gc()  
     # randomizes the mask 
@@ -322,17 +377,13 @@ for(i in levels(dcast.bdat$zonage_simple)){
   for(i in 1:nbl){
     print(i)
     donnee <- read.csv(paste(repsortie,"donneeL",model,"_",i,".csv",sep=""))
-    donnee <- donnee[with(donnee, order(id)),]# revoir ce point
-
+    #donnee <- donnee[with(donnee, order(id)),]
     residues <- donnee$residues
-    id <- donnee$id
+    id_col <- donnee$id_geofla
     restResidues[,i,"residues"] <- residues
-    restResidues[,i,"idresidues"] <- id
+    restResidues[,i,"idresidues"] <- id_col
   }
   restResidues <- as.data.frame(restResidues)
-
-  dfcomplet <- as.data.frame(pt@data["id"][with(pt@data["id"],order(id)),])
-  colnames(dfcomplet) <- "id"
 
   # Revoir...      
   dfcomplet <- as.data.frame(dcast.bdat_gbm[id][with(dcast.bdat_gbm[id],order(id)),])
@@ -353,38 +404,6 @@ for(i in levels(dcast.bdat$zonage_simple)){
 
   rest <- cbind(as.data.frame(rest),pt@data[vNames[1]])
 #####continuer pour stratification...
-
-
-
-# Stratification par zonage des grandes régions d'élevage
-p <- list()
-for(i in levels(dcast.bdat$zonage_simple)){
-  print(i)
-  dcast.bdat_zonage <- dcast.bdat[complete.cases(dcast.bdat[,c(vNames,"zonage_cplt")]) & dcast.bdat$zonage_simple %in% i,vNames] # Pour supprimer les NA
-  
-  datax <- dcast.bdat_zonage[, vNames[-1]]
-  datay <- dcast.bdat_zonage[, vNames[1]]
-
-  #tuneGrid <- expand.grid(.interaction.depth = c(1,5,9,13),.n.trees = c(150,500,1000,1500),.shrinkage = 0.05)
-  trControl <- trainControl(method = "cv",p=0.9)
-  tuneGrid <-  expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:50)*10,shrinkage = 0.1,n.minobsinnode = 20)
-
-  mgbm <- train(x = datax , y = datay,method="gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
-
-  varimport <- varImp(mgbm)
-  varimport <- as.data.frame(varimport[[1]])
-  varimport$variable <- rownames(varimport)
-  colnames(varimport) <- c("importance","variable")
-  #varimport <- varimport[order(varimport$importance,decreasing = TRUE),]
-  varimport$variable <- reorder(varimport$variable, varimport$importance)
-  varimport <- varimport[1:10,]
-  varimport$type <- gsub2(Rcovar,type,varimport$variable)#Ajout du type de facteurs
-
-  p[[i]] <- ggplot(varimport, aes(x = variable, y = importance,fill=type)) + 
-  geom_bar(stat = "identity") + coord_flip() + labs(title=i)
-}
-
-do.call(grid.arrange,c(p,list(ncol=2,nrow=3))) #Figure finale
 ```
 
 ```{r,highlight=TRUE,eval=FALSE}
@@ -410,7 +429,7 @@ print(mcubist$usage)
 #### Graphiques de correlation
 
 
-```{r,highlight=TRUE,eval=TRUE,fig.height=6, fig.width=6,fig.cap = fig$cap("correlation","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
+```{r,highlight=TRUE,eval=TRUE,fig.height=6, fig.width=8,fig.cap = fig$cap("correlation","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
 
 xlabel <- "Pluie annuelle (mm)"
 ylabel <- "Carbone organique (g/kg)"
