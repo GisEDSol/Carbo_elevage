@@ -208,7 +208,7 @@ for(i in period){
 
 ## Données associées aux UGB
 
-Les données des UGB proviennent de la table accessible à cette [adresse](http://agreste.agriculture.gouv.fr/IMG/xls/Donnees_principales__canton_departement_.xls). A noter qu'il sagit uniquement des UGB tous aliments et que les données sont uniquement accessibles pour 1988, 2000 et 2010. Cette section présente le calcul de la densité d'UGB tous aliments (UGBTA/SAU) pour les 3 périodes de temps disponibles.
+Les données des UGB proviennent de la table accessible à cette [adresse](http://agreste.agriculture.gouv.fr/IMG/xls/Donnees_principales__canton_departement_.xls). A noter qu'il sagit uniquement des UGB tous aliments et que les données sont uniquement accessibles pour 1988, 2000 et 2010. Cette section présente le calcul de la densité d'UGB tous aliments (UGBTA/SAU) pour les 3 périodes de temps disponibles. Le calcul est appliqué sur les tables importées dans la base postgresql et décrit dans le fichier [FS_bdd_brute.Rmd](`r github_url`Fichiers_suivis/BDD/Suivis/FS_bdd_brute.Rmd).
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
@@ -217,6 +217,7 @@ UGB  <- "ugbta" # Nom de la variable étudiée
 tableRA <- "ugbta_canton880010" # Nom de la table ra brute contenant les données à calculer et joindre vers la table dm_vecteurs.canton
 periodUGB <- c("1988","2000","2010") # Période de temps prise en compte
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+schema <- "ra"
 
 # Calcul chargement
 for(i in periodUGB){
@@ -227,7 +228,6 @@ for(i in periodUGB){
     sqlQuery(loc,paste("alter table ",table_dm,"
                         drop column if exists ",UGBperiod,sep=""))
 
-    #Vérifier la jointure et l'unité de la SAU (m2 ou ha?)
     sqlQuery(loc,paste("alter table ",table_dm,"
                         add column ",UGBperiod," numeric;
                         update ",table_dm,"
@@ -240,7 +240,7 @@ for(i in periodUGB){
 	    COMMENT ON COLUMN ",table_dm,".",UGBperiod," IS \'Densité UGBTA/SAU pour ",i,".\';",sep="")))
 }
 
-# Calcul de la densité des autres UGB
+# Calcul de la densité des autres UGB (voir pour supprimer)
 variableUGB <- "ensembledesexploitations"
 p_variable <- c("ugbh_sau","ugbgrani_sau")
 table_RA <- c("ugbherbi_canton","ugbgrani_canton")
@@ -263,7 +263,6 @@ for(v in table_RA){
       sqlQuery(loc,paste("alter table ",table_dm,"
                           drop column if exists ",p_variableRA,sep=""))
 
-      #Vérifier la jointure et l'unité de la SAU (m2 ou ha?)
       sqlQuery(loc,paste("alter table ",table_dm,"
                           add column ",p_variableRA," numeric;
                           update ",table_dm,"
@@ -283,6 +282,8 @@ for(v in table_RA){
 
 Les évolutions d'occupation du sol et de la densité d'UGB sont calculées entre 1970-2010, 1979-2010 et 1988-2010. Le calcul de l'évolution se base sur la relation suivante  : test avec (occupA/SAUA)-(occupB/SAUB) avec A l'année la plus récente et B l'année la plus ancienne. (A priori, plus intéressant car la sau peut également évoluer...)
 
+## Evolution pour l'occupation du sol
+
 ```{r,highlight=TRUE,eval=FALSE}
 # Calcul de l'évolution des superficies pour 1970-2010;1979-2010;1988-2010
 # Paramètres
@@ -290,7 +291,6 @@ p_variable <- c("sth","c","sfp","mf","prairie")
 periodref <- "2010"
 period <- c("1970","1979","1988")
 signification <- cbind("de la surface toujours en herbe","de la surface en céréales"," de la surface fourragère principale","de la surface en maîs fourrage ensilage","prairie")
-type_RA <- "s_cultures_canton"
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
 
 # Calcul de statistiques pour les cultures
@@ -340,6 +340,41 @@ sqlQuery(loc,paste("alter table ",table_dm,"
   # Ajout d'un commentaire sur la nouvelle colonne créée
 	print(sqlQuery(loc,paste("
 	COMMENT ON COLUMN ",table_dm,".",variable," IS \'Evolution des UGB tous aliment entre 2010 et 1988 (occupA/SAUA)-(occupB/SAUB).\';",sep="")))
+```
+
+## Evolution pour les OTEX
+
+```{r,highlight=TRUE,eval=FALSE}
+# Paramètres
+p_variable <- c("elevage","polyelevage","grdcultures","elevagehorsol") #nom des variables OTEX prise en compte
+periodref <- "2010"
+period <- "1988"
+signification <- cbind("élevage","polyélevage", "grandes cultures", "élevage hors sol")# Nom des labels associés aux variables à cartographier. Vecteur utilisé pour les titres des cartes
+table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+
+# Calcul de statistiques pour les OTEX
+cpt <- 0
+for(v in p_variable){
+  cpt <- cpt + 1
+  for(p in period){
+    varia <- paste("var_",v,p,"_",periodref,sep="")
+      
+    variacalA <- paste(v,periodref,sep="")   
+    variacalB <- paste(v,p,sep="")
+
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        drop column if exists ",varia,sep=""))
+  
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        add column ",varia," numeric;
+                        update ",table_dm,"
+                        SET ",varia," = ",variacalA,"-",variacalB,sep=""))
+    
+    # Ajout d'un commentaire sur la nouvelle colonne crée
+  print(sqlQuery(loc,paste("
+    COMMENT ON COLUMN ",table_dm,".",varia," IS \'Evolution du pourcentage d\''OTEX en ",signification[cpt]," entre ",periodref," et ",p,".\';",sep="")))
+  }
+}
 ```
 
 # Création de classes de valeurs pour la stratification

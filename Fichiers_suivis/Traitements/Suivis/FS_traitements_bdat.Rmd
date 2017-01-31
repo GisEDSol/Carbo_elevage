@@ -191,11 +191,9 @@ Dans cette partie, les facteurs contrôlant la distribution spatiale des teneurs
 
 ```{r,highlight=TRUE,eval=TRUE,fig.height=6, fig.width=7,fig.cap = fig$cap("pca_fr",""),fig.align="center"}
 # Sélection des variables de travail
-Rcovar <- c("ttemp_an","jfroids_an","jchauds_an","hpluie_an","ugbta1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sth1970","p_sth1979","p_sth1988","p_sfp1970","p_sfp1979","p_sfp1988","p_mf1970","p_mf1979","p_mf1988","p_c1970","p_c1979","p_c1988","altimean","classe_C")#,"grdcultures1988","elevagehorsol1988","polyelevage1988","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90")
-vNames <- c("corgox_medequi9094",Rcovar)
+#Rcovar <- c("ttemp_an","jfroids_an","jchauds_an","hpluie_an","ugbta1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sth1970","p_sth1979","p_sth1988","p_sfp1970","p_sfp1979","p_sfp1988","p_mf1970","p_mf1979","p_mf1988","p_c1970","p_c1979","p_c1988","altimean","classe_C")#,"grdcultures1988","elevagehorsol1988","polyelevage1988","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90")
+#vNames <- c("corgox_medequi9094",Rcovar)
 #vNames <- c("corgox_medequi9094","corgox_medequi9599","corgox_medequi0004","corgox_medequi0509","corgox_medequi1014",Rcovar)
-
-
 
 Rcovarclimato <- c("hpluie_an","jchauds_an","jfroids_an","ttemp_an","pluie_ecart_janv","pluie_ecart_juil","ampli_t_juil_janv","jpluie_janv","jpluie_juil")
 typeclimato <- replicate(length(Rcovarclimato), "climat")
@@ -260,7 +258,7 @@ Faire une boucle et présenter les graphs d'importances pour les différentes p�
 ```{r,highlight=TRUE,eval=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("gbm_fr","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
 
 ##### Sélection des variables explicatives (revoir cette sélection, se baser sur un tableau à charger en fonction des périodes à analyser)
-Rcovarclimato <- c("hpluie_an","jchauds_an","jfroids_an","ttemp_an","pluie_ecart_janv","pluie_ecart_juil","ampli_t_juil_janv","jpluie_janv","jpluie_juil")
+Rcovarclimato <- c("hpluie_an","jchauds_an","jfroids_an","ttemp_an","pluie_ecart_janv")#,"pluie_ecart_juil","ampli_t_juil_janv","jpluie_janv","jpluie_juil")
 typeclimato <- replicate(length(Rcovarclimato), "climat")
 
 Rcovartopo <- "altimean"
@@ -283,7 +281,7 @@ datay <- dcast.bdat_gbm[, vNames[1]]
 # France entière
 trControl <- trainControl(method = "cv",p=0.8)
 tuneGrid <-  expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 20)
-mgbm <- train(x = learningx , y = learningy,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
+mgbm <- train(x = datax , y = datay,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
 plot(varImp(mgbm), top = 10)
 
 # Stratification par zonage des grandes régions d'élevage
@@ -314,7 +312,6 @@ for(i in levels(as.factor(dcast.bdat$typo_clim))){
   p[[i]] <- ggplot(varimport, aes(x = variable, y = importance,fill=type)) + 
   geom_bar(stat = "identity") + coord_flip() + labs(title=i)
 }
-
 
 do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=3,position="bottom")))
 #do.call(grid.arrange,c(p,list(ncol=2,nrow=3))) #Figure finale

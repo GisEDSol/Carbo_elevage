@@ -117,6 +117,9 @@ assign("repBase",paste(repdata,"Base/",sep=""),.GlobalEnv)
 assign("repagreste",paste(repdata,"Vegetation_Occup/Agreste/Disar/",sep=""),.GlobalEnv)
 #########################################
 
+# 
+assign("github_url",paste("https://github.com/Rosalien/GISEDSol/tree/master/",sep=""),.GlobalEnv) #url du dépôt github
+
 # Mise en place de la connexion ODBC
 assign("loc",odbcConnect("solelevage",case="postgresql", believeNRows=FALSE),.GlobalEnv)
 

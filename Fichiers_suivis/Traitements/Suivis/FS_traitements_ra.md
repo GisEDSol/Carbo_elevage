@@ -7,13 +7,15 @@ Jean-Baptiste Paroissien
 -   [Cartographie](#cartographie)
     -   [Occupation du sol](#occupation-du-sol)
     -   [Les UGB](#les-ugb)
+    -   [Autres](#autres)
 -   [Statistiques descriptives](#statistiques-descriptives)
     -   [Courbes des fréquences cumulées et boxplot](#courbes-des-frequences-cumulees-et-boxplot)
-    -   [Résumé des statistiques](#resume-des-statistiques)
+    -   [Résumé des statistiques et tests](#resume-des-statistiques-et-tests)
 -   [Analyse de l'évolution par stratification](#analyse-de-levolution-par-stratification)
+    -   [Stratification par les principales régions d'élevage](#stratification-par-les-principales-regions-delevage)
     -   [Analyse des différences d'occupation](#analyse-des-differences-doccupation)
     -   [Zoom sur les principales régions concernées par les évolutions](#zoom-sur-les-principales-regions-concernees-par-les-evolutions)
-    -   [Exploration et fouille de données](#exploration-et-fouille-de-donnees)
+    -   [Observation par régions administratives](#observation-par-regions-administratives)
 
 Objectifs
 =========
@@ -30,7 +32,8 @@ Pour ce travail, les cartes ont été générées avec le paquet **`ggplot2`** e
 Occupation du sol
 -----------------
 
-Les figures suivantes
+Commenter les figures et rajouter les figures sur les variations.
+Voir pour rajouter d'autres cartes...
 
 ``` r
 # Paramètres ###########################
@@ -50,13 +53,13 @@ for(v in variablecarto){
   cpt <- cpt + 1
   nomfichier <- paste(v,style_classe,sep="")
   l_legendvaria <- l_legend[cpt]
-  variablecarto <- paste(v,period,sep="")
+  variableperiod <- paste(v,period,sep="")
 
-  carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=5,position="bottom",ggsaveheight=5,ggsavewidth=20)  
+  carto(dsn,tablecarto,variableperiod,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=5,position="bottom",ggsaveheight=5,ggsavewidth=20)  
 }
 ```
 
-![This is myfile\_1.png](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/p_prairiepretty.png) ![This is myfile\_1.png](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/p_sthpretty.png) ![This is myfile\_1.png](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/p_sfppretty.png) ![This is myfile\_1.png](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/p_mfpretty.png) ![This is myfile\_1.png](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/p_cpretty.png)
+![Cartographie de l'occupation du sol p\_prairie](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/p_prairiepretty.png) ![Cartographie de l'occupation du sol p\_sth](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/p_sthpretty.png) ![Cartographie de l'occupation du sol p\_sfp](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/p_sfppretty.png) ![Cartographie de l'occupation du sol p\_mf](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/p_mfpretty.png) ![Cartographie de l'occupation du sol p\_c](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/p_cpretty.png)
 
 Les UGB
 -------
@@ -79,34 +82,71 @@ for(v in variablecarto){
   cpt <- cpt + 1
   nomfichier <- paste(v,style_classe,sep="")
   l_legendvaria <- l_legend[cpt]
-  variablecarto <- paste(v,period,sep="")
+  variableperiod <- paste(v,period,sep="")
 
-  carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=3,position="bottom",ggsavewidth=18,ggsaveheight=5)  
+  carto(dsn,tablecarto,variableperiod,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=3,position="bottom",ggsavewidth=18,ggsaveheight=5)  
 }
 ```
 
-Ici, on rajoute la carte sur les ugb tout aliments
+![Cartograpahie des ugb tous aliments](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/ugbtaquantile.png)
 
-![This is myfile\_1.png](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/ugbtaquantile.png)
+Autres
+------
+
+``` r
+# Paramètres ###########################
+tablecarto <- "dm_vecteurs.canton" 
+
+period <- c("1988","2000","2010") #Périodes de temps prise en compte
+variablecarto <- c("elevage","polyelevage","grdcultures","elevagehorsol")#variable(s) à cartographier
+l_legend <- c("OTEX en élevage (%)","OTEX en polyélevage (%)", "OTEX en grandes cultures (%)", "OTEX en élevage hors sol (%)")# Nom des labels associés aux variables à cartographier. Vecteur utilisé pour les titres des cartes
+
+nclasse <- 5 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "pretty" #"pretty"#"jenks"
+couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+
+# Lancement
+cpt <- 0
+for(v in variablecarto){
+  cpt <- cpt + 1
+  nomfichier <- paste(v,style_classe,sep="")
+  l_legendvaria <- l_legend[cpt]
+  variableperiod <- paste(v,period,sep="")
+
+  carto(dsn,tablecarto,variableperiod,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=3,position="bottom",ggsaveheight=5,ggsavewidth=15)  
+}
+```
+
+![](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/elevagepretty.png) ![](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/polyelevagepretty.png) ![](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/grdculturespretty.png) ![](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/elevagehorsolpretty.png)
 
 Statistiques descriptives
 =========================
 
+L'objectif de cett section est d'observer globalement les principales tendances dans l'évolution des changements d'occupation du sol sur les données du recencement agricole pour les périodes de 1970 à 2010.
+
 Courbes des fréquences cumulées et boxplot
 ------------------------------------------
 
+Les courbes de fréquences cumulées présentées ci-dessous mettent en exergue plusieus points :
+
+-   **Pourcentage de cérélale dans la SAU (p\_c):** Une augmentation de la part des céréales dans la SAU est clairement identifiée. Celle-ci concerne surtout les zones aux pourcentages moyens. A l'inverse, on constate une diminution de la part des céréales pour les zones densément occupées par les céréales.
+    -**Pourcentage de prairie dans la SAU (p\_prairie) :** Une diminution du pourcentage des prairies est observée entre 1979 et les années 1988, 2000 et 2010. La plus grosse diminution concerne les années 1979-1988. Cette tendance implique surtout les zones faiblement et moyennement occupées par les prairies. *A contrario*, les zones fortement occupées par les prairies (80 à 90% de la SAU) ont profitée une légère augmentation entre 1970 et 2010.
+    -**Pourcentage des surfaces toujours en herbe dans la SAU (p\_sth) :** Les surfaces toujours en herbe suivent globalement la même tendance que les prairies mais avec une intensité différente. La diminution de la STH (principalement les zones entre 0 et 75% de la SAU) est bien prononcée (surtout entre 1988 et 2000) tandis l'augmentation observée sur les prairies est peu tangible dans le cas des STH.
+    -**Pourcentage des surfaces fourragères principales (p\_sfp) :** La dynamique de la SFP suit de très près la dynamique des prairies.
+
 <figure>
-<img src="FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-4-1.png">
+<img src="FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-5-1.png">
 <figcaption>
 </figcaption>
 </figure>
-La distribution des valeurs par années et par type d'occupation du sol présentée dans la figure ci-dessous illustre également les même tendances.
+La distribution des valeurs par années et par type d'occupation du sol présentée dans la figure ci-dessous illustre également les même tendances décrites précédemment.
 
 ``` r
 melted.ra_occup <- melted.ra[melted.ra$variable != "ugbta",]
 
 p <- ggplot(melted.ra_occup) +
             geom_boxplot(aes(x=annees,y=value,col=variable))+
+#           geom_smooth(aes(x=as.integer(annees),y=value,color=variable,fill=variable),method=loess)+
             #scale_color_manual(values=colors,name="Années")+
             scale_x_discrete("Périodes")+scale_y_continuous("% d'occupation du sol")+
             theme(plot.title = element_text(size = 14, face = "bold"), 
@@ -117,135 +157,170 @@ p
 ```
 
 <figure>
-<img src="FS_traitements_ra_files/figure-markdown_github/summarybdatfrance-1.png">
+<img src="FS_traitements_ra_files/figure-markdown_github/boxplotra-1.png">
 <figcaption>
 </figcaption>
 </figure>
-Résumé des statistiques
------------------------
+Résumé des statistiques et tests
+--------------------------------
 
 Commenter les statistiques par périodes et type d'occupation du sol
 
-<table class="kable_wrapper">
-<tbody>
-<tr>
-<td>
-|      |  Min.|  1st Qu.|  Median|   Mean|  3rd Qu.|   Max.|
-|------|-----:|--------:|-------:|------:|--------:|------:|
-| 1970 |  0.00|    13.16|   24.95|  29.57|    44.31|  93.68|
-| 1979 |  0.00|    12.67|   26.73|  32.02|    49.36|  96.50|
-| 1988 |  0.00|    12.80|   28.09|  31.10|    48.12|  96.11|
-| 2000 |  0.04|    14.40|   31.60|  31.77|    47.64|  84.86|
-| 2010 |  0.08|    15.52|   33.91|  33.25|    49.76|  87.36|
+Principaux résultats du test des différences entre les années pour les principales occupations du sol :
 
-</td>
-<td>
-|      |  Min.|  1st Qu.|  Median|   Mean|  3rd Qu.|    Max.|
-|------|-----:|--------:|-------:|------:|--------:|-------:|
-| 1970 |     0|    21.12|   49.25|  47.55|    73.56|   99.67|
-| 1979 |     0|    21.64|   49.34|  48.04|    74.53|  100.00|
-| 1988 |     0|    11.60|   39.28|  42.40|    72.27|  100.00|
-| 2000 |     0|     9.88|   33.99|  40.22|    69.39|  100.00|
-| 2010 |     0|     9.90|   33.24|  39.74|    68.03|  100.00|
+-   **Proportion en céréales** : Seules les évolutions entre 1979-1988, 1979-2000, 1988-2000 ne sont pas significatives.
 
-</td>
-<td>
-|      |  Min.|  1st Qu.|  Median|   Mean|  3rd Qu.|    Max.|
-|------|-----:|--------:|-------:|------:|--------:|-------:|
-| 1970 |  0.03|    33.72|   58.46|  55.14|    78.60|   99.74|
-| 1979 |  0.00|    28.87|   58.97|  54.41|    80.50|  100.00|
-| 1988 |  0.03|    21.98|   54.18|  51.70|    81.41|  100.00|
-| 2000 |  0.08|    18.01|   48.51|  48.85|    79.73|  100.00|
-| 2010 |  0.07|    18.16|   48.61|  49.05|    79.56|  100.00|
+    Pairwise comparisons using Wilcoxon rank sum test
 
-</td>
-<td>
-|      |  Min.|  1st Qu.|  Median|   Mean|  3rd Qu.|    Max.|
-|------|-----:|--------:|-------:|------:|--------:|-------:|
-| 1970 |  0.09|   18.810|   41.89|  43.64|    66.33|   99.57|
-| 1979 |  0.00|   15.740|   38.39|  41.69|    65.49|  100.00|
-| 1988 |  0.07|   12.860|   33.60|  39.02|    63.43|  100.00|
-| 2000 |  0.04|    9.192|   25.71|  34.51|    56.27|  100.00|
-| 2010 |  0.01|    8.240|   23.56|  33.03|    53.86|  100.00|
+data: melted.test\[, "value"\] and melted.test\[, "annees"\]
 
-</td>
-<td>
-|      |  Min.|  1st Qu.|  Median|    Mean|  3rd Qu.|    Max.|
-|------|-----:|--------:|-------:|-------:|--------:|-------:|
-| 1988 |     0|     0.38|    0.83|  0.9876|     1.25|  144.00|
-| 2000 |     0|     0.31|    0.76|  0.9240|     1.23|   16.57|
-| 2010 |     0|     0.26|    0.72|  0.8982|     1.20|   57.43|
+     1970    1979    1988    2000   
 
-</td>
-</tr>
-</tbody>
-</table>
+1979 0.00726 - - -
+1988 0.01563 0.57299 - -
+2000 2.8e-07 0.24409 0.08333 -
+2010 1.4e-15 0.00034 8.4e-06 0.01563
+
+P value adjustment method: holm
+
+-   **Proportion en STH** : Les tendances observées sur les surfaces toujours en herbe sont toutes significatives.
+
+    Pairwise comparisons using Wilcoxon rank sum test
+
+data: melted.test\[, "value"\] and melted.test\[, "annees"\]
+
+     1970    1979    1988    2000  
+
+1979 0.0021 - - -
+1988 3.6e-13 7.9e-05 - -
+2000 &lt; 2e-16 &lt; 2e-16 3.0e-11 -
+2010 &lt; 2e-16 &lt; 2e-16 &lt; 2e-16 0.0308
+
+P value adjustment method: holm
+- **Proportion en prairie** : Seule les évolutions entre 1970-1979 et 2000-2010 ne sont pas significatives.
+
+    Pairwise comparisons using Wilcoxon rank sum test 
+
+data: melted.test\[, "value"\] and melted.test\[, "annees"\]
+
+     1970    1979    1988  2000 
+
+1979 0.903 - - -
+1988 4.0e-12 3.4e-14 - -
+2000 &lt; 2e-16 &lt; 2e-16 0.023 -
+2010 &lt; 2e-16 &lt; 2e-16 0.005 0.903
+
+P value adjustment method: holm
+- **Proportion en surface fourragère principale** : Seule les évolutions entre 1970-1979 et 2000-2010 ne sont pas significatives.
+
+    Pairwise comparisons using Wilcoxon rank sum test 
+
+data: melted.test\[, "value"\] and melted.test\[, "annees"\]
+
+     1970    1979    1988    2000   
+
+1979 1.00000 - - -
+1988 0.00095 0.00580 - -
+2000 5.3e-14 8.0e-11 0.00245 -
+2010 3.9e-13 4.5e-10 0.00580 1.00000
+
+P value adjustment method: holm
+- **Proportion en UGBTA** : Les différences entre toutes les années sont significatives
+
+    Pairwise comparisons using Wilcoxon rank sum test 
+
+data: melted.test\[, "value"\] and melted.test\[, "annees"\]
+
+&lt;0 x 0 matrix&gt;
+
+P value adjustment method: holm
+
+### Conclusion
+
+Globalement, les changements d'occupation du sol observées sur les cartes sont conséquentes et significatives pour une large part de périodes. Ces évolutions occasionnent :
+
+-   Une diminution des surfaces en prairies et toujours en herbe,
+-   Une augmentation des surfaces utilisées pour la culture des céréales.
+
+L'évolution de ces surfaces s'est surtout faites entre les périodes 1979 et 2000. (ce serait intéressant d'avoir le pourcentage moyen de perte en tel ou tel surface. Par exemple, les surfaces en céréales ont doublé en XX tmps)
+
 Analyse de l'évolution par stratification
 =========================================
 
+L'objectif de cette section est d'identifier les principales zones touchées par les changements d'occupations du sol.
+
+Stratification par les principales régions d'élevage
+----------------------------------------------------
+
+Dans la figure ci-dessous, la distribution des pourcentages d'occupation du sol par SAU est représentée par années et pour les principales régions d'élevage.
+Cette figure met en évidence plusieurs points :
+
+-   Les zones F et G (respectivement zones pastorales et montagnes humide) ont subi peu d'évolution. Les surfaces en céréales dans ces zones sont relativement basses et ont très peu évoluées. Les surfaces associées à la pratique de l'élevage ont légèrement augmentées dans la zone F et quasi-stagnées pour le cas de la zone G.
+-   A l'inverse, la zone A associée aux zones de grandes cultures présente une progression des surfaces de céréales et une diminution nette des surfaces d'occupation du sol liées à l'élevage.
+-   La zone B (zones de polycultures-élevages) présentent une proportion équilibrée entre la part de céréale et la part d'occupation du sol type élevage. Néanmoins, une dynamique similaire à la zone A est observée avec une augmentation des surfaces en céréales et une diminution des surfaces prairiales et fourragères.
+
+Les zones C, D et E présentent les contrastes les plus importants :
+
+-   la zone C (cultures fourragères), les surfaces prairiales ont nettement diminuées au profil des céréales. La part des surfaces fourragères a stagné.
+-   la zone D a connu une diminution importante des prairies, sth et sfp. La part des céréales a quasiment doublé.
+-   On retrouve cette même dynamique pour la zone E mais avec une intensité moindre.
+
 <figure>
-<img src="FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-6-1.png">
+<img src="FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-11-1.png">
 <figcaption>
 </figcaption>
 </figure>
+A la suite de ces observations, les zones B, C, D et E semblent intéressantes à étudier.
+
 Analyse des différences d'occupation
 ------------------------------------
 
-Le graphique ci-dessous n'est pas très parlant. Pour mieux appréhender les zones où il y a eu pas mal de changements, nous pourrions sélectionner uniquement les cantons ayant connun un bouleversement de plus de X% (par exemple 25 ou 50%) et compter ces cantons par zones de stratification (façon histogramme, avec diminution ou augmentation de plus de X%).Il faudra également rajouter les UGB
+Cette figure présente le nombre de canton impacté par des évolutions d'occupation du sol pour les différentes régions d'élevage. Ces évolutions sont classées en deux catégories selon les règles suivantes :
+
+-   Augmentation : le pourcentage d'évolution toutes années confondues est supérieur à 10%
+-   Diminution : le pourcentage d'évolution toutes années confondues est inférieur à -10%
+
+Cette figure est difficilement commentable...voir si c'est intéressant de la conserver.
 
 <figure>
-<img src="FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-7-1.png">
+<img src="FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-12-1.png">
 <figcaption>
 </figcaption>
 </figure>
+Voici les principales observations :
+
+-   Les prairies et les STH sont surtout en diminution. Les principales zones en diminution sont : A,B1,C1,D et dans une moindre mesure E,
+-   Les surfaces de maïs fourrage sont essentiellement en augmentation et les zones mobilisées par cette dynamique sont C1 et D.
+-   Les surfaces en céréales ont davantage tendance à augmenter. Ces augmentations concernent surtout les zones B1 et C1. A noter que la zone A est surtout concernée par une diminution des surfaces en céréales.
+
 <figure>
-<img src="FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-7-2.png">
+<img src="FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-13-1.png">
 <figcaption>
 </figcaption>
 </figure>
 Zoom sur les principales régions concernées par les évolutions
 --------------------------------------------------------------
 
-<figure>
-<img src="FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-9-1.png">
-<figcaption>
-</figcaption>
-</figure>
-    ## <ggproto object: Class CoordCartesian, Coord>
-    ##     aspect: function
-    ##     distance: function
-    ##     expand: TRUE
-    ##     is_linear: function
-    ##     labels: function
-    ##     limits: list
-    ##     range: function
-    ##     render_axis_h: function
-    ##     render_axis_v: function
-    ##     render_bg: function
-    ##     render_fg: function
-    ##     train: function
-    ##     transform: function
-    ##     super:  <ggproto object: Class CoordCartesian, Coord>
+Pas besoin de la commenter. Cette figure est un simple zoom. Elle confirme les observations déjà évoquées...
 
 <figure>
-<img src="FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-10-1.png">
+<img src="FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-14-1.png">
 <figcaption>
 </figcaption>
 </figure>
-Ici, prendre du recul sur l'occupation du sol et son évolution. On pourra s'appuyer sur d'autres types de graphiques, comme les boxplots avec des stats du type (% de prairies retournées...?)
+Observation par régions administratives
+---------------------------------------
 
 ``` r
 # Lecture de la table de travail
-#reg <- "54|23|83|25"
-reg <- c("26","23","83","54","74","52","53","25","74")
-melted.ra_reg <- melted.ra[melted.ra$code_reg %in% reg,]
 
+melted.ra_zonage <- melted.ra[melted.ra$zonage_cplt %in% c("A","B1","C1","D","E1"),]
 p_variable <- cbind("p_prairie","p_sth","p_sfp")#,"p_mf")#,"p_c")
 
 cpt <- 0
 for(i in p_variable){
   cpt <- cpt + 1
-  melted.raplot <- melted.ra_reg[melted.ra_reg["variable"] == i,]
+  melted.raplot <- melted.ra_zonage[melted.ra_zonage["variable"] == i,]
   melted.raplot[,"annees"] <- as.factor(melted.raplot[,"annees"])
   melted.raplot[,"nom_region"] <- as.factor(melted.raplot[,"nom_region"])
   
@@ -263,72 +338,4 @@ for(i in p_variable){
   
   #tt <- do.call("grid.arrange",p)
   #ggsave(tt, file = paste("map_",reg,"_",v,".png",sep=""), width = 10, height = 10)  
-```
-
-``` r
-##################Autre méthode#######################
-
-sth <- c("p_sth1979","p_sth1988","p_sth2000","p_sth2010")
-sfp <- c("p_sfp1979","p_sfp1988","p_sfp2000","p_sfp2010")
-
-pdf(paste("STH_SFP.pdf",sep=""),width=7, height=7)
-boxplot(mapcanton@data[,sth],at = 1:4 - 0.15,col = "white",xlab="Années",ylab="% de SAU",boxwex = 0.15,xaxt = "n",ylim=c(0,100))
-axis(1, at = 1:4, labels=c("1979","1988","2000","2010"))
-boxplot(mapcanton@data[,sfp],boxwex = 0.15,at = 1:4 + 0.15,col = "grey",xaxt = "n",outline=FALSE,add=TRUE,axes=FALSE)
-box()
-legend("bottomleft",c("sth", "sfp"),fill = c("white", "grey"),bty="n")
-dev.off()
-
-summary(mapcanton@data$p_sth1979)
-summary(mapcanton@data$p_sth1988)
-summary(mapcanton@data$p_sth2000)
-summary(mapcanton@data$p_sth2010)
-```
-
-Boxplot pour le poitou charentes
-
-``` r
-# Lecture de la table de travail
-reg <- "54" # Nom de la région à sélectionner
-melted.RAreg <- sqlQuery(loc,paste("select * from ra.melted_RA where code_reg like '",reg,"'",sep=""))
-melted.RAreg <- melted.RA[complete.cases(melted.RAreg),]
-
-p1 <- ggplot(melted.RAreg, aes(x=as.factor(annees), y=value, col=variable))+
-              geom_boxplot(alpha=0.7)+
-              scale_x_discrete("Années")+scale_y_continuous("Pourcentage")+
-              theme(plot.title = element_text(size = 14, face = "bold"), 
-                    text = element_text(size = 12),
-                    axis.title = element_text(face="bold"),
-                    axis.text.x=element_text(size = 11))+
-              scale_fill_brewer(palette = "Dark2")
-p1
-ggsave(p1, file = paste("boxplot_",reg,".png",sep=""), width = 10, height = 10)  
-```
-
-Exploration et fouille de données
----------------------------------
-
-``` r
-# Pour l'exploration, on se basera sur les fichiers sources du RA (différent melted)
-
-dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" # Configuration de la connexion vers le PostGIS
-varia <- c("p_sth","p_sfp","p_prairie") # Variable à analyser 
-period <- c("1979","1988","2000","2010") #Période de temps
-id <- c("code_canton","code_reg") #Nom de l'identifiant
-
-variable <- paste()
-
-# Lecture du postgis
-mapcanton <- readOGR(dsn = dsn, "canton")
-
-sth <- c("p_sth1979","p_sth1988","p_sth2000","p_sth2010")
-sfp <- c("p_sfp1979","p_sfp1988","p_sfp2000","p_sfp2010")
-
-mapcanton.active <- mapcanton@data[,c("corgox_med9094","corgox_med9599","corgox_med0004","corgox_med0509",sth,sfp)]
-res.pca <- PCA(mapcanton.active, graph = FALSE)
-fviz_pca_var(res.pca)
-
-#fviz_pca_var(res.pca, col.var="cos2") +
-#scale_color_gradient2(low="white", mid="blue", 
-                    #high="red", midpoint=0.5) + theme_minimal()
 ```
