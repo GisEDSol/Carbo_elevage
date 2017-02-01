@@ -78,3 +78,46 @@ sqlQuery(loc,"drop table if exists dm_vecteurs.tmptopo")
 # Ci-dessous, une solution en postGIS (intéressant à exploiter)
 #http://gis.stackexchange.com/questions/155974/calculate-mean-value-of-polygon-from-raster-in-postgis
 ```
+
+## Création d'une classification de l'altitude 
+
+La classification de l'altitude moyenne par canton a pour objectif de stratifier les analyses de la BDAT par différents niveaux d'altitudes.
+
+```{r,highlight=TRUE,eval=FALSE}
+table_dm <- "dm_vecteurs.canton"
+mapcanton <- sqlQuery(loc,paste("select * from ",table_dm,sep=""))
+
+nclasse <- 4
+style_classe <- "quantile"
+
+# Classement des valeurs
+stats.value <- melt(mapcanton[,"altimean"])$value
+classe_valeur <- classIntervals(stats.value,n=nclasse,style=style_classe,digits=1,na.rm=TRUE)[[2]]
+
+vName <- "classe_altimean"
+mapcanton[,vName] <- cut(mapcanton[,"altimean"],breaks = data.frame(classe_valeur)[,1],include.lowest=T)
+    
+sqlQuery(loc,paste("alter table ",table_dm,"
+                    drop column if exists ",vName,";
+                    alter table ",table_dm,"
+                    add column ",vName," text",sep=""))
+                       
+# Création d'une table provisoire pour jointure
+sqlSave(loc,mapcanton[,c("id_geofla",vName)],tablename="dm_vecteurs.tmp")
+    
+# Jointure 
+sqlQuery(loc,paste("update ",table_dm,"
+                    SET ",vName," = s1.",vName," from(
+                    select ",vName,",id_geofla
+                    from dm_vecteurs.tmp) as s1
+                    where ",table_dm,".id_geofla=s1.id_geofla",sep=""))
+    
+# Suppression de la table temporaire
+sqlQuery(loc,"drop table if exists dm_vecteurs.tmp")
+
+print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",table_dm,".",vName," IS \'Classes des altitudes moyennes par canton avec la méthode ",style_classe," et établies sur la variable altimean.\';",sep="")))
+```
+
+
+

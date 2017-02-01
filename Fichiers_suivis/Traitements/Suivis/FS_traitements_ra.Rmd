@@ -74,8 +74,9 @@ for(v in variablecarto){
 period <- c("1970","1979","1988","2000","2010") #Période de temps prise en compte
 variablecarto <- c("p_prairie","p_sth","p_sfp","p_mf","p_c")#variable(s) à cartographier
 style_classe <- "pretty" #"pretty"#"jenks"
-fichiers <- paste(github_url,"Fichiers_suivis/Traitements/Fichiers/",variablecarto,style_classe,".png",sep="")
-cat(paste("![Cartographie de l\'occupation du sol ",variablecarto,"](",fichiers,")",sep=""))
+#fichiers <- paste(github_url,"Fichiers_suivis/Traitements/Fichiers/",variablecarto,style_classe,".png",sep="")
+fichiers <- paste(repsortie,variablecarto,style_classe,".png",sep="")
+cat(paste("![](",fichiers,")",sep=""))
 ```
 
 ## Les UGB
@@ -108,8 +109,9 @@ for(v in variablecarto){
 period <- c("1988","2000","2010") #Période de temps prise en compte
 variablecarto <- "ugbta"
 style_classe <- "quantile" #"pretty"#"jenks"
-fichiers <- paste(github_url,"Fichiers_suivis/Traitements/Fichiers/",variablecarto,style_classe,".png",sep="")
-cat(paste("![Cartograpahie des ugb tous aliments](",fichiers,")",sep=""))
+#fichiers <- paste(github_url,"Fichiers_suivis/Traitements/Fichiers/",variablecarto,style_classe,".png",sep="")
+fichiers <- paste(repsortie,variablecarto,style_classe,".png",sep="")
+cat(paste("![](",fichiers,")",sep=""))
 ```
 
 ## Autres
@@ -134,14 +136,15 @@ for(v in variablecarto){
   l_legendvaria <- l_legend[cpt]
   variableperiod <- paste(v,period,sep="")
 
-  carto(dsn,tablecarto,variableperiod,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=3,position="bottom",ggsaveheight=5,ggsavewidth=15)  
+  carto(dsn,tablecarto,variableperiod,nclasse,style_classe,couleur,l_legendvaria,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=3,position="bottom",ggsaveheight=5,ggsavewidth=15)  
 }
 ```
 
 ```{r otexplot, echo = F, results = 'asis'}
 variablecarto <- c("elevage","polyelevage","grdcultures","elevagehorsol")
 style_classe <- "pretty" #"pretty"#"jenks"
-fichiers <- paste(github_url,"Fichiers_suivis/Traitements/Fichiers/",variablecarto,style_classe,".png",sep="")
+#fichiers <- paste(github_url,"Fichiers_suivis/Traitements/Fichiers/",variablecarto,style_classe,".png",sep="")
+fichiers <- paste(repsortie,variablecarto,style_classe,".png",sep="")
 cat(paste("![](",fichiers,")",sep=""))
 ```
 
@@ -216,39 +219,36 @@ Principaux résultats du test des différences entre les années pour les princi
 
 - **Proportion en céréales** : Seules les évolutions entre 1979-1988, 1979-2000, 1988-2000 ne sont pas significatives.
 
-```{r ,highlight=TRUE,eval=TRUE,echo=FALSE,results='asis'}
+```{r highlight=TRUE,eval=TRUE,echo=TRUE}
   melted.test <- melted.ra[melted.ra$variable %in% "p_c",]
-  tt <- pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
-  print(tt)
+  pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
 ```
 
 - **Proportion en STH** : Les tendances observées sur les surfaces toujours en herbe sont toutes significatives.
 
-```{r ,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE,error=FALSE,results='asis'}
+```{r highlight=TRUE,eval=TRUE,echo=TRUE}
   melted.test <- melted.ra[melted.ra$variable %in% "p_sth",]
-  tt <- pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
-  print(tt)
+  pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
 ```
+
 - **Proportion en prairie** : Seule les évolutions entre 1970-1979 et 2000-2010 ne sont pas significatives.
 
-```{r ,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE,error=FALSE,results='asis'}
+```{r highlight=TRUE,eval=TRUE,echo=TRUE}
   melted.test <- melted.ra[melted.ra$variable %in% "p_prairie",]
-  tt <- pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
-  print(tt)
+  pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
 ```
 - **Proportion en surface fourragère principale** : Seule les évolutions entre 1970-1979 et 2000-2010 ne sont pas significatives.
 
-```{r ,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE,error=FALSE,results='asis'}
+```{r highlight=TRUE,eval=TRUE,echo=TRUE}
   melted.test <- melted.ra[melted.ra$variable %in% "p_sfp",]
-  tt <- pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
-  print(tt)
+  pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
 ```
+
 - **Proportion en UGBTA** : Les différences entre toutes les années sont significatives
 
-```{r ,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE,error=FALSE,results='asis'}
+```{r highlight=TRUE,eval=TRUE,echo=TRUE}
   melted.test <- melted.ra[melted.ra$variable %in% "ugbta",]
-  tt <- pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
-  print(tt)
+  pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
 ```
 
 ### Conclusion 
@@ -321,17 +321,55 @@ ggplot(melted.radiff_select[melted.radiff_select$variable %in% c("prairie","sth"
 
 Voici les principales observations :
 
-- Les prairies et les STH sont surtout en diminution. Les principales zones en diminution sont : A,B1,C1,D et dans une moindre mesure E,
+- Les prairies et les STH sont surtout en diminution. Les principales zones en diminution sont : A,B1,C1,D et dans une moindre mesure E.
 - Les surfaces de maïs fourrage sont essentiellement en augmentation et les zones mobilisées par cette dynamique sont C1 et D.
 - Les surfaces en céréales ont davantage tendance à augmenter. Ces augmentations concernent surtout les zones B1 et C1. A noter que la zone A est surtout concernée par une diminution des surfaces en céréales.
 
 ```{r ,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=5, fig.width=8}
 ## Evolution des surfaces par zones d'élevage (2)
-ggplot(melted.radiff_select[melted.radiff_select$variable %in% c("prairie","sth","c","mf"),],aes(classe,fill=zonage_cplt))+geom_bar(position="dodge")+facet_wrap(~
+ggplot(melted.radiff_select[melted.radiff_select$variable %in% c("prairie","sth","c","mf"),],aes(classe,fill=zonage_cplt))+geom_bar(position="dodge")
+# test pour une cartographie des principales évolutions par classe, voir http://stackoverflow.com/questions/10368180/plotting-pie-graphs-on-map-in-ggplot
+```       
+On se concentre sur les principales zones 
+
+```{r ,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=5, fig.width=8}
+## Evolution des surfaces par zones d'élevage (2)
+zone_elevage <- c("A","B1","C1","C2","D")
+ggplot(melted.radiff_select[(melted.radiff_select$variable %in% c("prairie","sth","c","mf")) & (melted.radiff_select$zonage_cplt %in% zone_elevage),],aes(classe,fill=zonage_cplt))+geom_bar(position="dodge")+facet_wrap(~
   variable,scales="free")
+
+zone_elevage <- c("A","B1","C1","C2","D")
+ggplot(melted.radiff_select[(melted.radiff_select$variable %in% c("prairie","sth","c","mf")) & (melted.radiff_select$zonage_cplt %in% zone_elevage),],aes(classe,fill=nom_region))+geom_bar(position="dodge")+facet_wrap(~
+  variable,scales="free")
+
+tablera <- melted.radiff_select[(melted.radiff_select$variable %in% c("prairie","sth","c","mf")) & (melted.radiff_select$zonage_cplt %in% zone_elevage),]
+
+histo_ra <- count(tablera,c("classe","nom_region","variable","periode"))
+histo_raorder <- histo_ra[order(-histo_ra[,"freq"]),]
+
+
 
 # test pour une cartographie des principales évolutions par classe, voir http://stackoverflow.com/questions/10368180/plotting-pie-graphs-on-map-in-ggplot
 ```       
+
+## Analyse des différentes périodes d'évolution en fonction des zones d'élevage
+
+```{r,echo=FALSE,eval=TRUE}
+periodetud <- c("14","24","15","25","13","35")
+bdatdiff <- bdatdiff[(bdatdiff$period %in% periodetud) & bdatdiff$zonage_simple != "H" & bdatdiff$zonage_simple != "G" & bdatdiff$zonage_simple != "F", ]
+bdatdiff$diff <- as.factor(bdatdiff$diff)
+
+histo_regelevage <- ggplot(bdatdiff,aes(diff,fill=zonage_cplt)) + geom_bar() + facet_wrap(~ period)+
+                    scale_fill_brewer(palette = 'Paired',name="Zones d'élevage")+
+                    xlab("Classe d'évolution des teneurs en carbone organique")+ylab("Nombre de canton")+
+                    theme(plot.title = element_text(size = 14, face = "bold"), 
+                    text = element_text(size = 12),
+                    axis.title = element_text(face="bold"),
+                    axis.text.x=element_text(size = 11))    
+                    #geom_bar(position="dodge")
+histo_regelevage
+
+```
 
 ## Zoom sur les principales régions concernées par les évolutions
 

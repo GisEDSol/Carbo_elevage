@@ -59,7 +59,7 @@ for(v in variablecarto){
 }
 ```
 
-![Cartographie de l'occupation du sol p\_prairie](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/p_prairiepretty.png) ![Cartographie de l'occupation du sol p\_sth](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/p_sthpretty.png) ![Cartographie de l'occupation du sol p\_sfp](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/p_sfppretty.png) ![Cartographie de l'occupation du sol p\_mf](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/p_mfpretty.png) ![Cartographie de l'occupation du sol p\_c](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/p_cpretty.png)
+![](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/p_prairiepretty.png) ![](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/p_sthpretty.png) ![](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/p_sfppretty.png) ![](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/p_mfpretty.png) ![](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/p_cpretty.png)
 
 Les UGB
 -------
@@ -88,7 +88,7 @@ for(v in variablecarto){
 }
 ```
 
-![Cartograpahie des ugb tous aliments](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/ugbtaquantile.png)
+![](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/ugbtaquantile.png)
 
 Autres
 ------
@@ -113,11 +113,11 @@ for(v in variablecarto){
   l_legendvaria <- l_legend[cpt]
   variableperiod <- paste(v,period,sep="")
 
-  carto(dsn,tablecarto,variableperiod,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=3,position="bottom",ggsaveheight=5,ggsavewidth=15)  
+  carto(dsn,tablecarto,variableperiod,nclasse,style_classe,couleur,l_legendvaria,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=3,position="bottom",ggsaveheight=5,ggsavewidth=15)  
 }
 ```
 
-![](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/elevagepretty.png) ![](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/polyelevagepretty.png) ![](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/grdculturespretty.png) ![](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Fichiers/elevagehorsolpretty.png)
+![](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/elevagepretty.png) ![](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/polyelevagepretty.png) ![](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/grdculturespretty.png) ![](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/elevagehorsolpretty.png)
 
 Statistiques descriptives
 =========================
@@ -130,9 +130,9 @@ Courbes des fréquences cumulées et boxplot
 Les courbes de fréquences cumulées présentées ci-dessous mettent en exergue plusieus points :
 
 -   **Pourcentage de cérélale dans la SAU (p\_c):** Une augmentation de la part des céréales dans la SAU est clairement identifiée. Celle-ci concerne surtout les zones aux pourcentages moyens. A l'inverse, on constate une diminution de la part des céréales pour les zones densément occupées par les céréales.
-    -**Pourcentage de prairie dans la SAU (p\_prairie) :** Une diminution du pourcentage des prairies est observée entre 1979 et les années 1988, 2000 et 2010. La plus grosse diminution concerne les années 1979-1988. Cette tendance implique surtout les zones faiblement et moyennement occupées par les prairies. *A contrario*, les zones fortement occupées par les prairies (80 à 90% de la SAU) ont profitée une légère augmentation entre 1970 et 2010.
-    -**Pourcentage des surfaces toujours en herbe dans la SAU (p\_sth) :** Les surfaces toujours en herbe suivent globalement la même tendance que les prairies mais avec une intensité différente. La diminution de la STH (principalement les zones entre 0 et 75% de la SAU) est bien prononcée (surtout entre 1988 et 2000) tandis l'augmentation observée sur les prairies est peu tangible dans le cas des STH.
-    -**Pourcentage des surfaces fourragères principales (p\_sfp) :** La dynamique de la SFP suit de très près la dynamique des prairies.
+-   **Pourcentage de prairie dans la SAU (p\_prairie) :** Une diminution du pourcentage des prairies est observée entre 1979 et les années 1988, 2000 et 2010. La plus grosse diminution concerne les années 1979-1988. Cette tendance implique surtout les zones faiblement et moyennement occupées par les prairies. *A contrario*, les zones fortement occupées par les prairies (80 à 90% de la SAU) ont profitée une légère augmentation entre 1970 et 2010.
+-   **Pourcentage des surfaces toujours en herbe dans la SAU (p\_sth) :** Les surfaces toujours en herbe suivent globalement la même tendance que les prairies mais avec une intensité différente. La diminution de la STH (principalement les zones entre 0 et 75% de la SAU) est bien prononcée (surtout entre 1988 et 2000) tandis l'augmentation observée sur les prairies est peu tangible dans le cas des STH.
+-   **Pourcentage des surfaces fourragères principales (p\_sfp) :** La dynamique de la SFP suit de très près la dynamique des prairies.
 
 <figure>
 <img src="FS_traitements_ra_files/figure-markdown_github/unnamed-chunk-5-1.png">
@@ -140,21 +140,6 @@ Les courbes de fréquences cumulées présentées ci-dessous mettent en exergue 
 </figcaption>
 </figure>
 La distribution des valeurs par années et par type d'occupation du sol présentée dans la figure ci-dessous illustre également les même tendances décrites précédemment.
-
-``` r
-melted.ra_occup <- melted.ra[melted.ra$variable != "ugbta",]
-
-p <- ggplot(melted.ra_occup) +
-            geom_boxplot(aes(x=annees,y=value,col=variable))+
-#           geom_smooth(aes(x=as.integer(annees),y=value,color=variable,fill=variable),method=loess)+
-            #scale_color_manual(values=colors,name="Années")+
-            scale_x_discrete("Périodes")+scale_y_continuous("% d'occupation du sol")+
-            theme(plot.title = element_text(size = 14, face = "bold"), 
-                  text = element_text(size = 12),
-                  axis.title = element_text(face="bold"),
-                  axis.text.x=element_text(size = 11))
-p  
-```
 
 <figure>
 <img src="FS_traitements_ra_files/figure-markdown_github/boxplotra-1.png">
@@ -170,70 +155,99 @@ Principaux résultats du test des différences entre les années pour les princi
 
 -   **Proportion en céréales** : Seules les évolutions entre 1979-1988, 1979-2000, 1988-2000 ne sont pas significatives.
 
-    Pairwise comparisons using Wilcoxon rank sum test
+``` r
+  melted.test <- melted.ra[melted.ra$variable %in% "p_c",]
+  pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
+```
 
-data: melted.test\[, "value"\] and melted.test\[, "annees"\]
-
-     1970    1979    1988    2000   
-
-1979 0.00726 - - -
-1988 0.01563 0.57299 - -
-2000 2.8e-07 0.24409 0.08333 -
-2010 1.4e-15 0.00034 8.4e-06 0.01563
-
-P value adjustment method: holm
+    ## 
+    ##  Pairwise comparisons using Wilcoxon rank sum test 
+    ## 
+    ## data:  melted.test[, "value"] and melted.test[, "annees"] 
+    ## 
+    ##      1970    1979    1988    2000   
+    ## 1979 0.00726 -       -       -      
+    ## 1988 0.01563 0.57299 -       -      
+    ## 2000 2.8e-07 0.24409 0.08333 -      
+    ## 2010 1.4e-15 0.00034 8.4e-06 0.01563
+    ## 
+    ## P value adjustment method: holm
 
 -   **Proportion en STH** : Les tendances observées sur les surfaces toujours en herbe sont toutes significatives.
 
-    Pairwise comparisons using Wilcoxon rank sum test
+``` r
+  melted.test <- melted.ra[melted.ra$variable %in% "p_sth",]
+  pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
+```
 
-data: melted.test\[, "value"\] and melted.test\[, "annees"\]
+    ## 
+    ##  Pairwise comparisons using Wilcoxon rank sum test 
+    ## 
+    ## data:  melted.test[, "value"] and melted.test[, "annees"] 
+    ## 
+    ##      1970    1979    1988    2000  
+    ## 1979 0.0021  -       -       -     
+    ## 1988 3.6e-13 7.9e-05 -       -     
+    ## 2000 < 2e-16 < 2e-16 3.0e-11 -     
+    ## 2010 < 2e-16 < 2e-16 < 2e-16 0.0308
+    ## 
+    ## P value adjustment method: holm
 
-     1970    1979    1988    2000  
+-   **Proportion en prairie** : Seule les évolutions entre 1970-1979 et 2000-2010 ne sont pas significatives.
 
-1979 0.0021 - - -
-1988 3.6e-13 7.9e-05 - -
-2000 &lt; 2e-16 &lt; 2e-16 3.0e-11 -
-2010 &lt; 2e-16 &lt; 2e-16 &lt; 2e-16 0.0308
+``` r
+  melted.test <- melted.ra[melted.ra$variable %in% "p_prairie",]
+  pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
+```
 
-P value adjustment method: holm
-- **Proportion en prairie** : Seule les évolutions entre 1970-1979 et 2000-2010 ne sont pas significatives.
+    ## 
+    ##  Pairwise comparisons using Wilcoxon rank sum test 
+    ## 
+    ## data:  melted.test[, "value"] and melted.test[, "annees"] 
+    ## 
+    ##      1970    1979    1988  2000 
+    ## 1979 0.903   -       -     -    
+    ## 1988 4.0e-12 3.4e-14 -     -    
+    ## 2000 < 2e-16 < 2e-16 0.023 -    
+    ## 2010 < 2e-16 < 2e-16 0.005 0.903
+    ## 
+    ## P value adjustment method: holm
 
-    Pairwise comparisons using Wilcoxon rank sum test 
+-   **Proportion en surface fourragère principale** : Seule les évolutions entre 1970-1979 et 2000-2010 ne sont pas significatives.
 
-data: melted.test\[, "value"\] and melted.test\[, "annees"\]
+``` r
+  melted.test <- melted.ra[melted.ra$variable %in% "p_sfp",]
+  pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
+```
 
-     1970    1979    1988  2000 
+    ## 
+    ##  Pairwise comparisons using Wilcoxon rank sum test 
+    ## 
+    ## data:  melted.test[, "value"] and melted.test[, "annees"] 
+    ## 
+    ##      1970    1979    1988    2000   
+    ## 1979 1.00000 -       -       -      
+    ## 1988 0.00095 0.00580 -       -      
+    ## 2000 5.3e-14 8.0e-11 0.00245 -      
+    ## 2010 3.9e-13 4.5e-10 0.00580 1.00000
+    ## 
+    ## P value adjustment method: holm
 
-1979 0.903 - - -
-1988 4.0e-12 3.4e-14 - -
-2000 &lt; 2e-16 &lt; 2e-16 0.023 -
-2010 &lt; 2e-16 &lt; 2e-16 0.005 0.903
+-   **Proportion en UGBTA** : Les différences entre toutes les années sont significatives
 
-P value adjustment method: holm
-- **Proportion en surface fourragère principale** : Seule les évolutions entre 1970-1979 et 2000-2010 ne sont pas significatives.
+``` r
+  melted.test <- melted.ra[melted.ra$variable %in% "ugbta",]
+  pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
+```
 
-    Pairwise comparisons using Wilcoxon rank sum test 
-
-data: melted.test\[, "value"\] and melted.test\[, "annees"\]
-
-     1970    1979    1988    2000   
-
-1979 1.00000 - - -
-1988 0.00095 0.00580 - -
-2000 5.3e-14 8.0e-11 0.00245 -
-2010 3.9e-13 4.5e-10 0.00580 1.00000
-
-P value adjustment method: holm
-- **Proportion en UGBTA** : Les différences entre toutes les années sont significatives
-
-    Pairwise comparisons using Wilcoxon rank sum test 
-
-data: melted.test\[, "value"\] and melted.test\[, "annees"\]
-
-&lt;0 x 0 matrix&gt;
-
-P value adjustment method: holm
+    ## 
+    ##  Pairwise comparisons using Wilcoxon rank sum test 
+    ## 
+    ## data:  melted.test[, "value"] and melted.test[, "annees"] 
+    ## 
+    ## <0 x 0 matrix>
+    ## 
+    ## P value adjustment method: holm
 
 ### Conclusion
 
@@ -310,32 +324,3 @@ Pas besoin de la commenter. Cette figure est un simple zoom. Elle confirme les o
 </figure>
 Observation par régions administratives
 ---------------------------------------
-
-``` r
-# Lecture de la table de travail
-
-melted.ra_zonage <- melted.ra[melted.ra$zonage_cplt %in% c("A","B1","C1","D","E1"),]
-p_variable <- cbind("p_prairie","p_sth","p_sfp")#,"p_mf")#,"p_c")
-
-cpt <- 0
-for(i in p_variable){
-  cpt <- cpt + 1
-  melted.raplot <- melted.ra_zonage[melted.ra_zonage["variable"] == i,]
-  melted.raplot[,"annees"] <- as.factor(melted.raplot[,"annees"])
-  melted.raplot[,"nom_region"] <- as.factor(melted.raplot[,"nom_region"])
-  
-  p <- ggplot(melted.raplot) +
-            geom_boxplot(aes(x=annees,y=value,col=nom_region))+
-            geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
-            scale_x_discrete("Années")+scale_y_continuous("Pourcentage")+labs(title=i)+
-            theme(plot.title = element_text(size = 14, face = "bold"), 
-                  text = element_text(size = 12),
-                  axis.title = element_text(face="bold"),
-                  axis.text.x=element_text(size = 11))
-  
-  ggsave(p,file = paste(repsortie,"evolregion",i,".png",sep=""), width = 15, height = 10)  
-  }
-  
-  #tt <- do.call("grid.arrange",p)
-  #ggsave(tt, file = paste("map_",reg,"_",v,".png",sep=""), width = 10, height = 10)  
-```

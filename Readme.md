@@ -22,6 +22,10 @@ Il est également composé de plusieurs modes opératoires pour prendre en le pr
 
 ### Document de travail en cours
 
-Pour une lecture aisée des traitements et résultats en cours sur l'analyse des teneurs en carbone organique, le lecteur intéressé peut consulter cette [page](https://github.com/Rosalien/GISEDSol/blob/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdat.md) et cette [page](https://github.com/Rosalien/GISEDSol/blob/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdatdiff.md) qui traite de l'évolution des teneurs en carbone. 
+Pour une lecture aisée des traitements et résultats en cours sur l'analyse des teneurs en carbone organique, le lecteur intéressé peut consulter :
+
+* **[l'analyse de l'évolution de l'occupation du sol et des OTEX](https://rawgit.com/Rosalien/GISEDSol/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_ra.html)**
+* **[l'analyse des teneurs en carbone organique pour différentes périodes](https://rawgit.com/Rosalien/GISEDSol/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdat.html)**
+* **[l'analyse de l'évolution des teneurs en carbone organique](https://rawgit.com/Rosalien/GISEDSol/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdat.html)**
 
 ----

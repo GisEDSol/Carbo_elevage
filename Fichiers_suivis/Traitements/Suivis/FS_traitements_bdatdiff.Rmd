@@ -1,5 +1,5 @@
 ---
-title: "Traitement des données de la BDAT :Evolution des teneurs en carbone organique"
+title: "Traitement des données de la BDAT : Evolution des teneurs en carbone organique"
 author: "Jean-Baptiste Paroissien"
 date: "27/01/2017"
 output:
@@ -71,9 +71,9 @@ sessionInfo()
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
 # Lecture des tables de travail
-melted.bdatdiff <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdatdiff",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE))
+melted.bdatdiff <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdatdiff",sep=""))#,as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE))
+melted.bdatdiff$diffmedian <- as.numeric(melted.bdatdiff$diffmedian)
 dcast.bdat <- sqlQuery(loc,paste("select * from dm_vecteurs.canton",sep=""))
-
 melted.bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff),]
 ```
 
@@ -89,50 +89,39 @@ Ici, on s'intéresse aux résultats sur les évolutions des teneurs en carbone. 
 
 A l'échelle nationale, on souhaite avoir une vision des évolutions générales des teneurs en C, appréhender les zones les plus touchées, savoir si ces évolutions sont significatives ou non.
 
-
-## Cartographie des évolutions
-
-Description des cartes :
-
-- Répartition des zones touchées par des augmentations ou diminutions significatives. Prendre en compte aussi les différences observées entre les périodes de temps analysées
-- Faire un focus sur les zones aux changements significatifs??
-
-```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,message=FALSE}
-
-tablecarto <- "dm_vecteurs.canton" 
-dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
-variablecarto <- c("diff15","diff14","diff24","diff25") #variable à spatialiser
-l_legend <- "Evolution des teneurs en C"#label de la variable
-nclasse <- 3 #Nombre de classes de valeurs pour la cartographie
-style_classe <- "fixed" #"pretty"#"jenks","fixed"
-couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
-nomfichier <- "Evolu_c"
-
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=10,ggsavewidth=10)  
-```
-
-```{r map_carbo_fr, echo = F, results = 'asis'}
-# Pour insérer l'image
-fichiers <- paste(repsortie,nomfichier,sep="")
-cat(paste("![](",fichiers,")",sep=""))
-```
-
 ## Analyse du nombre d'évolution significative par canton
 
-Dans la figure ci-dessous,
+La figure `r fig$ref("histo_evolution",link=TRUE)` présente un histogramme du nombre de canton ayant connu une augmentation ou une diminution significative des teneurs en carbone organique. L'histogramme est appliqué sur toutes les périodes et stratifié par zones d'élevage.
+La figure montre un équilibre entre le nombre de canton ayant eu une augmentation et le nombre de canton ayant eu une diminution de la teneur en carbone organique. La proportion des zones d'élevage entre les classes d'augmentation et de diminution est relativement équilibrée mais quelques zones se distinguent :
 
-Analyser la figure en la confrontant avec des graphiques similaires basés sur les données du RA et de CLC.
-Ce serait intéressant de développer un indice de changement d'occupation du sol pour faciliter les analyses.
+- Les régions B1, C2 et D sont davantage affectées par la diminution des teneurs en C
+- La région A et C1 sont plus affecté par des augmentations que des diminutions. 
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("histo_evolution",""),fig.align="center"}
 # Histogramme des valeurs 
 
 # Sélection des cantons aux diminutions significatives
-bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff),]
-
-# Sélection
 bdatdiff <- subset(melted.bdatdiff,diff!="Non significatif")
-periodetud <- c("14","24","15","25")
+
+histo_evol <- ggplot(bdatdiff,aes(diff,fill=zonage_cplt)) + geom_bar() +
+                    scale_fill_brewer(palette = 'Paired',name="Zones d'élevage")+
+                    xlab("Classe d'évolution des teneurs en carbone organique")+ylab("Nombre de canton")+
+                    theme(plot.title = element_text(size = 14, face = "bold"), 
+                    text = element_text(size = 12),
+                    axis.title = element_text(face="bold"),
+                    axis.text.x=element_text(size = 11))    
+                    #geom_bar(position="dodge")
+histo_evol
+```
+
+Dans la figure `r fig$ref("histo_evolution_period",link=TRUE)`, les histogrammes sont analysés pour les différentes entre périodes ayant au minimum 10 d'écarts. La figure montre des différences importantes entre les périodes analysées :
+
+- L'évolution des teneurs est équilibrée entre les périodes [1994-1999]-[2010-2014] et les périodes [1990-1994]-[2010-2014],
+- Les différences entre les périodes [1990-1994]-[2000-2004] et [1994-1999]-[2005-2009] montrent une part importante pour la diminution des teneurs en C. Dans une moindre mesure, la différence entre les périodes [1990-1994]-[2005-2009] présente une part de diminution des teneurs en C plus importante que l'augmentation.
+- A l'inverse, les teneurs en C ont augmenté majoritairement entre les périodes [2000-2004]-[2010-2014].
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("histo_evolution_period",""),fig.align="center"}
+periodetud <- c("14","24","15","25","13","35")
 bdatdiff <- bdatdiff[(bdatdiff$period %in% periodetud) & bdatdiff$zonage_simple != "H" & bdatdiff$zonage_simple != "G" & bdatdiff$zonage_simple != "F", ]
 bdatdiff$diff <- as.factor(bdatdiff$diff)
 
@@ -146,21 +135,34 @@ histo_regelevage <- ggplot(bdatdiff,aes(diff,fill=zonage_cplt)) + geom_bar() + f
                     #geom_bar(position="dodge")
 histo_regelevage
 ```
-Présenter dans le détail les histogrammes `r fig$ref("histo_evolution",link=TRUE)`. Possibilité de comparer le nbr de canton en augmentation et en diminution par période analysées et ensuite développer une analyse par classe de diminution ou d'augmentation. Par exemple, il y a quasiment autant de canton ayant des teneurs en C en augmentation et en diminution entre les périodes 1994-1999 et 2010-2014.
+**En conclusion** de cette section, on constate plusieurs points :
 
+- Les évolutions des teneurs en C entre les différentes périodes ne suivent pas les mêmes tendances. Les premières observation vues dans [FS_traitements_bdat.Rmd](`r github_url`Fichiers_suivis/Traitements/Suivis/FS_traitements_bdat.Rmd) se confirment. Les teneurs en C ont augmenté sur la période [2010-2014] et cette augmentation est particulièrement prononcée entre les périodes [2000-2004]-[2010-2014].
+- La diminution des teneurs est surtout observée entre [1990-1994]-[2000-2004] et [1994-1999]-[2005-2009] et [1990-1994]-[2005-2009].
+- Les principales zones d'élevage affectées par ces changements sont : A, B1, C1, C2 et D. Ce résultat provient surtout de la densité d'analyse dans ces zones.
 
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("histo_evolution",""),fig.align="center"}
-# Histogramme des valeurs 
-# Revoir, pas très bien visible
+## Analyse sur les périodes identifiées
 
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE}
 # Sélection des cantons aux diminutions significatives
 bdatdiff_classe <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff) & melted.bdatdiff$diff !="Non significatif",]
 
 # Sélection
-periodetud <- c("14","24","15","25")
-bdatdiff_classe <- bdatdiff_classe[(bdatdiff_classe$period %in% periodetud), ]
+periodetud <- c("13","24","35","14")
+zone_elevage <- c("A","B1","C1","C2","D")
+
+bdatdiff_classe <- bdatdiff_classe[(bdatdiff_classe$period %in% periodetud) & (bdatdiff_classe$zonage_cplt %in% zone_elevage),]
 bdatdiff_classe$diff <- as.factor(bdatdiff_classe$diff)
-#
+
+histo_table <- count(bdatdiff_classe,c("diff","nom_region","period"))
+histo_table[order(-histo_table[,"freq"]),][1:10,]
+```
+Dans la suite, on s'intéressera uniquement aux périodes concernées par les changements importants idenfiés dans le paragraphe précédent, à savoir : [2000-2004]-[2010-2014], [1990-1994]-[2000-2004],[1994-1999]-[2005-2009] et [1990-1994]-[2005-2009].
+
+Dans la figure 
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=5, fig.width=8,fig.cap = fig$cap("bar_prairie","Histogramme à commenter"),fig.align="center"}
+# Histogramme des valeurs 
 histo_regionadmin <- ggplot(bdatdiff_classe,aes(diff,fill=nom_region)) + geom_bar(position="dodge") + facet_wrap(~ period) + 
                     xlab("Classe d'évolution des teneurs en carbone organique")+ylab("Nombre de canton")+
                     theme(plot.title = element_text(size = 14, face = "bold"), 
@@ -168,19 +170,45 @@ histo_regionadmin <- ggplot(bdatdiff_classe,aes(diff,fill=nom_region)) + geom_ba
                     axis.title = element_text(face="bold"),
                     axis.text.x=element_text(size = 11))                      
 histo_regionadmin
+#pg <- ggplot_build(histo_regionadmin)
+#pg$data[[1]][,c("count","PANEL","group")]
 ```
 
-Dans la figures ci-dessous, on peut observer : 
-A faire
+## Cartographie des évolutions
 
-```{r,highlight=TRUE,eval=TRUE,fig.height=5, fig.width=8,fig.cap = fig$cap("bar_prairie","Histogramme à commenter"),fig.align="center"}
+Description des cartes :
+
+- Répartition des zones touchées par des augmentations ou diminutions significatives. Prendre en compte aussi les différences observées entre les périodes de temps analysées
+- Faire un focus sur les zones aux changements significatifs??
+
+
+```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,message=FALSE}
+
+tablecarto <- "dm_vecteurs.canton" 
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
+variablecarto <- c("diff13","diff24","diff35","diff14") #variable à spatialiser
+l_legend <- "Evolution des teneurs en C"#label de la variable
+nclasse <- 3 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "fixed" #"pretty"#"jenks","fixed"
+couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+nomfichier <- "Evolu_c"
+
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=10,ggsavewidth=10)
+```
+
+```{r map_carbo_fr, echo = F, results = 'asis'}
+# Pour insérer l'image
+fichiers <- paste(repsortie,nomfichier,sep="")
+cat(paste("![](",fichiers,")",sep=""))
+```
+
 # Reproduire ce type de graphe par stratification
 
 bar_prairie <- ggplot(bdatdiff_classe,aes(diff,fill=diff_var_sfp1970_2010)) + geom_bar() + facet_wrap(~ period)
 bar_prairie
 
 
-
+```{r,echo=FALSE,eval=FALSE}
 # Faire une sélection sur les principales années 
 
 
@@ -226,9 +254,9 @@ p.ass <- grid.arrange(p1,p2,ncol=2)
 ```
 
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE}
-ggplot(bdatdiff_classe[bdatdiff_classe$period %in% "24" & bdatdiff_classe$zonage_cplt %in% c("A","B1","B2","C1","C2","D","E1","E2"),],aes(diff,fill=classe2_var_c1970_2010)) + geom_bar() + facet_wrap(~ zonage_cplt)
+ggplot(bdatdiff_classe[bdatdiff_classe$period %in% "24" & bdatdiff_classe$zonage_cplt %in% c("A","B1","B2","C1","C2","D","E1","E2"),],aes(diff,fill=classe_var_c1970_2010)) + geom_bar() + facet_wrap(~ zonage_cplt)
 
-ggplot(bdatdiff_classe[bdatdiff_classe$period %in% "24" & bdatdiff_classe$zonage_cplt %in% c("A","B1","B2","C1","C2","D","E1","E2"),],aes(diff,fill=classe2_var_sfp1970_2010)) + geom_bar() + facet_wrap(~ zonage_cplt)
+ggplot(bdatdiff_classe[bdatdiff_classe$period %in% "24" & bdatdiff_classe$zonage_cplt %in% c("A","B1","B2","C1","C2","D","E1","E2"),],aes(diff,fill=classe_var_sfp1970_2010)) + geom_bar() + facet_wrap(~ zonage_cplt)
 
 
 # Sélection de la zone d'élevage B
@@ -492,7 +520,7 @@ for(i in 1:nbl){
   print(i)
   donnee <- read.csv(paste(repsortie,"donneeL",model,"_",i,".csv",sep=""))
 
-  donnee <- donnee[with(donnee, order(id)),]# revoir ce point
+  #donnee <- donnee[with(donnee, order(id)),]# revoir ce point
 
   residues <- donnee$residues
   id <- donnee$id
