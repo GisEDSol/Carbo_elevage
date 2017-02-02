@@ -8,7 +8,7 @@ Jean-Baptiste Paroissien
     -   [Analyse du nombre d'évolution significative par canton](#analyse-du-nombre-devolution-significative-par-canton)
     -   [Analyse sur les périodes identifiées](#analyse-sur-les-periodes-identifiees)
     -   [Cartographie des évolutions](#cartographie-des-evolutions)
--   [Reproduire ce type de graphe par stratification](#reproduire-ce-type-de-graphe-par-stratification)
+    -   [Focus sur la Picardie et le Nord-Pas-De-Calais](#focus-sur-la-picardie-et-le-nord-pas-de-calais)
 -   [Analyse sur les régions d'élevage B, C et D](#analyse-sur-les-regions-delevage-b-c-et-d)
     -   [Histogrammes](#histogrammes)
     -   [Graphiques de correlation](#graphiques-de-correlation)
@@ -20,7 +20,7 @@ Jean-Baptiste Paroissien
 Sys.Date()
 ```
 
-    ## [1] "2017-02-01"
+    ## [1] "2017-02-02"
 
 ``` r
 sessionInfo()
@@ -95,19 +95,14 @@ La figure <A HREF="#histo_evolution">1</A> présente un histogramme du nombre de
 La figure montre un équilibre entre le nombre de canton ayant eu une augmentation et le nombre de canton ayant eu une diminution de la teneur en carbone organique. La proportion des zones d'élevage entre les classes d'augmentation et de diminution est relativement équilibrée mais quelques zones se distinguent :
 
 -   Les régions B1, C2 et D sont davantage affectées par la diminution des teneurs en C
--   La région A et C1 sont plus affecté par des augmentations que des diminutions.
-
-<!-- -->
-
-    ## Warning in RColorBrewer::brewer.pal(n, pal): n too large, allowed maximum for palette Paired is 12
-    ## Returning the palette you asked for with that many colors
+-   Les région A et C1 sont plus affectées par des augmentations que des diminutions.
 
 <figure style="text-align:center;">
 <a name="histo_evolution"></a><img src="FS_traitements_bdatdiff_files/figure-markdown_github/unnamed-chunk-4-1.png">
 <figcaption>
 </figcaption>
 </figure>
-Dans la figure <A HREF="#histo_evolution_period">2</A>, les histogrammes sont analysés pour les différentes entre périodes ayant au minimum 10 d'écarts. La figure montre des différences importantes entre les périodes analysées :
+Dans la figure <A HREF="#histo_evolution_period">2</A>, les histogrammes sont analysés pour des écarts entre les périodes étudiées d'au moins 10 ans. La figure montre des différences importantes entre les périodes analysées :
 
 -   L'évolution des teneurs est équilibrée entre les périodes \[1994-1999\]-\[2010-2014\] et les périodes \[1990-1994\]-\[2010-2014\],
 -   Les différences entre les périodes \[1990-1994\]-\[2000-2004\] et \[1994-1999\]-\[2005-2009\] montrent une part importante pour la diminution des teneurs en C. Dans une moindre mesure, la différence entre les périodes \[1990-1994\]-\[2005-2009\] présente une part de diminution des teneurs en C plus importante que l'augmentation.
@@ -122,77 +117,105 @@ Dans la figure <A HREF="#histo_evolution_period">2</A>, les histogrammes sont an
 
 -   Les évolutions des teneurs en C entre les différentes périodes ne suivent pas les mêmes tendances. Les premières observation vues dans [FS\_traitements\_bdat.Rmd](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdat.Rmd) se confirment. Les teneurs en C ont augmenté sur la période \[2010-2014\] et cette augmentation est particulièrement prononcée entre les périodes \[2000-2004\]-\[2010-2014\].
 -   La diminution des teneurs est surtout observée entre \[1990-1994\]-\[2000-2004\] et \[1994-1999\]-\[2005-2009\] et \[1990-1994\]-\[2005-2009\].
--   Les principales zones d'élevage affectées par ces changements sont : A, B1, C1, C2 et D. Ce résultat provient surtout de la densité d'analyse dans ces zones.
+-   Les principales zones d'élevage affectées par ces changements sont : A, B1, C1, C2 et D. Ce résultat provient surtout de la densité d'analyse dans ces zones et de leur étendue spatiale.
 
 Analyse sur les périodes identifiées
 ------------------------------------
 
-    ##             diff         nom_region period freq
-    ## 115   Diminution NORD-PAS-DE-CALAIS     14  103
-    ## 114   Diminution NORD-PAS-DE-CALAIS     13   96
-    ## 26  Augmentation             CENTRE     35   73
-    ## 116   Diminution NORD-PAS-DE-CALAIS     24   66
-    ## 21  Augmentation           BRETAGNE     24   54
-    ## 20  Augmentation           BRETAGNE     14   49
-    ## 122   Diminution           PICARDIE     13   48
-    ## 61  Augmentation   PAYS DE LA LOIRE     35   47
-    ## 123   Diminution           PICARDIE     14   43
-    ## 126   Diminution   POITOU-CHARENTES     13   42
-
 Dans la suite, on s'intéressera uniquement aux périodes concernées par les changements importants idenfiés dans le paragraphe précédent, à savoir : \[2000-2004\]-\[2010-2014\], \[1990-1994\]-\[2000-2004\],\[1994-1999\]-\[2005-2009\] et \[1990-1994\]-\[2005-2009\].
 
-Dans la figure
-
 <figure style="text-align:center;">
-<a name="bar_prairie"></a><img src="FS_traitements_bdatdiff_files/figure-markdown_github/unnamed-chunk-7-1.png">
+<a name="bar_prairie"></a><img src="FS_traitements_bdatdiff_files/figure-markdown_github/unnamed-chunk-6-1.png">
 <figcaption>
 </figcaption>
 </figure>
+De la figure ci-dessous, les 10 principales régions touchées par des évolutions significatives sont présentées dans le tableau ci-dessous.
+
+|         |     diff     |     nom\_region    | period | freq |
+|:-------:|:------------:|:------------------:|:------:|:----:|
+| **115** |  Diminution  | NORD-PAS-DE-CALAIS |   14   |  103 |
+| **114** |  Diminution  | NORD-PAS-DE-CALAIS |   13   |  96  |
+|  **26** | Augmentation |       CENTRE       |   35   |  73  |
+| **116** |  Diminution  | NORD-PAS-DE-CALAIS |   24   |  66  |
+|  **21** | Augmentation |      BRETAGNE      |   24   |  54  |
+|  **20** | Augmentation |      BRETAGNE      |   14   |  49  |
+| **122** |  Diminution  |      PICARDIE      |   13   |  48  |
+|  **61** | Augmentation |  PAYS DE LA LOIRE  |   35   |  47  |
+| **123** |  Diminution  |      PICARDIE      |   14   |  43  |
+| **126** |  Diminution  |  POITOU-CHARENTES  |   13   |  42  |
+
+La région Centre et les pays de la Loire ont une fréquence importante de canton ayant une augmentation de C.
+Le Nord-pas-de-Calais, la Bretagne, la Picardie et le Poitou-Charentes sont les principales régions touchées par des diminutions en C.
+
 Cartographie des évolutions
 ---------------------------
 
-Description des cartes :
-
--   Répartition des zones touchées par des augmentations ou diminutions significatives. Prendre en compte aussi les différences observées entre les périodes de temps analysées
--   Faire un focus sur les zones aux changements significatifs??
+On retrouve ces observations sur les cartes d'évolution des teneurs. Dans le détail, c'est le morbihan qui est surtout affecté par des chutes de teneurs en carbone organique et en région Centre, on observe une augmentation des teneurs concentrée dans le Perche.
+Ces résultats très ciblés font penser à un effet de bord, surtout pour les régions Picardie, Nord-Pas-De-Calais et le département du Morbihan. **La suite des analyses se concentrera sur ces zones.**
 
 ![](/media/sf_GIS_ED/Dev/Scripts/master//Fichiers_suivis/Traitements/Fichiers/test)
 
-Reproduire ce type de graphe par stratification
-===============================================
+![](/media/sf_GIS_ED/Dev/Scripts/master//Fichiers_suivis/Traitements/Fichiers/test)
 
-bar\_prairie &lt;- ggplot(bdatdiff\_classe,aes(diff,fill=diff\_var\_sfp1970\_2010)) + geom\_bar() + facet\_wrap(~ period)
-bar\_prairie
+Focus sur la Picardie et le Nord-Pas-De-Calais
+----------------------------------------------
 
-Dans cette figure, on s'intéresse particulièrement aux différences entre les périodes 1994-1999 et 2004-2009 et on regarde de plus près la stratification par grande région agricole.
+### Cartographie
+
+![](/media/sf_GIS_ED/Dev/Scripts/master//Fichiers_suivis/Traitements/Fichiers/test)
+
+### Analyses des facteurs explicatifs
+
+#### ACP
 
 ``` r
-# On s'intéresse à la période 24
-# Pour 
-p1 <- ggplot(bdatdiff_classe[bdatdiff_classe$period %in% "24" & bdatdiff_classe$zonage_cplt %in% c("A","B1","B2","C1","C2","D","E1","E2"),],aes(diff,fill=diff_var_prairie1970_2010)) + geom_bar() + facet_wrap(~ zonage_cplt)
+########################
+Rcovarclimato <- c("std_temp_janv","std_temp_juil","std_pluie_janv","std_pluie_juil")
+typeclimato <- replicate(length(Rcovarclimato), "climat")
+#
+Rcovaroccup <- c("var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010")
+typeoccup <- replicate(length(Rcovaroccup), "occup")
 
-p2 <- ggplot(bdatdiff_classe[bdatdiff_classe$period %in% "24" & bdatdiff_classe$zonage_cplt %in% c("A","B1","B2","C1","C2","D","E1","E2"),],aes(diff,fill=diff_var_sfp1970_2010)) + geom_bar() + facet_wrap(~ zonage_cplt)
+type <- c(typeclimato,typeoccup)
+Rcovar <- c(Rcovarclimato,Rcovaroccup,"diff24")
+vNames <- c("diffmedian24",Rcovar) #9599 car meilleure représentation spatiale
+########################
 
-# Ici, regarder les prairies et la sfp, il y a une relation entre ces deux variables. Certes, les prairies ont chuté en Bretagne, mais les modes de production ont évolués et ont laissé place à la stabulation. Les sfp ont augmentée...
-p.ass <- grid.arrange(p1,p2,ncol=2)
+# Lecture de la table sans les NA
+lvNames <- length(vNames)
+dcast.focus <- dcast.bdat[(dcast.bdat$code_reg %in% reg_focus) & complete.cases(dcast.bdat[,vNames]),][,vNames]
+
+res.pca <- PCA(dcast.focus[,!names(dcast.focus) %in% "diff24"], graph = FALSE)
+#fviz_screeplot(res.pca, ncp=10)
+
+pca <- fviz_pca_var(res.pca, axes = c(1,2),col.var="contrib") +
+scale_color_gradient2(low="white", mid="blue", 
+                  high="red", midpoint=50) + theme_minimal()
+pca
+
+fviz_pca_biplot(res.pca, label="var",habillage=dcast.focus$diff24,axes=c(1,2),
+     addEllipses=FALSE, ellipse.level=0.95, ggtheme = theme_minimal())
 ```
 
+Pour l'analyse des facteurs explicatifs, on regardera la distribution des différences des teneurs (boxplot) en fonction de différentes classes d'évolution de l'occupation du sol.
+Des graphiques de correlation, pour voir si il existe des relations linéaires entre les évolutions des teneurs et l'évolution de l'occupation du sol.
+
 <figure style="text-align:center;">
-<a name="histo_double"></a><img src="FS_traitements_bdatdiff_files/figure-markdown_github/unnamed-chunk-10-1.png">
+<a name="boxplot_NPC_picardie"></a><img src="FS_traitements_bdatdiff_files/figure-markdown_github/unnamed-chunk-12-1.png">
 <figcaption>
 </figcaption>
 </figure>
+    ## TableGrob (2 x 1) "arrange": 2 grobs
+    ##   z     cells    name              grob
+    ## 1 1 (1-1,1-1) arrange   gtable[arrange]
+    ## 2 2 (2-2,1-1) arrange gtable[guide-box]
+
 Analyse sur les régions d'élevage B, C et D
 ===========================================
 
 Histogrammes
 ------------
 
-<figure>
-<img src="FS_traitements_bdatdiff_files/figure-markdown_github/unnamed-chunk-13-1.png">
-<figcaption>
-</figcaption>
-</figure>
 Graphiques de correlation
 -------------------------
 
@@ -201,21 +224,6 @@ Rajouter les variation climatiques
 
 Figure ci-dessous à commenter pour aller plus loin.
 
-<figure>
-<img src="FS_traitements_bdatdiff_files/figure-markdown_github/unnamed-chunk-15-1.png">
-<figcaption>
-</figcaption>
-</figure>
-<figure>
-<img src="FS_traitements_bdatdiff_files/figure-markdown_github/unnamed-chunk-16-1.png">
-<figcaption>
-</figcaption>
-</figure>
-<figure>
-<img src="FS_traitements_bdatdiff_files/figure-markdown_github/unnamed-chunk-16-2.png">
-<figcaption>
-</figcaption>
-</figure>
 ``` r
 # Voir le développement de ce type de graphique
 dcast.bdatBCD <- dcast.bdat[dcast.bdat$zonage_simple %in% c("B","C","D"),]

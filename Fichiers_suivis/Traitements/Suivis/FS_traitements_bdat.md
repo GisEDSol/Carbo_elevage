@@ -6,18 +6,11 @@ Jean-Baptiste Paroissien
 -   [Objectifs](#objectifs)
 -   [Analyse des teneurs en carbone organique par période](#analyse-des-teneurs-en-carbone-organique-par-periode)
     -   [Analyse à l'échelle de la France](#analyse-a-lechelle-de-la-france)
+    -   [Analyse des facteurs contrôlant la distribution spatiale](#analyse-des-facteurs-controlant-la-distribution-spatiale)
     -   [Par type de climat](#par-type-de-climat)
     -   [Par régions d'élevage](#par-regions-delevage)
     -   [Par classe de pourcentage d'occupation du sol (données du recensement agricole)](#par-classe-de-pourcentage-doccupation-du-sol-donnees-du-recensement-agricole)
 -   [Résumé des statistiques](#resume-des-statistiques)
-    -   [Graphique de correlation](#graphique-de-correlation)
-    -   [Cartographie](#cartographie)
--   [test avec les différences](#test-avec-les-differences)
-    -   [Graphique de correlation](#graphique-de-correlation-1)
--   [Autres graphiques](#autres-graphiques)
-
-    ## Warning in readLines(rmdCon): ligne finale incomplète trouvée dans
-    ## 'FS_traitements_bdat.Rmd'
 
 Objectifs
 =========
@@ -37,6 +30,8 @@ Cette première étape a pour but d'analyser les différences des teneurs en car
 
 Analyse à l'échelle de la France
 --------------------------------
+
+Important, dans l'analyse spatiale des teneurs en carbone organique, rajouter le nombre d'effectif...celà permettra de rajouter
 
 ### Statistiques descriptives
 
@@ -154,11 +149,12 @@ La section suivante s'attache à analyser la distribution spatiale des teneurs e
 
 ![](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/corgoxmed_period_fr.png)
 
-### Analyse des facteurs contrôlant la distribution spatiale
+Analyse des facteurs contrôlant la distribution spatiale
+--------------------------------------------------------
 
 Dans cette partie, les facteurs contrôlant la distribution spatiale des teneurs en carbone organique des différentes périodes sont analysés. Le travail est dans un premier porté par une analyse en composante principale pour identifier les relations entre les facteurs potentiellement explicatif et dans un deuxième temps par une modélisation avec la méthode des arbres de régression boostés pour affiner l'analyser et classer les variables explicatives par ordre d'importance (contribution).
 
-#### Analyse en composante principale
+### Analyse en composante principale
 
 La figure <A HREF="#pca_fr">3</A> présente la distribution des variables sur les axes 1 et 2 de l'ACP. Environ 61 pourcent de l'information est contenu dans ces deux premiers axes. Description de la distribution des variables dans l'espace des ACP :
 
@@ -184,7 +180,7 @@ Dans la figure <A HREF="#pcabiplot_fr">4</A>, les échantillons sont rajoutées 
 <figcaption>
 </figcaption>
 </figure>
-#### Modélisation avec GBM
+### Modélisation avec GBM
 
 Bien spécifier que GBM est utilisé juste pour appréhender l'importance et le comportement des variables explicatives.
 
@@ -200,8 +196,19 @@ L'application de ces modèles demande une bonne configuration de leurs paramètr
 Les principales variables explicatives de la distribution des teneurs en carbone organique sont présentées figure <A HREF="#gbm_fr">5</A>. Les facteurs les plus importants sont d'ordre climatiques et topographiques. Ces résultats confirment les premières observations de l'ACP.
 Les variables d'occupation du sol ont une influence secondaire et celles qui agissent significativement sont la proportion des exploitations ayant une OTEX de type élevage en 1988, la proportion de surface fourragère principale en 1988 et les proportions de maïs fourrage dans la SAU pour les années 1988, 1979 et 1970. Parmis ces variables d'occupation du sol, l'années 1988 explique bien les teneurs en carbone organique pour la période 1995-1999.
 
-Ces résultats mettent en valeur l'intérêt de travailler sur différentes zones géographiques aux conditions climatiques homogènes.
+**Ces résultats mettent en valeur l'intérêt de travailler sur différentes zones géographiques aux conditions climatiques homogènes.**
 
+    ## Loading required package: gbm
+
+    ## Loading required package: splines
+
+    ## Loaded gbm 2.1.1
+
+<figure style="text-align:center;">
+<a name="gbm_fr"></a><img src="FS_traitements_bdat_files/figure-markdown_github/unnamed-chunk-8-1.png">
+<figcaption>
+</figcaption>
+</figure>
 Ci-dessous, commenter les résultats de la stratification avec les types de climat
 
 <figure style="text-align:center;">
@@ -236,6 +243,56 @@ Ci-dessous, commenter les résultats de la stratification avec les types de clim
     ## 1 1 (1-1,1-1) arrange   gtable[arrange]
     ## 2 2 (2-2,1-1) arrange gtable[guide-box]
 
+<figure style="text-align:center;">
+<a name="cor_polyelevage"></a><img src="FS_traitements_bdat_files/figure-markdown_github/unnamed-chunk-12-1.png">
+<figcaption>
+</figcaption>
+</figure>
+    ## TableGrob (2 x 1) "arrange": 2 grobs
+    ##   z     cells    name              grob
+    ## 1 1 (1-1,1-1) arrange   gtable[arrange]
+    ## 2 2 (2-2,1-1) arrange gtable[guide-box]
+
+<figure style="text-align:center;">
+<a name="cor_elevagehorssol"></a><img src="FS_traitements_bdat_files/figure-markdown_github/unnamed-chunk-13-1.png">
+<figcaption>
+</figcaption>
+</figure>
+    ## TableGrob (2 x 1) "arrange": 2 grobs
+    ##   z     cells    name              grob
+    ## 1 1 (1-1,1-1) arrange   gtable[arrange]
+    ## 2 2 (2-2,1-1) arrange gtable[guide-box]
+
+<figure style="text-align:center;">
+<a name="cor_prairie1988"></a><img src="FS_traitements_bdat_files/figure-markdown_github/unnamed-chunk-14-1.png">
+<figcaption>
+</figcaption>
+</figure>
+    ## TableGrob (2 x 1) "arrange": 2 grobs
+    ##   z     cells    name              grob
+    ## 1 1 (1-1,1-1) arrange   gtable[arrange]
+    ## 2 2 (2-2,1-1) arrange gtable[guide-box]
+
+<figure style="text-align:center;">
+<a name="cor_ugbta"></a><img src="FS_traitements_bdat_files/figure-markdown_github/unnamed-chunk-15-1.png">
+<figcaption>
+</figcaption>
+</figure>
+    ## TableGrob (2 x 1) "arrange": 2 grobs
+    ##   z     cells    name              grob
+    ## 1 1 (1-1,1-1) arrange   gtable[arrange]
+    ## 2 2 (2-2,1-1) arrange gtable[guide-box]
+
+<figure style="text-align:center;">
+<a name="cor_cereal"></a><img src="FS_traitements_bdat_files/figure-markdown_github/unnamed-chunk-16-1.png">
+<figcaption>
+</figcaption>
+</figure>
+    ## TableGrob (2 x 1) "arrange": 2 grobs
+    ##   z     cells    name              grob
+    ## 1 1 (1-1,1-1) arrange   gtable[arrange]
+    ## 2 2 (2-2,1-1) arrange gtable[guide-box]
+
 ### Conclusion
 
 Ici, conclure en disant que l'analyse des teneurs france entière et des dynamiques n'est pas facile en raison de :
@@ -246,117 +303,63 @@ Ici, conclure en disant que l'analyse des teneurs france entière et des dynamiq
 Par type de climat
 ------------------
 
-Ici, expliquer rapidement cette stratification et présenter rapidement la carte des types de climat.
+Compte tenu de l'importance des variables climatiques dans le contrôle de la distribution spatiale des teneurs en carbone organique, une stratification des analyses précédemment réalisées est proposée. Celle-ci est basée sur une typologie des types de climat (rajouter ref). En raison de l'hétérogénéité spatiale des analyses de la BDAT (rajouter carte avec distribution du nombre d'effectif par canton), l'analyse est seulement portée sur les zones 1, 2, 3, 4 et 5.
 
-``` r
-xlabel <- "Carbone organique (g/kg)"
-ylabel <- "Fréquence"
-colour <- brewer.pal(5,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
+### Cartographie des types de climat
 
+La carte ci-dessous présente la typologie.
 
-melted.bdat_clim <- melted.bdat[complete.cases(melted.bdat$typo_clim) & complete.cases(melted.bdat$annees),]
+![](/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/typo_clim.png)
 
-cdf_clim <- ggplot(melted.bdat_clim, aes(x=value))+
-       facet_wrap(~typo_clim)+
-       stat_ecdf(aes(colour=annees))+
-       scale_color_manual(values=colour, 
-                          name="Périodes")+
-       scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
-       theme(plot.title = element_text(size = 14, face = "bold"), 
-             text = element_text(size = 12),
-             axis.title = element_text(face="bold"),
-             axis.text.x=element_text(size = 11))
-cdf_clim
-```
+### Courbes de fréquence cumulées
 
 <figure style="text-align:center;">
 <a name="cdf_clim"></a><img src="FS_traitements_bdat_files/figure-markdown_github/cdf_clim-1.png">
 <figcaption>
 </figcaption>
 </figure>
-Pour le climat, on pourra s'intéresser à quelques zones, en fonction de la densité des données que nous avons à disposition.
-Voir la figure <A HREF="#cdf_clim">8</A> présente les courbes de fréquence cumulées pour les différents types de climats.
+La figure <A HREF="#cdf_clim">14</A> présente les courbes de fréquence cumulées pour les différents types de climats.
 
-``` r
-ylim1 <- boxplot.stats(melted.bdat_clim$value)$stats[c(1, 5)]
-
-boxplot_clim <- ggplot(melted.bdat_clim) +
-            geom_boxplot(aes(x=annees,y=value),outlier.shape = NA,outlier.size=NA)+
-            facet_wrap(~typo_clim,scales="free")+
-            #scale_color_manual(values=colors,name="Années")+
-            #geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
-            scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone (g/kg)")+
-            theme(plot.title = element_text(size = 14, face = "bold"), 
-                  text = element_text(size = 12),
-                  axis.title = element_text(face="bold"),
-                  axis.text.x=element_text(size = 11))+
-            coord_cartesian(ylim = ylim1*1.05)
-boxplot_clim  
-```
-
-Voir aussi pour rajouter la figure <A HREF="#boxplot_clim">10</A>. Sur cette figure, revoir l'axe Y...
+<figure style="text-align:center;">
+<a name="boxplot_clim"></a><img src="FS_traitements_bdat_files/figure-markdown_github/unnamed-chunk-17-1.png">
+<figcaption>
+</figcaption>
+</figure>
+La figure <A HREF="#boxplot_clim">15</A> représente la distribution des teneurs en carbone organique sous forme de boxplot pour les différentes périodes et les différentes zones climatiques. COMMENTER
 
 Par régions d'élevage
 ---------------------
 
-Egalement, ce concentrer sur les zones où les données sont importantes. On peut supprimer les zones de hautes de montagnes...
-Test également en fonction des différentes régions d'élevage
+Cette section développe une analyse des teneurs en carbone organique pour les principales régions d'élevage. En raison de l'hétérogénéité spatiale des analyses de la BDAT (rajouter carte avec distribution du nombre d'effectif par canton), l'analyse est uniquement réalisée sur les régions d'élevage suivante :
+- A :
+- B1 :
+- B2 :
+- C1 :
+- C2 :
+- D :
 
-Regard sur les courbes de fréquences cumulées avec la figure <A HREF="#cdf_regelevage">11</A>
+### Cartographie des régions d'élevage
 
-``` r
-melted.bdat_regelevage <- melted.bdat[complete.cases(melted.bdat$zonage_cplt),]
-#melted.bdat_regelevage <- melted.bdat_regelevage[melted.bdat_regelevage$zonage_simple != "H",]
+Rajouter la cartographie des régions d'élevage
 
-cdf_regelevage <- ggplot(melted.bdat_regelevage, aes(x=value))+
-       facet_wrap(~zonage_cplt)+
-       stat_ecdf(aes(colour=annees))+
-       scale_color_manual(values=colors, 
-                          name="Années")+
-       scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
-       theme(plot.title = element_text(size = 14, face = "bold"), 
-             text = element_text(size = 12),
-             axis.title = element_text(face="bold"),
-             axis.text.x=element_text(size = 11))
-cdf_regelevage
-```
+### Analyses par régions d'élevage
+
+La figure <A HREF="#cdf_regelevage">16</A> présente les courbes de fréquences cumulées pour les différentes régions d'élevage.
 
 <figure style="text-align:center;">
 <a name="cdf_regelevage"></a><img src="FS_traitements_bdat_files/figure-markdown_github/cdf_regelevage-1.png">
 <figcaption>
 </figcaption>
 </figure>
-Ci-dessous, on regarde la répartition des teneurs en C pour les différentes périodes et par les principales régions d'élevage.
-
-``` r
-#ylim1 <- boxplot.stats(melted.bdat$value)$stats[c(1,5)]
-ylim1 <- c(min(melted.bdat_regelevage$value,na.rm=TRUE),quantile(melted.bdat$value,0.99,na.rm=TRUE))
-
-boxplot_reg_elevage <- ggplot(melted.bdat_regelevage) +
-            geom_boxplot(aes(x=annees,y=value,col=annees),outlier.shape = NA,outlier.size=NA)+
-            facet_wrap(~zonage_simple,scales="free")+
-            scale_color_manual(values=colors,name="Années")+
-            #geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
-            scale_x_discrete("Années")+scale_y_continuous("Teneur en carbone (g/kg)")+
-            theme(plot.title = element_text(size = 14, face = "bold"), 
-                  text = element_text(size = 12),
-                  axis.title = element_text(face="bold"),
-                  axis.text.x=element_text(size = 11))+
-            coord_cartesian(ylim = ylim1*1.05)
-boxplot_reg_elevage
-```
+Ci-dessous, on regarde la répartition des teneurs en C pour les différentes périodes et par les principales régions d'élevage. (voir figure <A HREF="#boxplot_regelevage">17</A>).
 
 <figure style="text-align:center;">
-<a name="boxplot_regelevage"></a><img src="FS_traitements_bdat_files/figure-markdown_github/unnamed-chunk-13-1.png">
+<a name="boxplot_regelevage"></a><img src="FS_traitements_bdat_files/figure-markdown_github/boxplot_reg_elevagezoom-1.png">
 <figcaption>
 </figcaption>
 </figure>
-Rajouter des résumés de statistiques pour mieux identifier les zones impactées.
-
-### Zoom sur les 3 régions d'élevage affectées par la baisse du pourcentage de STH, prairies et surface fourragères
-
-<figure>
-<img src="FS_traitements_bdat_files/figure-markdown_github/boxplot_reg_elevagezoom-1.png">
+<figure style="text-align:center;">
+<a name="boxplot_regelevage2"></a><img src="FS_traitements_bdat_files/figure-markdown_github/unnamed-chunk-18-1.png">
 <figcaption>
 </figcaption>
 </figure>
@@ -404,107 +407,3 @@ names(bdatsummary_regadmin) <- period
 # Revoir pour construire une table plus lisible
 #pander(bdatsummary_regadmin,caption = "Statistiques descriptives par période des teneurs en CO pour les différentes régions administratives")
 ```
-
-### Graphique de correlation
-
-``` r
-# voir ce type de graphique...
-# http://www.sthda.com/english/wiki/ggpubr-r-package-ggplot2-based-publication-ready-plots#at_pco=smlwn-1.0&at_si=5881c5fa70a2cae1&at_ab=per-2&at_pos=0&at_tot=1
-
-
-# Voir les graphiques de "différence" réalisés durant le M1
-# Rajouter les types de climat ou autre niveau de stratification pour voir l'influence de ces régions sur les pertes 
-# Voir également pour rajouter ces données sur une table au format melt
-plot(dcast.bdat$corgox_med9599,dcast.bdat$varcorgox_med0004_9599)
-
-plot(dcast.bdat$corgox_med9599,dcast.bdat$diffcorgox_med0004_9599)
-
-# Calculer les évolutions
-varcorgox_med0004_9599 
-varcorgox_med0509_9599
-varcorgox_med0509_9094
-varcorgox_med0004_9094
-diffcorgox_med0004_9599
-diffcorgox_med0509_9599
-diffcorgox_med0509_9094
-diffcorgox_med0004_9094
-
-test <- dcast.bdat[,c("corgox_med9094","corgox_med9599","corgox_med0004","corgox_med0509")]
-ggpairs(test)
-```
-
-Cartographie
-------------
-
-Dans cette partie, des cartes peuvent être produites selon plusieurs arguments (reste à définir) :
-
--   stratification spatiale (région ou autre entités spatiales),
--   stratification temporelle (groupe de plusieurs années).
-
-``` r
-# Paramètres #################
-tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
-period <- c("9094","9599","0004","0509","1014") #
-variable <- "corgox_medequi"
-variablecarto <- paste(variable,period,sep="")#variables à cartographier
-nclasse <- 5 
-style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
-couleur <- "Spectral" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
-l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
-nomfichier <- "corgoxmed_period_fr" #Nom du fichier
-
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=5,position="bottom",ggsaveheight=5,ggsavewidth=20)  
-```
-
-test avec les différences
-=========================
-
-``` r
-# Paramètres #################
-tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
-period <- c("14","15","24","25")#
-variable <- "diff"
-variablecarto <- paste(variable,period,sep="")#variables à cartographier
-nclasse <- 5 #Nombre de classes de valeurs pour la cartographie
-style_classe <- "quantile"
-couleur <- "Spectral" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
-l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
-nomfichier <- "corgoxmed_period" #Nom du fichier de sortie (.png)
-
-cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept="37",reg=FALSE)
-```
-
-Graphique de correlation
-------------------------
-
-``` r
-# Stratifier les plots par les régions et autres facteurs (voir pour la classification climatique)
-plot(dcast.bdat$hpluie_an,dcast.bdat$corgox_medequi9094)
-plot(dcast.bdat$p_sth2000,dcast.bdat$corgox_medequi9094)
-
-
-plot(dcast.bdat$hpluie_an,dcast.bdat$corgox_medequi9094)
-
-
-# Voir le développement de ce type de graphique
-# Relation avec les hauteurs de pluie
-ggplot(dcast.bdat, aes(hpluie_an, corgox_medequi9094,shape=factor(classe_p_prairie2000))) +
-  geom_point(aes(colour = factor(classe_p_prairie2000)), size = 4) +
-  geom_point(colour="grey10", size = 1.5)
-
-# Relation avec l'altitude
-ggplot(dcast.bdat, aes(ttmean, corgox_medequi9094,shape=factor(classe_p_prairie2000))) +
-  geom_point(aes(colour = factor(classe_p_prairie2000)), size = 4) +
-  geom_point(colour="grey10", size = 1.5)
-```
-
-Autres graphiques
-=================
-
-Même démarche que boxplot\_clim mais avec les régions d'élevage
-
-<figure>
-<img src="FS_traitements_bdat_files/figure-markdown_github/boxplot_reg_elevage-1.png">
-<figcaption>
-</figcaption>
-</figure>

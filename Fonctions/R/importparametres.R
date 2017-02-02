@@ -165,5 +165,27 @@ grid_arrange_shared_legend <- function(..., nrow = 1, ncol = length(list(...)), 
 
 assign("grid_arrange_shared_legend",grid_arrange_shared_legend,.GlobalEnv)
 
+#from https://gist.github.com/ottadini/6882677
+# Source: http://stackoverflow.com/q/7549694/857416
+lm_eqn = function(m) {
+  # Displays regression line equation and R^2 value on plot
+  # Usage:
+  # p + annotate("text", x=25, y=300, label=lm_eqn(lm(y ~ x, df)), parse=TRUE)
+  
+  l <- list(a = format(coef(m)[1], digits = 2),
+            b = format(abs(coef(m)[2]), digits = 2),
+            r2 = format(summary(m)$r.squared, digits = 3));
+  
+  if (coef(m)[2] >= 0)  {
+    eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2,l)
+  } else {
+    eq <- substitute(italic(y) == a - b %.% italic(x)*","~~italic(r)^2~"="~r2,l)    
+  }
+  
+  as.character(as.expression(eq));                 
+}
+
+assign("lm_eqn",lm_eqn,.GlobalEnv)
+
 #return(list(grid_arrange_shared_legend,gsub2,fig=fig))
 }#Fin fonction

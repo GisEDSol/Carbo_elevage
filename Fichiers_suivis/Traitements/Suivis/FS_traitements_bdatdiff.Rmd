@@ -95,17 +95,19 @@ La figure `r fig$ref("histo_evolution",link=TRUE)` présente un histogramme du n
 La figure montre un équilibre entre le nombre de canton ayant eu une augmentation et le nombre de canton ayant eu une diminution de la teneur en carbone organique. La proportion des zones d'élevage entre les classes d'augmentation et de diminution est relativement équilibrée mais quelques zones se distinguent :
 
 - Les régions B1, C2 et D sont davantage affectées par la diminution des teneurs en C
-- La région A et C1 sont plus affecté par des augmentations que des diminutions. 
+- Les région A et C1 sont plus affectées par des augmentations que des diminutions. 
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("histo_evolution",""),fig.align="center"}
 # Histogramme des valeurs 
 
 # Sélection des cantons aux diminutions significatives
 bdatdiff <- subset(melted.bdatdiff,diff!="Non significatif")
+bdatdiff <- melted.bdatdiff
 
-histo_evol <- ggplot(bdatdiff,aes(diff,fill=zonage_cplt)) + geom_bar() +
-                    scale_fill_brewer(palette = 'Paired',name="Zones d'élevage")+
-                    xlab("Classe d'évolution des teneurs en carbone organique")+ylab("Nombre de canton")+
+histo_evol <- ggplot(bdatdiff,aes(zonage_cplt,fill=diff)) + geom_bar() + #geom_bar(position="fill") + scale_y_continuous(labels = percent_format())
+#                    facet_grid(~period) +
+                    scale_fill_brewer(palette = 'Paired',name="Evolution des teneurs en C")+
+                    xlab("Zones d'élevage")+ylab("Nombre de canton")+
                     theme(plot.title = element_text(size = 14, face = "bold"), 
                     text = element_text(size = 12),
                     axis.title = element_text(face="bold"),
@@ -113,14 +115,14 @@ histo_evol <- ggplot(bdatdiff,aes(diff,fill=zonage_cplt)) + geom_bar() +
                     #geom_bar(position="dodge")
 histo_evol
 ```
-
-Dans la figure `r fig$ref("histo_evolution_period",link=TRUE)`, les histogrammes sont analysés pour les différentes entre périodes ayant au minimum 10 d'écarts. La figure montre des différences importantes entre les périodes analysées :
+Dans la figure `r fig$ref("histo_evolution_period",link=TRUE)`, les histogrammes sont analysés pour des écarts entre les périodes étudiées d'au moins 10 ans. La figure montre des différences importantes entre les périodes analysées :
 
 - L'évolution des teneurs est équilibrée entre les périodes [1994-1999]-[2010-2014] et les périodes [1990-1994]-[2010-2014],
 - Les différences entre les périodes [1990-1994]-[2000-2004] et [1994-1999]-[2005-2009] montrent une part importante pour la diminution des teneurs en C. Dans une moindre mesure, la différence entre les périodes [1990-1994]-[2005-2009] présente une part de diminution des teneurs en C plus importante que l'augmentation.
 - A l'inverse, les teneurs en C ont augmenté majoritairement entre les périodes [2000-2004]-[2010-2014].
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("histo_evolution_period",""),fig.align="center"}
+bdatdiff <- subset(melted.bdatdiff,diff!="Non significatif")
 periodetud <- c("14","24","15","25","13","35")
 bdatdiff <- bdatdiff[(bdatdiff$period %in% periodetud) & bdatdiff$zonage_simple != "H" & bdatdiff$zonage_simple != "G" & bdatdiff$zonage_simple != "F", ]
 bdatdiff$diff <- as.factor(bdatdiff$diff)
@@ -139,29 +141,21 @@ histo_regelevage
 
 - Les évolutions des teneurs en C entre les différentes périodes ne suivent pas les mêmes tendances. Les premières observation vues dans [FS_traitements_bdat.Rmd](`r github_url`Fichiers_suivis/Traitements/Suivis/FS_traitements_bdat.Rmd) se confirment. Les teneurs en C ont augmenté sur la période [2010-2014] et cette augmentation est particulièrement prononcée entre les périodes [2000-2004]-[2010-2014].
 - La diminution des teneurs est surtout observée entre [1990-1994]-[2000-2004] et [1994-1999]-[2005-2009] et [1990-1994]-[2005-2009].
-- Les principales zones d'élevage affectées par ces changements sont : A, B1, C1, C2 et D. Ce résultat provient surtout de la densité d'analyse dans ces zones.
+- Les principales zones d'élevage affectées par ces changements sont : A, B1, C1, C2 et D. Ce résultat provient surtout de la densité d'analyse dans ces zones et de leur étendue spatiale.
 
 ## Analyse sur les périodes identifiées
 
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE}
+Dans la suite, on s'intéressera uniquement aux périodes concernées par les changements importants idenfiés dans le paragraphe précédent, à savoir : [2000-2004]-[2010-2014], [1990-1994]-[2000-2004],[1994-1999]-[2005-2009] et [1990-1994]-[2005-2009].
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=5, fig.width=8,fig.cap = fig$cap("bar_prairie","Histogramme à commenter"),fig.align="center"}
 # Sélection des cantons aux diminutions significatives
 bdatdiff_classe <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff) & melted.bdatdiff$diff !="Non significatif",]
-
-# Sélection
 periodetud <- c("13","24","35","14")
 zone_elevage <- c("A","B1","C1","C2","D")
 
 bdatdiff_classe <- bdatdiff_classe[(bdatdiff_classe$period %in% periodetud) & (bdatdiff_classe$zonage_cplt %in% zone_elevage),]
 bdatdiff_classe$diff <- as.factor(bdatdiff_classe$diff)
 
-histo_table <- count(bdatdiff_classe,c("diff","nom_region","period"))
-histo_table[order(-histo_table[,"freq"]),][1:10,]
-```
-Dans la suite, on s'intéressera uniquement aux périodes concernées par les changements importants idenfiés dans le paragraphe précédent, à savoir : [2000-2004]-[2010-2014], [1990-1994]-[2000-2004],[1994-1999]-[2005-2009] et [1990-1994]-[2005-2009].
-
-Dans la figure 
-
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=5, fig.width=8,fig.cap = fig$cap("bar_prairie","Histogramme à commenter"),fig.align="center"}
 # Histogramme des valeurs 
 histo_regionadmin <- ggplot(bdatdiff_classe,aes(diff,fill=nom_region)) + geom_bar(position="dodge") + facet_wrap(~ period) + 
                     xlab("Classe d'évolution des teneurs en carbone organique")+ylab("Nombre de canton")+
@@ -173,17 +167,45 @@ histo_regionadmin
 #pg <- ggplot_build(histo_regionadmin)
 #pg$data[[1]][,c("count","PANEL","group")]
 ```
+De la figure ci-dessous, les 10 principales régions touchées par des évolutions significatives sont présentées dans le tableau ci-dessous.
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,results='asis'}
+# Sélection
+histo_table <- count(bdatdiff_classe,c("diff","nom_region","period"))
+histo <- histo_table[order(-histo_table[,"freq"]),][1:10,]
+pander(histo,style = "rmarkdown",caption = "Principales régions touchées par des évolutions significatives")
+```
+
+La région Centre et les pays de la Loire ont une fréquence importante de canton ayant une augmentation de C.
+Le Nord-pas-de-Calais, la Bretagne, la Picardie et le Poitou-Charentes sont les principales régions touchées par des diminutions en C.
 
 ## Cartographie des évolutions
 
-Description des cartes :
-
-- Répartition des zones touchées par des augmentations ou diminutions significatives. Prendre en compte aussi les différences observées entre les périodes de temps analysées
-- Faire un focus sur les zones aux changements significatifs??
-
+On retrouve ces observations sur les cartes d'évolution des teneurs. Dans le détail, c'est le morbihan qui est surtout affecté par des chutes de teneurs en carbone organique et en région Centre, on observe une augmentation des teneurs concentrée dans le Perche.
+Ces résultats très ciblés font penser à un effet de bord, surtout pour les régions Picardie, Nord-Pas-De-Calais et le département du Morbihan. **La suite des analyses se concentrera sur ces zones.**
 
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,message=FALSE}
+# Cartographie des résultats des tests statistiques
+tablecarto <- "dm_vecteurs.canton" 
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
+variablecarto <- c("diffmedian13","diffmedian24","diffmedian35","diffmedian14") #variable à spatialiser
+l_legend <- "Evolution des teneurs en C"#label de la variable
+nclasse <- 4 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "quantile" #"pretty"#"jenks","fixed"
+couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+nomfichier <- "Median_evolu_c"
 
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=10,ggsavewidth=10)
+```
+
+```{r map_evol_fr, echo = F, results = 'asis'}
+# Pour insérer l'image
+fichiers <- paste(repsortie,nomfichier,sep="")
+cat(paste("![](",fichiers,")",sep=""))
+```
+
+```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,message=FALSE}
+# Cartographie des résultats des tests statistiques
 tablecarto <- "dm_vecteurs.canton" 
 dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
 variablecarto <- c("diff13","diff24","diff35","diff14") #variable à spatialiser
@@ -202,97 +224,128 @@ fichiers <- paste(repsortie,nomfichier,sep="")
 cat(paste("![](",fichiers,")",sep=""))
 ```
 
-# Reproduire ce type de graphe par stratification
+## Focus sur la Picardie et le Nord-Pas-De-Calais
 
-bar_prairie <- ggplot(bdatdiff_classe,aes(diff,fill=diff_var_sfp1970_2010)) + geom_bar() + facet_wrap(~ period)
-bar_prairie
+### Cartographie
 
+```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,message=FALSE}
+tablecarto <- "dm_vecteurs.canton" 
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
+variablecarto <- c("diffmedian13","diffmedian24","diffmedian35","diffmedian14") #variable à spatialiser
+l_legend <- "Evolution des teneurs en C"#label de la variable
+nclasse <- 4 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "quantile" #"pretty"#"jenks","fixed"
+couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
 
-```{r,echo=FALSE,eval=FALSE}
-# Faire une sélection sur les principales années 
+reg <- "31|22"
+reg <- "31"
 
-
-periodetud <- c("14","24","15","25")
-bdatdiff_classe <- melted.bdatdiff[(melted.bdatdiff$period %in% periodetud),]
-bdatdiff_classe$diff <- as.factor(bdatdiff_classe$diff)
-bdatdiff_classe$diffmedian <- as.numeric(bdatdiff_classe$diffmedian)
-
-bdatponct, aes(x=occupation, y=c, color=occupation, group=occupation)
-
-
-ggplot(bdatdiff_classe,aes(x=diff_var_prairie1970_2010,y=diffmedian)) +
-            geom_boxplot()+
-            geom_point(position=position_jitter(width=0.3), alpha=0.1) +
-            facet_wrap(~period)
-# Voir cette figure et rajouter color=diff,
-
-
-
-
-            #scale_color_manual(values=colors,name="Années")+
-            #geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
-            scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone (g/kg)")+
-            theme(plot.title = element_text(size = 14, face = "bold"), 
-                  text = element_text(size = 12),
-                  axis.title = element_text(face="bold"),
-                  axis.text.x=element_text(size = 11))+
-            coord_cartesian(ylim = ylim1*1.05)
-
+for(i in reg){
+    nomfichier <- paste("Median_evolu_c",i,sep="")
+    carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=i,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=10,ggsavewidth=10)
+}
 ```
 
-Dans cette figure, on s'intéresse particulièrement aux différences entre les périodes 1994-1999 et 2004-2009 et on regarde de plus près la stratification par grande région agricole.
-
-```{r,highlight=TRUE,eval=TRUE,fig.height=5, fig.width=8,fig.cap = fig$cap("histo_double","Histogramme à commenter"),fig.align="center"}
-# On s'intéresse à la période 24
-# Pour 
-p1 <- ggplot(bdatdiff_classe[bdatdiff_classe$period %in% "24" & bdatdiff_classe$zonage_cplt %in% c("A","B1","B2","C1","C2","D","E1","E2"),],aes(diff,fill=diff_var_prairie1970_2010)) + geom_bar() + facet_wrap(~ zonage_cplt)
-
-p2 <- ggplot(bdatdiff_classe[bdatdiff_classe$period %in% "24" & bdatdiff_classe$zonage_cplt %in% c("A","B1","B2","C1","C2","D","E1","E2"),],aes(diff,fill=diff_var_sfp1970_2010)) + geom_bar() + facet_wrap(~ zonage_cplt)
-
-# Ici, regarder les prairies et la sfp, il y a une relation entre ces deux variables. Certes, les prairies ont chuté en Bretagne, mais les modes de production ont évolués et ont laissé place à la stabulation. Les sfp ont augmentée...
-p.ass <- grid.arrange(p1,p2,ncol=2)
+```{r map_carbo_fr_picar, echo = F, results = 'asis'}
+# Pour insérer l'image
+fichiers <- paste(repsortie,nomfichier,sep="")
+cat(paste("![](",fichiers,")",sep=""))
 ```
 
-```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE}
-ggplot(bdatdiff_classe[bdatdiff_classe$period %in% "24" & bdatdiff_classe$zonage_cplt %in% c("A","B1","B2","C1","C2","D","E1","E2"),],aes(diff,fill=classe_var_c1970_2010)) + geom_bar() + facet_wrap(~ zonage_cplt)
-
-ggplot(bdatdiff_classe[bdatdiff_classe$period %in% "24" & bdatdiff_classe$zonage_cplt %in% c("A","B1","B2","C1","C2","D","E1","E2"),],aes(diff,fill=classe_var_sfp1970_2010)) + geom_bar() + facet_wrap(~ zonage_cplt)
+### Analyses des facteurs explicatifs
 
 
-# Sélection de la zone d'élevage B
-bdatdiff_B <- bdatdiff[bdatdiff$zonage_simple %in% "B",]
-ggplot(bdatdiff_B,aes(diff,fill=nom_region)) + geom_bar(position="dodge") + facet_wrap(~ period)
+#### ACP
 
+```{r,highlight=TRUE,eval=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("acp_evolution_picardie","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
 
+########################
+Rcovarclimato <- c("std_temp_janv","std_temp_juil","std_pluie_janv","std_pluie_juil")
+typeclimato <- replicate(length(Rcovarclimato), "climat")
+#
+Rcovaroccup <- c("var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010")
+typeoccup <- replicate(length(Rcovaroccup), "occup")
+
+type <- c(typeclimato,typeoccup)
+Rcovar <- c(Rcovarclimato,Rcovaroccup,"diff24")
+vNames <- c("diffmedian24",Rcovar) #9599 car meilleure représentation spatiale
+########################
+
+# Lecture de la table sans les NA
+lvNames <- length(vNames)
+dcast.focus <- dcast.bdat[(dcast.bdat$code_reg %in% reg_focus) & complete.cases(dcast.bdat[,vNames]),][,vNames]
+
+res.pca <- PCA(dcast.focus[,!names(dcast.focus) %in% "diff24"], graph = FALSE)
+#fviz_screeplot(res.pca, ncp=10)
+
+pca <- fviz_pca_var(res.pca, axes = c(1,2),col.var="contrib") +
+scale_color_gradient2(low="white", mid="blue", 
+                  high="red", midpoint=50) + theme_minimal()
+pca
+
+fviz_pca_biplot(res.pca, label="var",habillage=dcast.focus$diff24,axes=c(1,2),
+     addEllipses=FALSE, ellipse.level=0.95, ggtheme = theme_minimal())
+```
+Pour l'analyse des facteurs explicatifs, on regardera la distribution des différences des teneurs (boxplot) en fonction de différentes classes d'évolution de l'occupation du sol.
+Des graphiques de correlation, pour voir si il existe des relations linéaires entre les évolutions des teneurs et l'évolution de l'occupation du sol.
+
+```{r,echo=FALSE,eval=TRUE,fig.height=6, fig.width=12,fig.cap = fig$cap("boxplot_NPC_picardie","boxplot NPC_picardie"),fig.align="center"}
+# Analyse sur les périodes retenues et les régions identifiée
+diffmedian <- c("14","24","15","25")#différences des médianes d'intérêts
+#reg_focus <- c("31","22","53","24")#code_region d'intérêts
+
+vNames <- c("diff_var_prairie1988_2010","diff_var_sfp1988_2010","diff_var_c1988_2010","diff_var_mf1988_2010")
+
+# Pour Picardie et Pas de Calais (31,22)
+p <- list()
+for(i in vNames){
+    reg_focus <- c("31","22")#code_region d'intérêts
+    # Sélection
+    melted_focus <- melted.bdatdiff[complete.cases(melted.bdatdiff[,i]) & (melted.bdatdiff$code_reg %in% reg_focus) & (melted.bdatdiff$period %in% diffmedian),]
+
+    p[[i]] <- ggplot(melted_focus,aes_string(x=i,y="diffmedian")) +
+              geom_boxplot()+
+              geom_point(position=position_jitter(width=0.3), alpha=0.5,aes(colour = diff)) +
+              facet_wrap(~period)+
+              #scale_color_manual(values=colors,name="Années")+
+              #geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
+              scale_x_discrete(i)+scale_y_continuous("Différences des teneurs en carbone organique (g/kg)")+
+              theme(plot.title = element_text(size = 14, face = "bold"), 
+                    text = element_text(size = 12),
+                    axis.title = element_text(face="bold"),
+                    axis.text.x = element_text(size = 11))
+             
+}
+do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
 ```
 
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE}
 # Voir les graphiques de "différence" réalisés durant le M1
 # Rajouter les types de climat ou autre niveau de stratification pour voir l'influence de ces régions sur les pertes 
 # Voir également pour rajouter ces données sur une table au format melt
-plot(dcast.bdat$corgox_med9599,dcast.bdat$varcorgox_med0004_9599)
+dcast.focus <- dcast.bdat[dcast.bdat$code_reg %in% reg_focus,]
 
-plot(dcast.bdat$corgox_med9599,dcast.bdat$diffcorgox_med0004_9599)
+xlabel <- "Teneur en carbone organique initiale (g/kg)"
+ylabel <- "Différence des teneurs en carbone organique (g/kg)(14)"
+x <- "corgox_medequi9094"
+y <- "diffmedian14"
 
-# Calculer les évolutions
-varcorgox_med0004_9599 
-varcorgox_med0509_9599
-varcorgox_med0509_9094
-varcorgox_med0004_9094
-diffcorgox_med0004_9599
-diffcorgox_med0509_9599
-diffcorgox_med0509_9094
-diffcorgox_med0004_9094
-
-test <- dcast.bdat[,c("corgox_med9094","corgox_med9599","corgox_med0004","corgox_med0509")]
-ggpairs(test)
+ggplot(dcast.focus, aes_string(x,y)) +
+            geom_point(aes(colour = factor(diff14)),alpha = 0.8, size = 1) +
+            scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+            text = element_text(size = 12),
+            axis.title = element_text(face="bold"),
+            axis.text.x=element_text(size = 11))+ labs(title=i)+
+            annotate("text", x=20, y=10, label=lm_eqn(lm(dcast.focus[,y]~dcast.focus[,x], dcast.focus,na.rm=TRUE)), parse=TRUE)+
+            geom_smooth(method = "lm", se = FALSE,color="black")    
 
 ```
 
 # Analyse sur les régions d'élevage B, C et D
 
 ## Histogrammes
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE}
 # Histogramme des valeurs 
 periodetud <- c("14","24","15","25")
 # Sélection des cantons aux diminutions significatives et des zones B,C et D
@@ -311,53 +364,8 @@ Rajouter les variation climatiques
 
 Figure ci-dessous à commenter pour aller plus loin.
 
+
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE}
-# GET EQUATION AND R-SQUARED AS STRING
-# SOURCE: http://goo.gl/K4yh
-
-
-x <- "hpluie_an"
-y <- "corgox_medequi9094"
-
-lm_eqn <- function(df,x,y){
-    m <- lm(x ~ y, df);
-    eq <- substitute(italic(x) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2, 
-         list(a = format(coef(m)[1], digits = 2), 
-              b = format(coef(m)[2], digits = 2), 
-             r2 = format(summary(m)$r.squared, digits = 3)))
-    as.character(as.expression(eq));                 
-}
-
-# Stratifier les plots par les régions et autres facteurs (voir pour la classification climatique)
-ggplot(dcast.bdat, aes(hpluie_an, corgox_medequi9094,shape=factor(classe_p_prairie2000))) +
-  geom_point(aes(colour = factor(classe_p_prairie2000)), size = 3) +
-  geom_point(colour="grey10", size = 1.5) + geom_smooth(method='lm',formula=y~x) #+ facet_wrap(~ zonage_cplt) + 
-
-
-geom_text(data=eq,aes(x = 25, y = 300,label=V1), parse = TRUE, inherit.aes=FALSE)
-
-
-
-ggplot(dcast.bdat, aes(hpluie_an, corgox_medequi9094)) +
-  geom_point(aes(colour = factor(classe_p_prairie2000)), size = 3) +
-  geom_smooth(method='lm',formula=y~x) #+ facet_wrap(~ zonage_cplt) + 
-
-
-geom_smooth(method = "lm", se = FALSE)
-
-
-
-
-
-
-
-# Voir un peu plus G1 (bof, peut d'intérêt. Eventuellement, voir pour une figure synthétique avec une matrice présentant les coef de correlation)
-#ggplot(dcast.bdat[dcast.bdat$zonage_cplt %in% "G1",], aes(hpluie_an, corgox_medequi9094,shape=factor(classe_p_prairie2000))) +
- # geom_point(aes(colour = factor(classe_p_prairie2000)), size = 4) +
-  #geom_point(colour="grey10", size = 1.5)
-```
-
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
 # Plot of the change in the cantonal medians of soil OC versus the cantonal medians of soil OC content averaged over the two extreme periods (1990–1994 and 2000–2004). Triangles are significant changes. Circles are non-significant changes. Line is the regression (r 2 = 0.15) between the change in the cantonal medians of soil OC and the cantonal medians of soil OC averaged over the two extreme periods.
 
 # Ici, on reprend la figure 7 de Saby2008
@@ -369,7 +377,7 @@ ggplot(dcast.bdat, aes(meancorgox9599_0409,diffmedian24,shape=factor(diff24))) +
 
 ```
 
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE}
 #Median of baseline soil OC content (first period) versus change in median of soil OC values over the whole survey. Triangles are significant changes. Circles are non-significant changes. Line is the regression (r 2 = 0.24) between median of baseline SOC (1990–1994) and significant changes
 
 # Ici, on reprend la figure 5 de Saby2008

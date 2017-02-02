@@ -382,7 +382,7 @@ for(v in p_variable){
 ## Pourcentage d'occupation du sol
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
-varia <- c("p_sth","p_sfp","p_prairie") # Variable à analyser 
+varia <- c("p_sth","p_sfp","p_prairie","p_c","p_mf") # Variable à analyser 
 period <- c("1970","1979","1988","2000","2010") #Période de temps
 id <- c("code_canton","code_reg","nom_region") #Nom de l'identifiant
 style_classe <- "pretty"
@@ -442,10 +442,10 @@ period <- c("1970_2010","1979_2010","1988_2010")
 varia <- apply(expand.grid(p_variable,period),1, function(x){paste("var_",x[1],x[2],sep="")})
 style_classe <- "quantile" # fixed", "sd", "equal", "pretty", "quantile", "kmeans", "hclust", "bclust", "fisher", or "jenks"
 nclasse <- 5
-dm_table <- "dm_vecteurs.canton"
+table_dm <- "dm_vecteurs.canton"
 
 # Lecture de la table dm_vecteurs.canton
-mapcanton <- sqlQuery(loc,paste("select * from ",dm_table,sep=""))
+mapcanton <- sqlQuery(loc,paste("select * from ",table_dm,sep=""))
 
 for(i in varia){
   print(i)
@@ -470,7 +470,7 @@ for(i in varia){
   for(v in c(vName,vNameS)){
     cpt <- cpt + 1
     print(sqlQuery(loc,paste("alter table ",table_dm,"
-                        drop column if exists ",v,";
+                        drop column if exists ",v," cascade;;
                         alter table ",table_dm,"
                         add column ",v," text",sep="")))
                        

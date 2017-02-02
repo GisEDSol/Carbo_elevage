@@ -1,0 +1,464 @@
+---
+title: "Analyse des données du recencement agricole"
+author: "Jean-Baptiste Paroissien"
+date: "17/01/2017"
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
+    fig_width: 10
+    fig_height: 10
+    dev: png
+    md_extensions: +autolink_bare_uris+hard_line_breaks+header_attributes+line_blocks+table_captions
+---
+
+```{r setup, include=FALSE,eval=TRUE}
+# Importation des paramètres de travail
+source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
+repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
+importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
+repsortie <- paste(repmaster,"Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
+```
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+# Lecture des tables de travail
+tablename <- paste("dm_traitements.","melted_ra",sep="")
+melted.ra <- sqlQuery(loc,paste("select * from ",tablename,sep=""))
+dcast.ra <- sqlQuery(loc,paste("select * from dm_vecteurs.canton",sep=""))
+melted.radiff <- sqlQuery(loc,paste("select * from ",tablename,"diff",sep=""))
+melted.radiff <- melted.radiff[complete.cases(melted.radiff$value) & complete.cases(melted.radiff$zonage_simple) & complete.cases(melted.radiff$zonage_cplt),]
+melted.ra <- melted.ra[complete.cases(melted.ra$value) & complete.cases(melted.ra$zonage_simple) & complete.cases(melted.ra$zonage_cplt),]
+melted.ra$annees <- factor(melted.ra$annees)
+
+reg <- c("31","22","53","24")
+melted.ra <- melted.ra[melted.ra$nom_region %in% reg,]
+dcast.ra <- dcast.ra[dcast.ra$nom_region %in% reg,]
+```
+
+# Objectifs
+
+Dans ce travail, les données du recensement agricole construites avec les scripts d'intégration de [FS_bdd_elab_ra.Rmd](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/BDD/Suivis/FS_bdd_elab_ra.Rmd) sont analysées pour porter un regard sur la distribution spatiale et l'évolution de plusieurs variables d'occupation du sol en lien avec l'activité d'élevage. Cette étude exploratoire a pour objectif d'identifier les principales tendances des changements d'occupation du sol pour faciliter l'analyse de l'évolution des teneurs en carbone organique (voir [FS_traitements_bdat.Rmd](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdat.Rmd) et [FS_traitements_bdatdiff.Rmd](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdat.Rmd)).
+
+Dans un premier temps, plusieurs cartographies des variables à analyser sont réalisées. Des statistiques descriptives sont ensuite développées. Celle-ci sont portées à l'échelle de la France et sur différents niveaux géographiques (classes de type de sol, principales grandes région d'élevage).
+
+# Cartographie
+
+Pour ce travail, les cartes ont été générées avec le paquet **`ggplot2`** et la fonction [F_carto.R](https://github.com/Rosalien/GISEDSol/tree/master/Fonctions/R/F_carto.R).
+
+## Occupation du sol
+
+Commenter les figures et rajouter les figures sur les variations.
+Voir pour rajouter d'autres cartes...
+
+```{r,highlight=TRUE,eval=FALSE}
+# Paramètres ###########################
+tablecarto <- "dm_vecteurs.canton" 
+period <- c("1970","1979","1988","2000","2010") #Périodes de temps prise en compte
+variablecarto <- c("p_prairie","p_sth","p_sfp","p_mf","p_c")#variable(s) à cartographier
+#variablecarto <- "p_prairie"
+l_legend <- c("Prairie/SAU (%)","STH/SAU (STH)", "SFP/SAU (%)", "MFL/SAU (%)","Céréale/SAU (%)")# Nom des labels associés aux variables à cartographier. Vecteur utilisé pour les titres des cartes
+
+nclasse <- 5 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "pretty" #"pretty"#"jenks"
+couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+reg <- c("31","22","53","24")
+
+# Lancement
+
+
+cpt <- 0
+for(i in reg){
+  for(v in variablecarto){
+    cpt <- cpt + 1
+    nomfichier <- paste(v,i,style_classe,sep="")
+    l_legendvaria <- l_legend[cpt]
+    variableperiod <- paste(v,period,sep="")
+
+    carto(dsn,tablecarto,variableperiod,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=i,nrowlayout=1,ncollayout=5,position="bottom",ggsaveheight=5,ggsavewidth=20)  
+  }
+}
+
+```
+
+```{r occuplot, echo = F, results = 'asis'}
+period <- c("1970","1979","1988","2000","2010") #Période de temps prise en compte
+variablecarto <- c("p_prairie","p_sth","p_sfp","p_mf","p_c")#variable(s) à cartographier
+style_classe <- "pretty" #"pretty"#"jenks"
+#fichiers <- paste(github_url,"Fichiers_suivis/Traitements/Fichiers/",variablecarto,style_classe,".png",sep="")
+fichiers <- paste(repsortie,variablecarto,style_classe,".png",sep="")
+cat(paste("![](",fichiers,")",sep=""))
+```
+
+## Les UGB
+
+```{r,highlight=TRUE,eval=FALSE}
+# Paramètres ###########################
+tablecarto <- "dm_vecteurs.canton" 
+period <- c("1988","2000","2010") #Périodes de temps prise en compte
+variablecarto <- "ugbta" #variable(s) à cartographier
+#variablecarto <- "p_prairie"
+l_legend <- "Densité d'UGBTA (UGBTA/SAU)" # Nom des labels associés aux variables à cartographier. Vecteur utilisé pour les titres des cartes
+
+nclasse <- 5 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "quantile" #"pretty"#"jenks"
+couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+
+# Lancement
+cpt <- 0
+reg <- c("31","22","53","24")
+for(i in reg){
+  for(v in variablecarto){
+    cpt <- cpt + 1
+    nomfichier <- paste(v,i,style_classe,sep="")
+    l_legendvaria <- l_legend[cpt]
+    variableperiod <- paste(v,period,sep="")
+
+    carto(dsn,tablecarto,variableperiod,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=i,nrowlayout=1,ncollayout=3,position="bottom",ggsavewidth=18,ggsaveheight=5)  
+}
+```
+
+```{r ugbtplot, echo = F, results = 'asis'}
+period <- c("1988","2000","2010") #Période de temps prise en compte
+variablecarto <- "ugbta"
+style_classe <- "quantile" #"pretty"#"jenks"
+#fichiers <- paste(github_url,"Fichiers_suivis/Traitements/Fichiers/",variablecarto,style_classe,".png",sep="")
+fichiers <- paste(repsortie,variablecarto,style_classe,".png",sep="")
+cat(paste("![](",fichiers,")",sep=""))
+```
+
+## Autres
+
+```{r,highlight=TRUE,eval=FALSE}
+# Paramètres ###########################
+tablecarto <- "dm_vecteurs.canton" 
+
+period <- c("1988","2000","2010") #Périodes de temps prise en compte
+variablecarto <- c("elevage","polyelevage","grdcultures","elevagehorsol")#variable(s) à cartographier
+l_legend <- c("OTEX en élevage (%)","OTEX en polyélevage (%)", "OTEX en grandes cultures (%)", "OTEX en élevage hors sol (%)")# Nom des labels associés aux variables à cartographier. Vecteur utilisé pour les titres des cartes
+
+nclasse <- 5 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "pretty" #"pretty"#"jenks"
+couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+
+# Lancement
+cpt <- 0
+for(i in reg){
+  for(v in variablecarto){
+    cpt <- cpt + 1
+    nomfichier <- paste(v,i,style_classe,sep="")
+    l_legendvaria <- l_legend[cpt]
+    variableperiod <- paste(v,period,sep="")
+
+    carto(dsn,tablecarto,variableperiod,nclasse,style_classe,couleur,l_legendvaria,repsortie,nomfichier,dept=FALSE,reg=i,nrowlayout=1,ncollayout=3,position="bottom",ggsaveheight=5,ggsavewidth=15)  
+  }
+}
+
+```
+
+```{r otexplot, echo = F, results = 'asis'}
+variablecarto <- c("elevage","polyelevage","grdcultures","elevagehorsol")
+style_classe <- "pretty" #"pretty"#"jenks"
+#fichiers <- paste(github_url,"Fichiers_suivis/Traitements/Fichiers/",variablecarto,style_classe,".png",sep="")
+fichiers <- paste(repsortie,variablecarto,style_classe,".png",sep="")
+cat(paste("![](",fichiers,")",sep=""))
+```
+
+# Statistiques descriptives
+
+L'objectif de cett section est d'observer globalement les principales tendances dans l'évolution des changements d'occupation du sol sur les données du recencement agricole pour les périodes de 1970 à 2010.
+
+## Courbes des fréquences cumulées et boxplot
+
+Les courbes de fréquences cumulées présentées ci-dessous mettent en exergue plusieus points :
+
+- **Pourcentage de cérélale dans la SAU (p_c):** Une augmentation de la part des céréales dans la SAU est clairement identifiée. Celle-ci concerne surtout les zones aux pourcentages moyens. A l'inverse, on constate une diminution de la part des céréales pour les zones densément occupées par les céréales.
+- **Pourcentage de prairie dans la SAU (p_prairie) :** Une diminution du pourcentage des prairies est observée entre 1979 et les années 1988, 2000 et 2010. La plus grosse diminution concerne les années 1979-1988. Cette tendance implique surtout les zones faiblement et moyennement occupées par les prairies. *A contrario*, les zones fortement occupées par les prairies (80 à 90% de la SAU) ont profitée une légère augmentation entre 1970 et 2010.
+- **Pourcentage des surfaces toujours en herbe dans la SAU (p_sth) :** Les surfaces toujours en herbe suivent globalement la même tendance que les prairies mais avec une intensité différente. La diminution de la STH (principalement les zones entre 0 et 75% de la SAU) est bien prononcée (surtout entre 1988 et 2000) tandis l'augmentation observée sur les prairies est peu tangible dans le cas des STH.
+- **Pourcentage des surfaces fourragères principales (p_sfp) :** La dynamique de la SFP suit de très près la dynamique des prairies.
+
+```{r, eval=TRUE, echo=FALSE, error=FALSE, fig.height=5, fig.width=8, message=FALSE, warning=FALSE, highlight=TRUE}
+# Graphique général (pour le graphique, voir les valeurs supérieures à 100...)
+xlabel <- "Pourcentage d'occupation du sol dans la SAU"
+ylabel <- "Fréquence"
+nperiod <- 5
+colors <- brewer.pal(nperiod,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
+
+melted.ra <- melted.ra[complete.cases(melted.ra$value) &complete.cases(melted.ra$annees) & melted.ra$variable != "ugbta",]
+
+cdf <- ggplot(melted.ra, aes(x=value))+
+       stat_ecdf(aes(colour=annees))+
+       facet_wrap(~variable)+
+       scale_color_manual(values=colors, 
+                          name="Périodes")+
+       scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+       theme(plot.title = element_text(size = 14, face = "bold"), 
+             text = element_text(size = 12),
+             axis.title = element_text(face="bold"),
+             axis.text.x=element_text(size = 11))
+cdf
+```
+
+La distribution des valeurs par années et par type d'occupation du sol présentée dans la figure ci-dessous illustre également les même tendances décrites précédemment.
+
+```{r boxplotra,highlight=TRUE,echo=FALSE,eval=TRUE, fig.height=5, fig.width=8}
+melted.ra_occup <- melted.ra[melted.ra$variable != "ugbta",]
+
+p <- ggplot(melted.ra_occup) +
+            geom_boxplot(aes(x=annees,y=value,col=variable))+
+#           geom_smooth(aes(x=as.integer(annees),y=value,color=variable,fill=variable),method=loess)+
+            #scale_color_manual(values=colors,name="Années")+
+            scale_x_discrete("Périodes")+scale_y_continuous("% d'occupation du sol")+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+                  text = element_text(size = 12),
+                  axis.title = element_text(face="bold"),
+                  axis.text.x=element_text(size = 11))
+p  
+```
+
+## Résumé des statistiques et tests
+
+Commenter les statistiques par périodes et type d'occupation du sol
+
+```{r summaryrafrance,eval=TRUE,echo=FALSE,highlight=TRUE,results = 'asis'}
+# Résumé des statistiques 
+ra_summary <- apply(round(melted.ra["value"],2),2, function(x) tapply(x, list(melted.ra[,"annees"],melted.ra[,"variable"]),summary))
+ra_summary<- data.frame(ra_summary[[1]])
+ra_summary <- lapply(ra_summary, do.call, what = rbind)
+for(i in levels(melted.ra[,"variable"])){
+  knitr::kable(ra_summary[i])
+}
+
+```
+
+Principaux résultats du test des différences entre les années pour les principales occupations du sol :
+
+- **Proportion en céréales** : Seules les évolutions entre 1979-1988, 1979-2000, 1988-2000 ne sont pas significatives.
+
+```{r highlight=TRUE,eval=TRUE,echo=TRUE}
+  melted.test <- melted.ra[melted.ra$variable %in% "p_c",]
+  pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
+```
+
+- **Proportion en STH** : Les tendances observées sur les surfaces toujours en herbe sont toutes significatives.
+
+```{r highlight=TRUE,eval=TRUE,echo=TRUE}
+  melted.test <- melted.ra[melted.ra$variable %in% "p_sth",]
+  pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
+```
+
+- **Proportion en prairie** : Seule les évolutions entre 1970-1979 et 2000-2010 ne sont pas significatives.
+
+```{r highlight=TRUE,eval=TRUE,echo=TRUE}
+  melted.test <- melted.ra[melted.ra$variable %in% "p_prairie",]
+  pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
+```
+- **Proportion en surface fourragère principale** : Seule les évolutions entre 1970-1979 et 2000-2010 ne sont pas significatives.
+
+```{r highlight=TRUE,eval=TRUE,echo=TRUE}
+  melted.test <- melted.ra[melted.ra$variable %in% "p_sfp",]
+  pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
+```
+
+- **Proportion en UGBTA** : Les différences entre toutes les années sont significatives
+
+```{r highlight=TRUE,eval=TRUE,echo=TRUE}
+  melted.test <- melted.ra[melted.ra$variable %in% "ugbta",]
+  pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
+```
+
+### Conclusion 
+
+Globalement, les changements d'occupation du sol observées sur les cartes sont conséquentes et significatives pour une large part de périodes. Ces évolutions occasionnent :
+
+- Une diminution des surfaces en prairies et toujours en herbe,
+- Une augmentation des surfaces utilisées pour la culture des céréales.
+
+L'évolution de ces surfaces s'est surtout faites entre les périodes 1979 et 2000. (ce serait intéressant d'avoir le pourcentage moyen de perte en tel ou tel surface. Par exemple, les surfaces en céréales ont doublé en XX tmps)
+
+# Analyse de l'évolution par stratification
+
+L'objectif de cette section est d'identifier les principales zones touchées par les changements d'occupations du sol.
+
+
+## Stratification par les principales régions d'élevage
+
+Dans la figure ci-dessous, la distribution des pourcentages d'occupation du sol par SAU est représentée par années et pour les principales régions d'élevage.
+Cette figure met en évidence plusieurs points :
+
+- Les zones F et G (respectivement zones pastorales et montagnes humide) ont subi peu d'évolution. Les surfaces en céréales dans ces zones sont relativement basses et ont très peu évoluées. Les surfaces associées à la pratique de l'élevage ont légèrement augmentées dans la zone F et quasi-stagnées pour le cas de la zone G.
+- A l'inverse, la zone A associée aux zones de grandes cultures présente une progression des surfaces de céréales et une diminution nette des surfaces d'occupation du sol liées à l'élevage. 
+- La zone B (zones de polycultures-élevages) présentent une proportion équilibrée entre la part de céréale et la part d'occupation du sol type élevage. Néanmoins, une dynamique similaire à la zone A est observée avec une augmentation des surfaces en céréales et une diminution des surfaces prairiales et fourragères.
+
+Les zones C, D et E présentent les contrastes les plus importants : 
+
+- la zone C (cultures fourragères), les surfaces prairiales ont nettement diminuées au profil des céréales. La part des surfaces fourragères a stagné. 
+- la zone D a connu une diminution importante des prairies, sth et sfp. La part des céréales a quasiment doublé. 
+- On retrouve cette même dynamique pour la zone E mais avec une intensité moindre.
+
+```{r ,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=5, fig.width=10}
+melted.ra_zonage <- melted.ra[complete.cases(melted.ra$zonage_simple) & melted.ra$zonage_simple != "H" &melted.ra$variable != "ugbta",]
+
+p <- ggplot(melted.ra_zonage) +
+            geom_boxplot(aes(x=annees,y=value,col=variable))+
+            facet_wrap(~zonage_simple,scales="free")+
+            geom_smooth(aes(x=as.integer(annees),y=value,color=variable,fill=variable),method=loess)+
+            #scale_color_manual(values=colors,name="Années")+
+            scale_x_discrete("Périodes")+scale_y_continuous("% d'occupation du sol")+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+                  text = element_text(size = 12),
+                  axis.title = element_text(face="bold"),
+                  axis.text.x=element_text(size = 11))
+p  
+```
+
+A la suite de ces observations, les zones B, C, D et E semblent intéressantes à étudier.
+
+## Analyse des différences d'occupation
+Cette figure présente le nombre de canton impacté par des évolutions d'occupation du sol pour les différentes régions d'élevage. Ces évolutions sont classées en deux catégories selon les règles suivantes :
+
+- Augmentation : le pourcentage d'évolution toutes années confondues est supérieur à 10%
+- Diminution : le pourcentage d'évolution toutes années confondues est inférieur à -10%
+
+Cette figure est difficilement commentable...voir si c'est intéressant de la conserver.
+
+```{r ,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=5, fig.width=8}
+# Création de deux classes (diminution et augmentation)
+melted.radiff$classe <- ifelse(melted.radiff$value > 10,"Aug",ifelse(melted.radiff$value < -10,"Dim","Pas d'évolution"))
+melted.radiff$classe <- as.factor(melted.radiff$classe)
+melted.radiff$periode <- as.factor(melted.radiff$periode)
+# Sélection des évolutions > 10% ou < -10%
+
+melted.radiff_select <- melted.radiff[melted.radiff$classe != "Pas d'évolution",]
+
+## Evolution des surfaces par zones d'élevage (1)
+ggplot(melted.radiff_select[melted.radiff_select$variable %in% c("prairie","sth","c","mf"),],aes(classe,fill=variable))+geom_bar(position="dodge")+facet_wrap(~zonage_cplt,scales="free")
+```
+
+Voici les principales observations :
+
+- Les prairies et les STH sont surtout en diminution. Les principales zones en diminution sont : A,B1,C1,D et dans une moindre mesure E.
+- Les surfaces de maïs fourrage sont essentiellement en augmentation et les zones mobilisées par cette dynamique sont C1 et D.
+- Les surfaces en céréales ont davantage tendance à augmenter. Ces augmentations concernent surtout les zones B1 et C1. A noter que la zone A est surtout concernée par une diminution des surfaces en céréales.
+
+```{r ,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=5, fig.width=8}
+## Evolution des surfaces par zones d'élevage (2)
+ggplot(melted.radiff_select[melted.radiff_select$variable %in% c("prairie","sth","c","mf"),],aes(classe,fill=zonage_cplt))+geom_bar(position="dodge")
+# test pour une cartographie des principales évolutions par classe, voir http://stackoverflow.com/questions/10368180/plotting-pie-graphs-on-map-in-ggplot
+```       
+On se concentre sur les principales zones 
+
+```{r ,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=5, fig.width=8}
+## Evolution des surfaces par zones d'élevage (2)
+zone_elevage <- c("A","B1","C1","C2","D")
+ggplot(melted.radiff_select[(melted.radiff_select$variable %in% c("prairie","sth","c","mf")) & (melted.radiff_select$zonage_cplt %in% zone_elevage),],aes(classe,fill=zonage_cplt))+geom_bar(position="dodge")+facet_wrap(~
+  variable,scales="free")
+
+zone_elevage <- c("A","B1","C1","C2","D")
+ggplot(melted.radiff_select[(melted.radiff_select$variable %in% c("prairie","sth","c","mf")) & (melted.radiff_select$zonage_cplt %in% zone_elevage),],aes(classe,fill=nom_region))+geom_bar(position="dodge")+facet_wrap(~
+  variable,scales="free")
+
+tablera <- melted.radiff_select[(melted.radiff_select$variable %in% c("prairie","sth","c","mf")) & (melted.radiff_select$zonage_cplt %in% zone_elevage),]
+
+histo_ra <- count(tablera,c("classe","nom_region","variable","periode"))
+histo_raorder <- histo_ra[order(-histo_ra[,"freq"]),]
+
+
+
+# test pour une cartographie des principales évolutions par classe, voir http://stackoverflow.com/questions/10368180/plotting-pie-graphs-on-map-in-ggplot
+```       
+
+## Analyse des différentes périodes d'évolution en fonction des zones d'élevage
+
+```{r,echo=FALSE,eval=TRUE}
+periodetud <- c("14","24","15","25","13","35")
+bdatdiff <- bdatdiff[(bdatdiff$period %in% periodetud) & bdatdiff$zonage_simple != "H" & bdatdiff$zonage_simple != "G" & bdatdiff$zonage_simple != "F", ]
+bdatdiff$diff <- as.factor(bdatdiff$diff)
+
+histo_regelevage <- ggplot(bdatdiff,aes(diff,fill=zonage_cplt)) + geom_bar() + facet_wrap(~ period)+
+                    scale_fill_brewer(palette = 'Paired',name="Zones d'élevage")+
+                    xlab("Classe d'évolution des teneurs en carbone organique")+ylab("Nombre de canton")+
+                    theme(plot.title = element_text(size = 14, face = "bold"), 
+                    text = element_text(size = 12),
+                    axis.title = element_text(face="bold"),
+                    axis.text.x=element_text(size = 11))    
+                    #geom_bar(position="dodge")
+histo_regelevage
+
+```
+
+## Zoom sur les principales régions concernées par les évolutions
+
+Pas besoin de la commenter. Cette figure est un simple zoom. Elle confirme les observations déjà évoquées...
+
+```{r ,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=5, fig.width=10}
+# wpf : windows presentation fundation
+# Cette figure représente simplement un zoom pour mieux voir les évolutions sur certaines zones d'élevage
+
+melted.ra_zonage <- melted.ra[complete.cases(melted.ra$zonage_cplt) & melted.ra$zonage_cplt %in% c("A","B1","C1","D","E1") &melted.ra$variable != "ugbta" ,]
+p <- ggplot(melted.ra_zonage) +
+            geom_boxplot(aes(x=annees,y=value,col=variable))+
+            facet_wrap(~zonage_cplt,scales="free")+
+            geom_smooth(aes(x=as.integer(annees),y=value,color=variable,fill=variable),method=loess)+
+            #scale_color_manual(values=colors,name="Années")+
+            scale_x_discrete("Périodes")+scale_y_continuous("% d'occupation du sol")+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+                  text = element_text(size = 12),
+                  axis.title = element_text(face="bold"),
+                  axis.text.x=element_text(size = 11))
+p  
+```
+
+```{r ,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,message=FALSE,error=FALSE,fig.height=3, fig.width=6}
+# Pbl lors de la compilation
+#Quitting from lines 359-374 (FS_traitements_ra.Rmd) 
+#Erreur : Faceting variables must have at least one value
+
+
+melted.ra_zonage_ugbta <- melted.ra[melted.ra$zonage_cplt %in% c("A","B1","C1","D","E1") & melted.ra$variable %in% "ugbta",]
+ylim1 <- boxplot.stats(melted.ra_zonage_ugbta$value)$stats[c(1,5)]
+
+p <- ggplot(melted.ra_zonage_ugbta) +
+            geom_boxplot(aes(x=annees,y=value),outlier.shape = NA,outlier.size=NA)+#,col=zonage_simple))+
+            facet_wrap(~zonage_cplt,scales="free")+
+#            geom_smooth(aes(x=as.integer(annees),y=value,method=loess)+
+            #scale_color_manual(values=colors,name="Années")+
+            scale_x_discrete("Périodes")+scale_y_continuous("UGBTA/ha(SAU)")+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+                  text = element_text(size = 12),
+                  axis.title = element_text(face="bold"),
+                  axis.text.x=element_text(size = 11))+
+            coord_cartesian(ylim = ylim1*1.7)
+p  
+```
+
+## Observation par régions administratives
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=5, fig.width=8}
+# Lecture de la table de travail
+
+melted.ra_zonage <- melted.ra[melted.ra$zonage_cplt %in% c("A","B1","C1","D","E1"),]
+p_variable <- cbind("p_prairie","p_sth","p_sfp")#,"p_mf")#,"p_c")
+
+cpt <- 0
+for(i in p_variable){
+  cpt <- cpt + 1
+  melted.raplot <- melted.ra_zonage[melted.ra_zonage["variable"] == i,]
+  melted.raplot[,"annees"] <- as.factor(melted.raplot[,"annees"])
+  melted.raplot[,"nom_region"] <- as.factor(melted.raplot[,"nom_region"])
+  
+  p <- ggplot(melted.raplot) +
+            geom_boxplot(aes(x=annees,y=value,col=nom_region))+
+            geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
+            scale_x_discrete("Années")+scale_y_continuous("Pourcentage")+labs(title=i)+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+                  text = element_text(size = 12),
+                  axis.title = element_text(face="bold"),
+                  axis.text.x=element_text(size = 11))
+  
+  ggsave(p,file = paste(repsortie,"evolregion",i,".png",sep=""), width = 15, height = 10)  
+  }
+  
+  #tt <- do.call("grid.arrange",p)
+  #ggsave(tt, file = paste("map_",reg,"_",v,".png",sep=""), width = 10, height = 10)  
+```
+

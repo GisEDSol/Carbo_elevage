@@ -417,6 +417,9 @@ for(i in Liste_fichiers){
   # Suppression des lignes avec une SAU=0
   tablecsv <- tablecsv[tablecsv$SAU2000>0 & tablecsv$SAU2010>0 & tablecsv$SAU1988>0,]
 
+  # Suppression du canton 5496 (valeur abérante)
+  tablecsv <- tablecsv[tablecsv$num_canton != "5496",]
+
   sqlQuery(loc,paste("drop table if exists ",schema,".UGBTA_canton880010",sep=""))
   sqlSave(loc,tablecsv,tablename = paste(schema,".UGBTA_canton880010",sep=""))
   
@@ -649,21 +652,6 @@ rpostgisname <- "m_rasters.dem_copernicus"
 
 system(paste("raster2sql -s 2154 -t 30x30 -f -I -Y myRaster.tif ",rpostgisname," > raster.sql`
 psql -h localhost -U jb -d sol_elevage -f raster.sql",sep=""))
-
-
-
-
-rep_rasterjrc <- "/media/sf_GIS_ED/Dev/Data/Sol/Lucas/Elaborees/"
-list.rast <- list.files(rep_rasterjrc,pattern=".tif$")#Le $ signifie la fin du pattern
-shaperef <- "/media/sf_GIS_ED/Dev/Data/Base/DEPARTEMENT.shp"
-for(i in list.rast){
-    # 
-    system(paste("gdalwarp -t_srs EPSG:2154 ",rep_rasterjrc,i," ",rep_rasterjrc,"tmp",i," -overwrite",sep=""))
-    system(paste("gdalwarp --config GDALWARP_IGNORE_BAD_CUTLINE YES -cutline ",shaperef," -crop_to_cutline ",rep_rasterjrc,"tmp",i," ",rep_rasterjrc,"fr_",i," -overwrite",sep=""))
-    system(paste("rm ",rep_rasterjrc,"tmp",i,sep=""))
-
-
-
 ```
 
 # Les métadonnées
