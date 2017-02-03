@@ -304,7 +304,7 @@ Cette figure présente le nombre de canton impacté par des évolutions d'occupa
 - Augmentation : le pourcentage d'évolution toutes années confondues est supérieur à 10%
 - Diminution : le pourcentage d'évolution toutes années confondues est inférieur à -10%
 
-Cette figure est difficilement commentable...voir si c'est intéressant de la conserver.
+Cette figure est difficilement commentable...voir si c'est intéressant de la conserver.(à conserver, l'autre figure est bien mieux)
 
 ```{r ,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=5, fig.width=8}
 # Création de deux classes (diminution et augmentation)

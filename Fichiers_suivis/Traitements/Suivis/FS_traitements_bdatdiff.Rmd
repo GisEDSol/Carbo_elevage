@@ -13,7 +13,7 @@ output:
 ---
 
 
-```{r setup, include=FALSE,eval=TRUE}
+```{r setup, include=FALSE,eval=TRUE,echo=FALSE}
 # Importation des paramètres de travail
 source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
 repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
@@ -64,7 +64,7 @@ if (length(fig_labels) > 0) {
 }    
 ```
 
-```{r, tidy=FALSE,eval=TRUE}
+```{r, tidy=FALSE,eval=FALSE,echo=FALSE}
 Sys.Date()
 sessionInfo()
 ```
@@ -75,6 +75,12 @@ melted.bdatdiff <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdatd
 melted.bdatdiff$diffmedian <- as.numeric(melted.bdatdiff$diffmedian)
 dcast.bdat <- sqlQuery(loc,paste("select * from dm_vecteurs.canton",sep=""))
 melted.bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff),]
+
+melted.bdat <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdat",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE))
+period <- c("9094","9599","0004","0509","1014")
+melted.bdat$value <- as.numeric(melted.bdat$value)
+melted.bdat <- melted.bdat[complete.cases(melted.bdat$value),]
+melted.bdat$annees <- factor(melted.bdat$annees,levels=period)
 ```
 
 # Objectifs
@@ -121,7 +127,7 @@ Dans la figure `r fig$ref("histo_evolution_period",link=TRUE)`, les histogrammes
 - Les différences entre les périodes [1990-1994]-[2000-2004] et [1994-1999]-[2005-2009] montrent une part importante pour la diminution des teneurs en C. Dans une moindre mesure, la différence entre les périodes [1990-1994]-[2005-2009] présente une part de diminution des teneurs en C plus importante que l'augmentation.
 - A l'inverse, les teneurs en C ont augmenté majoritairement entre les périodes [2000-2004]-[2010-2014].
 
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("histo_evolution_period",""),fig.align="center"}
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=12,fig.cap = fig$cap("histo_evolution_period",""),fig.align="center"}
 bdatdiff <- subset(melted.bdatdiff,diff!="Non significatif")
 periodetud <- c("14","24","15","25","13","35")
 bdatdiff <- bdatdiff[(bdatdiff$period %in% periodetud) & bdatdiff$zonage_simple != "H" & bdatdiff$zonage_simple != "G" & bdatdiff$zonage_simple != "F", ]
@@ -147,7 +153,7 @@ histo_regelevage
 
 Dans la suite, on s'intéressera uniquement aux périodes concernées par les changements importants idenfiés dans le paragraphe précédent, à savoir : [2000-2004]-[2010-2014], [1990-1994]-[2000-2004],[1994-1999]-[2005-2009] et [1990-1994]-[2005-2009].
 
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=5, fig.width=8,fig.cap = fig$cap("bar_prairie","Histogramme à commenter"),fig.align="center"}
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=5, fig.width=13,fig.cap = fig$cap("bar_prairie","Histogramme à commenter"),fig.align="center"}
 # Sélection des cantons aux diminutions significatives
 bdatdiff_classe <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff) & melted.bdatdiff$diff !="Non significatif",]
 periodetud <- c("13","24","35","14")
@@ -167,7 +173,7 @@ histo_regionadmin
 #pg <- ggplot_build(histo_regionadmin)
 #pg$data[[1]][,c("count","PANEL","group")]
 ```
-De la figure ci-dessous, les 10 principales régions touchées par des évolutions significatives sont présentées dans le tableau ci-dessous.
+De la figure ci-dessus, les 10 principales régions touchées par des évolutions significatives sont présentées dans le tableau ci-dessous.
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,results='asis'}
 # Sélection
@@ -182,7 +188,7 @@ Le Nord-pas-de-Calais, la Bretagne, la Picardie et le Poitou-Charentes sont les 
 ## Cartographie des évolutions
 
 On retrouve ces observations sur les cartes d'évolution des teneurs. Dans le détail, c'est le morbihan qui est surtout affecté par des chutes de teneurs en carbone organique et en région Centre, on observe une augmentation des teneurs concentrée dans le Perche.
-Ces résultats très ciblés font penser à un effet de bord, surtout pour les régions Picardie, Nord-Pas-De-Calais et le département du Morbihan. **La suite des analyses se concentrera sur ces zones.**
+Ces résultats très ciblés font penser à un effet de bord (différences liés aux laboratoires?), surtout pour les régions Picardie, Nord-Pas-De-Calais et le département du Morbihan. **La suite des analyses se concentrera sur ces zones.**
 
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,message=FALSE}
 # Cartographie des résultats des tests statistiques
@@ -198,7 +204,7 @@ nomfichier <- "Median_evolu_c"
 carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=10,ggsavewidth=10)
 ```
 
-```{r map_evol_fr, echo = F, results = 'asis'}
+```{r map_evol_fr, echo = F, eval=FALSE,results = 'asis'}
 # Pour insérer l'image
 fichiers <- paste(repsortie,nomfichier,sep="")
 cat(paste("![](",fichiers,")",sep=""))
@@ -218,7 +224,7 @@ nomfichier <- "Evolu_c"
 carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=10,ggsavewidth=10)
 ```
 
-```{r map_carbo_fr, echo = F, results = 'asis'}
+```{r map_carbo_fr, echo = F, eval=FALSE,results = 'asis'}
 # Pour insérer l'image
 fichiers <- paste(repsortie,nomfichier,sep="")
 cat(paste("![](",fichiers,")",sep=""))
@@ -238,7 +244,7 @@ style_classe <- "quantile" #"pretty"#"jenks","fixed"
 couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
 
 reg <- "31|22"
-reg <- "31"
+#reg <- "31"
 
 for(i in reg){
     nomfichier <- paste("Median_evolu_c",i,sep="")
@@ -246,18 +252,68 @@ for(i in reg){
 }
 ```
 
-```{r map_carbo_fr_picar, echo = F, results = 'asis'}
+```{r map_carbo_fr_picar, echo=F, eval=T,results = 'asis'}
 # Pour insérer l'image
+nomfichier <- "Median_evolu_c31_32.png"
 fichiers <- paste(repsortie,nomfichier,sep="")
 cat(paste("![](",fichiers,")",sep=""))
 ```
 
+### Analyse de la distribution pour les différentes périodes
+
+```{r cdf_fr,highlight=TRUE,echo=FALSE,eval=TRUE,warning=FALSE,error=FALSE,fig.height=5, fig.width=6,fig.cap = fig$cap("cdf_picardieNPC","Courbe de fréquences cumulées"),fig.align="center"}
+reg_focus <- c("31","22","53","24")
+period <- c("9094","9599","0004","0509","1014")
+xlabel <- "Carbone organique (g/kg)"
+ylabel <- "Fréquence"
+nperiod <- length(period)
+colors <- brewer.pal(nperiod,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
+
+melted_focus <- melted.bdat[melted.bdat$code_reg %in% reg_focus,]
+
+# Courbe de fréquence cumulée
+cdf <- ggplot(melted_focus, aes(x=value))+
+       stat_ecdf(aes(colour=annees))+
+       scale_color_manual(values=colors, 
+                          name="Périodes")+
+       scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+       theme(plot.title = element_text(size = 14, face = "bold"), 
+             text = element_text(size = 12),
+             axis.title = element_text(face="bold"),
+             axis.text.x=element_text(size = 11))
+cdf
+```
+
+```{r boxplot_fr,highlight=TRUE,echo=FALSE,eval=TRUE,fig.height=5, fig.width=6,fig.cap = fig$cap("boxplot_picardieNPC","Boxplot des teneurs en carbone organiques par périodes"),fig.align="center"}
+p <- ggplot(melted_focus, aes(x=annees,y=value)) + 
+  geom_violin(trim=FALSE)+
+  geom_boxplot(width=0.1, fill="white")+
+  #scale_color_manual(values=colors,name="Années")+
+  geom_smooth(method = "loess", se=FALSE, color="black", aes(group=1))+
+  scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone organique (g/kg)")+
+  theme(plot.title = element_text(size = 14, face = "bold"), 
+        text = element_text(size = 12),
+        axis.title = element_text(face="bold"),
+        axis.text.x=element_text(size = 11))
+p  
+```
+
+```{r summarybdatfrance,echo=FALSE,eval=TRUE}
+# Résumé des statistiques 
+bdatsummary <- apply(melted_focus["value"],2, function(x) tapply(x, melted_focus[,"annees"],summary))
+bdatsummary <- lapply(bdatsummary, do.call, what = rbind)
+```
+
+```{r summarybdatfrancetable,highlight=TRUE,echo=FALSE,eval=TRUE,results = 'asis'}
+pander(bdatsummary[[1]],caption = "Statistiques descriptives des teneurs en carbone organique par périodes")
+```
 ### Analyses des facteurs explicatifs
 
+Rapidement, on regarde les acp puis tentative de modélisation avec GBM
 
 #### ACP
 
-```{r,highlight=TRUE,eval=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("acp_evolution_picardie","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=10,fig.cap = fig$cap("acp_evolution_picardie","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
 
 ########################
 Rcovarclimato <- c("std_temp_janv","std_temp_juil","std_pluie_janv","std_pluie_juil")
@@ -273,32 +329,84 @@ vNames <- c("diffmedian24",Rcovar) #9599 car meilleure représentation spatiale
 
 # Lecture de la table sans les NA
 lvNames <- length(vNames)
+reg_focus <- c("31","22","53","24")
 dcast.focus <- dcast.bdat[(dcast.bdat$code_reg %in% reg_focus) & complete.cases(dcast.bdat[,vNames]),][,vNames]
 
-res.pca <- PCA(dcast.focus[,!names(dcast.focus) %in% "diff24"], graph = FALSE)
+res.pca <- PCA(dcast.focus[,!names(dcast.focus) %in% "diff24"], quanti.sup=1,graph = FALSE)
 #fviz_screeplot(res.pca, ncp=10)
 
 pca <- fviz_pca_var(res.pca, axes = c(1,2),col.var="contrib") +
 scale_color_gradient2(low="white", mid="blue", 
                   high="red", midpoint=50) + theme_minimal()
-pca
+#pca
 
 fviz_pca_biplot(res.pca, label="var",habillage=dcast.focus$diff24,axes=c(1,2),
      addEllipses=FALSE, ellipse.level=0.95, ggtheme = theme_minimal())
 ```
-Pour l'analyse des facteurs explicatifs, on regardera la distribution des différences des teneurs (boxplot) en fonction de différentes classes d'évolution de l'occupation du sol.
-Des graphiques de correlation, pour voir si il existe des relations linéaires entre les évolutions des teneurs et l'évolution de l'occupation du sol.
 
-```{r,echo=FALSE,eval=TRUE,fig.height=6, fig.width=12,fig.cap = fig$cap("boxplot_NPC_picardie","boxplot NPC_picardie"),fig.align="center"}
+#### GBM
+
+```{r,eval=FALSE,echo=FALSE}
+Rcovarclimato <- c("std_temp_janv","std_temp_juil","std_pluie_janv","std_pluie_juil")
+typeclimato <- replicate(length(Rcovarclimato), "climat")
+#
+Rcovaroccup <- c("var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010")
+typeoccup <- replicate(length(Rcovaroccup), "occup")
+
+type <- c(typeclimato,typeoccup)
+Rcovar <- c(Rcovarclimato,Rcovaroccup,"diff24")
+vNames <- c("diffmedian24",Rcovar) #9599 car meilleure représentation spatiale
+#####################
+
+# Sélection du jeu de données
+id <- "id_geofla"# Nom du champs présentant un identifiant unique
+d <- dcast.focus[,c(vNames,id)]
+
+trainrows <- runif(nrow(d)) > 0.3
+train <- d[trainrows,] #Données pour l'apprentissage
+test <- d[!trainrows,] #Données pour test
+
+formula <- as.formula(paste(vNames[1],"~",paste(vNames[-1],collapse="+"),sep=""))
+
+# France entière
+set.seed(157) #Pour assurer la reproductibilité
+registerDoMC(4)
+
+# a priori, on peut garder les na avec gbmhttp://stackoverflow.com/questions/18657754/r-how-do-boosted-regression-trees-deal-with-missing-data
+# Pour les paramètres
+#http://stats.stackexchange.com/questions/25748/what-are-some-useful-guidelines-for-gbm-parameters
+
+trControl <- trainControl(method = "cv",p=0.8,number=5)
+tuneGrid <- expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 20)
+
+mgbm_picardiNPC <- train(formula,data=train,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T,na.action = na.omit)
+
+save(mgbm_picardiNPC,file=paste(repsortie,"mgbm_picardiNPC.RData",sep=""))
+```
+
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("gbm_fr","Importance des variables explicatives"),fig.align="center"}
+load(paste(repsortie,"mgbm_picardiNPC.RData",sep=""))
+plot(varImp(mgbm_picardiNPC), top = 10)
+```
+
+
+
+#### Autres représentations
+
+
+```{r,echo=FALSE,eval=TRUE,fig.height=12, fig.width=16,fig.cap = fig$cap("boxplot_NPC_picardie","boxplot NPC_picardie"),fig.align="center"}
 # Analyse sur les périodes retenues et les régions identifiée
 diffmedian <- c("14","24","15","25")#différences des médianes d'intérêts
 #reg_focus <- c("31","22","53","24")#code_region d'intérêts
 
-vNames <- c("diff_var_prairie1988_2010","diff_var_sfp1988_2010","diff_var_c1988_2010","diff_var_mf1988_2010")
+#vNames <- c("diff_var_prairie1988_2010","diff_var_sfp1988_2010","diff_var_c1988_2010","diff_var_mf1988_2010")
+
+vNames2 <- c("classe_var_prairie1988_2010","classe_var_sfp1988_2010","classe_var_c1988_2010","classe_var_mf1988_2010")# A faire...
 
 # Pour Picardie et Pas de Calais (31,22)
 p <- list()
-for(i in vNames){
+for(i in vNames2){
     reg_focus <- c("31","22")#code_region d'intérêts
     # Sélection
     melted_focus <- melted.bdatdiff[complete.cases(melted.bdatdiff[,i]) & (melted.bdatdiff$code_reg %in% reg_focus) & (melted.bdatdiff$period %in% diffmedian),]
@@ -319,10 +427,7 @@ for(i in vNames){
 do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
 ```
 
-```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE}
-# Voir les graphiques de "différence" réalisés durant le M1
-# Rajouter les types de climat ou autre niveau de stratification pour voir l'influence de ces régions sur les pertes 
-# Voir également pour rajouter ces données sur une table au format melt
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE}
 dcast.focus <- dcast.bdat[dcast.bdat$code_reg %in% reg_focus,]
 
 xlabel <- "Teneur en carbone organique initiale (g/kg)"
@@ -341,246 +446,3 @@ ggplot(dcast.focus, aes_string(x,y)) +
             geom_smooth(method = "lm", se = FALSE,color="black")    
 
 ```
-
-# Analyse sur les régions d'élevage B, C et D
-
-## Histogrammes
-```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE}
-# Histogramme des valeurs 
-periodetud <- c("14","24","15","25")
-# Sélection des cantons aux diminutions significatives et des zones B,C et D
-bdatdiff <- subset(melted.bdatdiff,diff!="Non significatif")
-bdatdiffBCD <- bdatdiff[(bdatdiff$period %in% periodetud) & bdatdiff$zonage_simple %in% c("B","C","D"), ]
-
-# Sélection
-bdatdiff$diff <- as.factor(bdatdiff$diff)
-ggplot(bdatdiffBCD,aes(diff,fill=zonage_simple)) + geom_bar(position="dodge") + facet_wrap(~period)
-
-```
-
-## Graphiques de correlation
-Rajouter les droites de régressions 
-Rajouter les variation climatiques
-
-Figure ci-dessous à commenter pour aller plus loin.
-
-
-```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE}
-# Plot of the change in the cantonal medians of soil OC versus the cantonal medians of soil OC content averaged over the two extreme periods (1990–1994 and 2000–2004). Triangles are significant changes. Circles are non-significant changes. Line is the regression (r 2 = 0.15) between the change in the cantonal medians of soil OC and the cantonal medians of soil OC averaged over the two extreme periods.
-
-# Ici, on reprend la figure 7 de Saby2008
-
-dcast.bdat$meancorgox9599_0409 <- rowMeans(cbind(dcast.bdat$corgox_medequi9599,dcast.bdat$corgox_medequi0409),na.rm=TRUE)
-ggplot(dcast.bdat, aes(meancorgox9599_0409,diffmedian24,shape=factor(diff24))) +
-  geom_point(aes(colour = factor(diff24)), size = 4) +
-  geom_point(colour="grey10", size = 1.5) + facet_wrap(~ zonage_cplt)
-
-```
-
-```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE}
-#Median of baseline soil OC content (first period) versus change in median of soil OC values over the whole survey. Triangles are significant changes. Circles are non-significant changes. Line is the regression (r 2 = 0.24) between median of baseline SOC (1990–1994) and significant changes
-
-# Ici, on reprend la figure 5 de Saby2008
-# Revoir ces figures, problème avec les données
-dcast.bdat$meancorgox9599_0509 <- rowMeans(cbind(dcast.bdat$corgox_medequi9599,dcast.bdat$corgox_medequi0509),na.rm=TRUE)
-
-ggplot(dcast.bdat, aes(meancorgox9599_0409,diffmedian24,shape=factor(diff24))) +
-  geom_point(aes(colour = factor(diff24)), size = 4) +
-  geom_point(colour="grey10", size = 1.5)# + facet_wrap(~ zonage_cplt)
-
-
-ggplot(dcast.bdat, aes(altimean,meancorgox9599_0509)) +
-  geom_point(aes(colour = factor(diff24)), size = 4) +
-  geom_point(colour="grey10", size = 1.5)# + facet_wrap(~ zonage_cplt)
-
-
-
-```
-
-
-
-```{r,eval=FALSE}
-# Voir le développement de ce type de graphique
-dcast.bdatBCD <- dcast.bdat[dcast.bdat$zonage_simple %in% c("B","C","D"),]
-
-ggplot(dcast.bdatBCD, aes(var_ugb8810, diffmedian15,shape=factor(diff15))) +
-  geom_point(aes(colour = factor(diff15)), size = 2) +
-  geom_point(colour="grey10", size = 1.5)
-
-
-ggplot(dcast.bdatBCD, aes(var_sth1970_2010, diffmedian15,shape=factor(diff15))) +
-  geom_point(aes(colour = factor(diff15)), size = 2) +
-  geom_point(colour="grey10", size = 1.5)
-
-
-ggplot(melted.bdatdiff, aes(var_cereale1970_2010, diffmedian15,shape=factor(diff15))) +
-  geom_point(aes(colour = factor(diff15)), size = 2) +
-  geom_point(colour="grey10", size = 1.5)
-```
-# Analyse avec une ACP
-
-
-```{r,highlight=TRUE,eval=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("acp_evolution_fr","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
-
-########################
-Rcovarclimato <- c("std_temp_janv","std_temp_juil","std_pluie_janv","std_pluie_juil")
-typeclimato <- replicate(length(Rcovarclimato), "climat")
-#
-Rcovaroccup <- c("var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010")
-typeoccup <- replicate(length(Rcovaroccup), "occup")
-
-type <- c(typeclimato,typeoccup)
-Rcovar <- c(Rcovarclimato,Rcovaroccup,"diff24")
-vNames <- c("diffmedian24",Rcovar) #9599 car meilleure représentation spatiale
-########################
-
-# Lecture de la table sans les NA
-lvNames <- length(vNames)
-dcast.bdat_variables <- dcast.bdat[complete.cases(dcast.bdat[,vNames]),]
-
-res.pca <- PCA(dcast.bdat_variables[,!names(dcast.bdat_variables) %in% "diff24"], graph = FALSE)
-#fviz_screeplot(res.pca, ncp=10)
-
-pca <- fviz_pca_var(res.pca, axes = c(1,2),col.var="contrib") +
-scale_color_gradient2(low="white", mid="blue", 
-                  high="red", midpoint=50) + theme_minimal()
-pca
-
-fviz_pca_biplot(res.pca, label="var",habillage=dcast.bdat_variables$diff24,axes=c(1,2),
-     addEllipses=FALSE, ellipse.level=0.95, ggtheme = theme_minimal())
-```
-
-
-# Modélisation de l'évolution des teneurs ?
-
-```{r,highlight=TRUE,eval=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("gbm_evolution_fr","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
-
-######################
-Rcovarclimato <- c("std_temp_janv","std_temp_juil","std_pluie_janv","std_pluie_juil")
-typeclimato <- replicate(length(Rcovarclimato), "climat")
-
-Rcovaroccup <- c("var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010")
-typeoccup <- replicate(length(Rcovaroccup), "occup")
-
-type <- c(typeclimato,typeoccup)
-Rcovar <- c(Rcovarclimato,Rcovaroccup)
-vNames <- c("diffmedian24",Rcovar) #9599 car meilleure représentation spatiale
-######################
-
-# Sélection du jeu de données
-id <- "id_geofla"# Nom du champs présentant un identifiant unique
-dcast.bdat_gbm <- dcast.bdat[complete.cases(dcast.bdat[,vNames]),c(vNames,id)] # Pour supprimer les NA
-datax <- dcast.bdat_gbm[, vNames[-1]]
-datay <- dcast.bdat_gbm[, vNames[1]]
-
-tuneGrid <- expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:20)*150,shrinkage = 0.1,n.minobsinnode = 20)
-trControl <- trainControl(method = "cv",p=0.8)
-
-#registerDoMC(4) # Nombre de processeurs activés
-#mgbm <- train(x = datax , y = datay,method="gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
-#plot(varImp(mgbm), top = 10)
-
-set.seed(157)#Pour assurer la reproductibilité
-nbl <- 2
-prob <- 0.8
-model <- "gbm"
-
-# Pour le stockage des résultats
-rest <- array(NA, dim = c(length(datay), nbl, 1),list(id = dcast.bdat_gbm[,id], loop = 1:nbl, mod = model))
-  
-for (j in 1:nbl){
-  gc()  
-  # randomizes the mask 
-  print(j)
-  masko <- createDataPartition(dcast.bdat_gbm[,1],p = prob, list = FALSE)
-  
-  donneeL <- dcast.bdat_gbm[masko,]
-  donneeV <- dcast.bdat_gbm[-masko,]
-  learningx <- datax[masko,]
-  learningy <- datay[masko]
-  indepx <- datax[-masko,]
-  indepy <- datay[-masko]
-
-  mgbm <- train(x = learningx , y = learningy,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
-  #best.iter <- gbm.perf(mgbm,method="cv")
-  #save(mgbm,file=paste(fold,"mfinal",titre,"_",model,"_",j,".RData",sep=""))
-                  
-  f.predict <- predict(mgbm$finalModel, learningx , n.trees = mgbm$bestTune$n.trees)
-  #save(f.predict,file=paste("fpredict",titre,"_",model,".RData",sep=""))
-
-  indep.pred <- predict(mgbm$finalModel, indepx , n.trees=mgbm$bestTune$n.trees)
-
-  # Si transformation log du c        
-  #indep.pred <- exp(indep.pred)
-        
-  rest[-masko, j, model] <- indep.pred  
-  residue <- learningy - f.predict
-  donneeL$residues <- residue
-        
-  # Construire la moyenne des résidus dans un dataframe!
-  write.csv(donneeL,paste(repsortie,"donneeL",model,"_",j,".csv",sep=""))  
-}
-
-#Calcul de la moyenne des résidus
-restResidues <- array(NA, dim = c(nrow(donneeL),nbl,2),list(idresidues = seq(1,nrow(donneeL),1),loop=1:nbl,data=c("residues","idresidues")))
-
-for(i in 1:nbl){
-  print(i)
-  donnee <- read.csv(paste(repsortie,"donneeL",model,"_",i,".csv",sep=""))
-
-  #donnee <- donnee[with(donnee, order(id)),]# revoir ce point
-
-  residues <- donnee$residues
-  id <- donnee$id
-  restResidues[,i,"residues"] <- residues
-  restResidues[,i,"idresidues"] <- id
-}
-restResidues <- as.data.frame(restResidues)
-
-dfcomplet <- as.data.frame(pt@data["id"][with(pt@data["id"],order(id)),])
-colnames(dfcomplet) <- "id"
-
-# Revoir...      
-dfcomplet <- as.data.frame(dcast.bdat_gbm[id][with(dcast.bdat_gbm[id],order(id)),])
-colnames(dfcomplet) <- "id"
-
-restMeanResidues <- array(NA, dim = c(nrow(pt),nbl+1),list(id=1:nrow(pt@data["id"]),data=c("idresidues",paste(1:nbl,".residues",sep=""))))
-
-for(i in 1:nbl){
-  print(i)
-  dtmerge <- merge(restResidues[c(paste(i,".residues",sep=""),paste(i,".idresidues",sep=""))],dfcomplet,by.x=paste(i,".idresidues",sep=""),by.y="id",all=TRUE)
-  restMeanResidues[,paste(i,".residues",sep="")] <- dtmerge[[2]]
-}
-
-restMeanResidues[,"idresidues"] <- dfcomplet[["id"]]
-dfMeanResidues <- as.data.frame(restMeanResidues)
-dfMeanResidues <- rowMeans(dfMeanResidues,na.rm=TRUE)
-##>> export!
-
-rest <- cbind(as.data.frame(rest),pt@data[vNames[1]])
-
-```
-
-
-# Modélisation spatio-temporelle
-
-Regarder :
-
-multivariate regression-kriging and generalized linear models par Nickel2014;
-et generalized least squares regression par Begueria2013.
-
-```{r,highlight=TRUE,eval=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("glm_evolution_fr","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
-
-# Logistic Regression
-# where F is a binary factor and
-# x1-x3 are continuous predictors
-fit <- glm(F~x1+x2+x3,data=mydata,family=binomial())
-summary(fit) # display results
-confint(fit) # 95% CI for the coefficients
-exp(coef(fit)) # exponentiated coefficients
-exp(confint(fit)) # 95% CI for exponentiated coefficients
-predict(fit, type="response") # predicted values
-residuals(fit, type="deviance") # residuals 
-
-```
-

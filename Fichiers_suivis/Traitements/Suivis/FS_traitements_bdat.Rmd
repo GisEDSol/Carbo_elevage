@@ -217,12 +217,15 @@ dcast.bdat_variables <- dcast.bdat[complete.cases(dcast.bdat[,vNames[-lvNames]])
 classe_valeur <- classIntervals(dcast.bdat_variables[vNames[1]][[1]],n=4,style="quantile",digits=1,na.rm=TRUE)[[2]]
 dcast.bdat_variables[,"classe_C"] <- cut(dcast.bdat_variables[vNames[1]][[1]],breaks = data.frame(classe_valeur)[,1],include.lowest=T) 
 
-res.pca <- PCA(dcast.bdat_variables[,!names(dcast.bdat_variables) %in% "classe_C"], graph = FALSE)
+res.pca <- PCA(dcast.bdat_variables[,!names(dcast.bdat_variables) %in% "classe_C"], quanti.sup=1,graph = FALSE)# Mettre le carbone en illustratif (quanti.sup=num de colonne)
 #fviz_screeplot(res.pca, ncp=10)
 
 pca <- fviz_pca_var(res.pca, axes = c(1,2),col.var="contrib") +
 scale_color_gradient2(low="white", mid="blue", 
                   high="red", midpoint=50) + theme_minimal()
+
+
+
 ```
 La figure `r fig$ref("pca_fr",link=TRUE)` présente la distribution des variables sur les axes 1 et 2 de l'ACP. Environ `r round(res.pca$eig[1,2]+res.pca$eig[2,2])` pourcent de l'information est contenu dans ces deux premiers axes. Description de la distribution des variables dans l'espace des ACP : 
 

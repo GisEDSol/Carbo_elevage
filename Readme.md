@@ -26,6 +26,6 @@ Pour une lecture aisée des traitements et résultats en cours sur l'analyse des
 
 * **[l'analyse de l'évolution de l'occupation du sol et des OTEX](https://rawgit.com/Rosalien/GISEDSol/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_ra.html)**
 * **[l'analyse des teneurs en carbone organique pour différentes périodes](https://rawgit.com/Rosalien/GISEDSol/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdat.html)**
-* **[l'analyse de l'évolution des teneurs en carbone organique](https://rawgit.com/Rosalien/GISEDSol/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdat.html)**
+* **[l'analyse de l'évolution des teneurs en carbone organique](https://rawgit.com/Rosalien/GISEDSol/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdatdiff.html)**
 
 ----
