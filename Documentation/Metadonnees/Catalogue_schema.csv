@@ -1,6 +1,9 @@
-Schéma;Description
-ra;Schéma regroupant l’ensemble des tables brutes du recencement agricole
-clc;Schéma de stockage des tables brutes de ClC. Correspond aux différentes feuilles excel du fichier stats_clc_commune_niveau_2.xls téléchargé à cette adresse : http://www.statistiques.developpement-durable.gouv.fr/clc/fichiers/
-climat;Schéma de stockage des tables en lien avec les données climatiques
-dm_vecteurs;Schéma regroupant différentes couches vecteurs au format PostGIS et autres tables pouvant de traitement de données être utilisées comme covariables dans des travaux
-dm_traitements;Schéma pour stocker les tables finalisées prêtes pour des analyses statistiques
+Schéma;Type;Description
+ra;Brute;Schéma regroupant l’ensemble des tables brutes du recencement agricole
+clc;Brute;Schéma de stockage des tables brutes de ClC. Correspond aux différentes feuilles excel du fichier stats_clc_commune_niveau_2.xls téléchargé à cette adresse : http://www.statistiques.developpement-durable.gouv.fr/clc/fichiers/
+climat;Brute;Schéma de stockage des tables en lien avec les données climatiques
+bdat;Brute;Schéma de stockage des données de la BDAT
+bdgsf;Brute;Schéma de stockage de la base de données européenne des sols (emprise france)
+dm_rasters;Data_mart;Schéma regroupant différentes couches rasters  au format PostGIS 
+dm_vecteurs;Data_mart;Schéma regroupant différentes couches vecteurs au format PostGIS et autres tables pouvant de traitement de données être utilisées comme covariables dans des travaux
+dm_traitements;Data_mart;Schéma pour stocker les tables finalisées prêtes pour des analyses statistiques

@@ -38,7 +38,9 @@ Le code suivant détermine la proportion de la surface d'occupation du sol par r
 - Superficie Toujours en Herbe (STH),
 - Surface Fourragère Princiaple (SFP),
 - Maïs Fourrage Ensilage (MF),
-- Céréales (c).
+- Céréales (c),
+- Oléagineux (olea)
+- Protéagineux (protea)
 
 A chaque itération, un commentaire est ajouté dans la base de données pour décrire le champs nouvellement créé. Ces commentaires sont accessibles dans la vue `public.metadata`.
 
@@ -48,9 +50,9 @@ Voir pour dans le détail le problème de Sau manquant pour certaines communes. 
 #Paramètres
 period <- c("1970","1979","1988","2000","2010") #périodes de temps analysées 
 SAU <- "(COALESCE(superficieagricoleutilisée1,superficieagricoleutiliséehorsarbresdenoël))"#Champs de la SAU : ici, l'un des deux champs est utilisé si l'un deux a une valeur nulle
-variable <- cbind("superficietoujoursenherbesth","fourragesetsuperficiestoujoursenherbe","maïsfourrageetensilage","céréales") #Nom des champs des tables brutes en sortie de requête sur DISAR
-p_variable <- cbind("p_sth","p_sfp","p_mf","p_c") #Nom du champs nouvellement calculé (pourcentage de XX dans la SAU)
-signification <- cbind("surface toujours en herbe","surface fourragère principale","maîs fourrage ensilage","céréales") #variable descriptive pour la construction de métadonnées
+variable <- cbind("superficietoujoursenherbesth","fourragesetsuperficiestoujoursenherbe","maïsfourrageetensilage","céréales","oléagineux","protéagineux") #Nom des champs des tables brutes en sortie de requête sur DISAR
+p_variable <- cbind("p_sth","p_sfp","p_mf","p_c","p_olea","p_protea") #Nom du champs nouvellement calculé (pourcentage de XX dans la SAU)
+signification <- cbind("surface toujours en herbe","surface fourragère principale","maîs fourrage ensilage","céréales","oléagineux","protéagineux") #variable descriptive pour la construction de métadonnées
 type_RA <- "S_cultures_canton" # Nom de la table brute où les données seront piochées pour être jointe vers dm_vecteurs.canton
 schema <- "ra" # Nom du schéma où est présent la table 'type_RA'
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)(table postGIS)
@@ -135,6 +137,56 @@ for(i in period){
       
       print(sqlQuery(loc,paste("
 	    COMMENT ON COLUMN ",table_dm,".",p_variableRA," IS \'Pourcentage des prairies (sommes des prairies temporaires, artificielles et des surfaces toujours en herbe) en fonction de la SAU pour ",i,".\';",sep="")))
+    }
+}
+```
+
+## Calcul de la COP (Céréales+Oléagineux+Protéagineux) A FAIRE
+
+Le type d'occupation nommé `COP` correspond à la somme des surfaces en céréales+oléagineux et Protéagineux. Le code ci-dessous calcul la proportion de COP pour les 5 périodes du recencement agricole.
+
+```{r,highlight=TRUE,eval=FALSE}
+# Calcul de statistiques pour les prairies (prairies artificielles, prairies temporaires)
+
+p_variable <- "p_cop"
+type_RA <- "S_cultures_canton"
+SAU <- "(COALESCE(superficieagricoleutilisée1,superficieagricoleutiliséehorsarbresdenoël))"#Champs de la SAU : ici, l'un des deux champs est utilisé si l'un deux a une valeur nulle
+period <- c("1970","1979","1988","2000","2010")
+schema <- "ra"
+table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+"céréales","oléagineux","protéagineux"
+for(i in period){
+    
+    p_variableRA <- paste(p_variable,i,sep="")
+    print(p_variableRA)
+    tableRA <- paste(type_RA,i,sep="")
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        drop column if exists ",p_variableRA,sep=""))
+  
+    if(i=="1970"){
+      sqlQuery(loc,paste("alter table ",table_dm,"
+                        add column ",p_variableRA," numeric;
+                        update ",table_dm,"
+                        SET ",p_variableRA," = s1.",p_variableRA," from(
+                        select ((COALESCE(céréales,0) + COALESCE(oléagineux,0))/",SAU,")*100 as ",p_variableRA,",num_canton
+                        from ",schema,".",tableRA,") as s1
+                        where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
+      
+      print(sqlQuery(loc,paste("
+        COMMENT ON COLUMN ",table_dm,".",p_variableRA," IS \'Pourcentage des prairies (sommes des prairies temporaires et des surfaces toujours en herbe) en fonction de la SAU pour ",i,".\';",sep="")))
+      
+    }else{
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        add column ",p_variableRA," numeric;
+                        update ",table_dm,"
+                        SET ",p_variableRA," = s1.",p_variableRA," from(
+                        select ((COALESCE(céréales,0) + COALESCE(protéagineux,0) + COALESCE(oléagineux,0))/",SAU,")*100 as ",p_variableRA,",num_canton
+                        from ",schema,".",tableRA,"
+                        where ",SAU," > 0) as s1
+                        where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
+      
+      print(sqlQuery(loc,paste("
+      COMMENT ON COLUMN ",table_dm,".",p_variableRA," IS \'Pourcentage de la COP (sommes des cultures en céréales, oléagineux et protéagineux) en fonction de la SAU pour ",i,".\';",sep="")))
     }
 }
 ```
@@ -239,43 +291,6 @@ for(i in periodUGB){
     print(sqlQuery(loc,paste("
 	    COMMENT ON COLUMN ",table_dm,".",UGBperiod," IS \'Densité UGBTA/SAU pour ",i,".\';",sep="")))
 }
-
-# Calcul de la densité des autres UGB (voir pour supprimer)
-variableUGB <- "ensembledesexploitations"
-p_variable <- c("ugbh_sau","ugbgrani_sau")
-table_RA <- c("ugbherbi_canton","ugbgrani_canton")
-period <- c("2000","2010")
-SAU <- "superficieagricoleutilisée1"
-
-signification <- cbind("herbivores","granivores")
-
-cpt <- 0
-for(v in table_RA){
-  cpt <- cpt + 1
-  print(v)
-  sign_varia <- signification[cpt]
-  
-  for(i in periodUGB){
-    
-      p_variableRA <- paste(p_variable[cpt],i,sep="")
-      print(p_variableRA)
-      tableRA <- paste(v,i,sep="")
-      sqlQuery(loc,paste("alter table ",table_dm,"
-                          drop column if exists ",p_variableRA,sep=""))
-
-      sqlQuery(loc,paste("alter table ",table_dm,"
-                          add column ",p_variableRA," numeric;
-                          update ",table_dm,"
-                          SET ",p_variableRA," = s1.",p_variableRA," from(
-                          select (",variableUGB,"/cc.",SAU,") as ",p_variableRA,",cc.num_canton
-                          from ",schema,".",tableRA,"
-                          right join ",schema,".S_cultures_canton2000 as cc on cc.num_canton=",tableRA,".num_canton::text) as s1
-                          where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
-      
-      print(sqlQuery(loc,paste("
-	    COMMENT ON COLUMN ",table_dm,".",p_variableRA," IS \'Pourcentage des UGB ",sign_varia," en fonction de la surface agricole utile en ",i,".\';",sep="")))
-  }
-}
 ```
 
 # Calcul des évolutions et jointure vers la table `dm_vecteurs.canton`
@@ -285,12 +300,12 @@ Les évolutions d'occupation du sol et de la densité d'UGB sont calculées entr
 ## Evolution pour l'occupation du sol
 
 ```{r,highlight=TRUE,eval=FALSE}
-# Calcul de l'évolution des superficies pour 1970-2010;1979-2010;1988-2010
+# Calcul de l'évolution des superficies
 # Paramètres
-p_variable <- c("sth","c","sfp","mf","prairie")
-periodref <- "2010"
-period <- c("1970","1979","1988")
-signification <- cbind("de la surface toujours en herbe","de la surface en céréales"," de la surface fourragère principale","de la surface en maîs fourrage ensilage","prairie")
+p_variable <- c("sth","c","sfp","mf","prairie","cop")
+periodref <- c("2010","2000")
+period <- c("1970","1979","1988","2000")
+signification <- cbind("de la surface toujours en herbe","de la surface en céréales"," de la surface fourragère principale","de la surface en maîs fourrage ensilage","des prairies","des surfaces en cop")
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
 
 # Calcul de statistiques pour les cultures
@@ -298,24 +313,28 @@ cpt <- 0
 for(v in p_variable){
 	cpt <- cpt + 1
   for(p in period){
-    varia <- paste("var_",v,p,"_",periodref,sep="")
-  	  
-  	variacalA <- paste("p_",v,periodref,sep="")   
-  	variacalB <- paste("p_",v,p,sep="")
 
-  	sqlQuery(loc,paste("alter table ",table_dm,"
-                      	drop column if exists ",varia,sep=""))
+    for(i in periodref){
+   
+      if(i==p){next}else{}
+      varia <- paste("var_",v,p,"_",i,sep="")    
+      variacalA <- paste("p_",v,i,sep="")   
+      variacalB <- paste("p_",v,p,sep="")
+
+      sqlQuery(loc,paste("alter table ",table_dm,"
+                        	drop column if exists ",varia,sep=""))
   
-  	sqlQuery(loc,paste("alter table ",table_dm,"
-	                      add column ",varia," numeric;
-	                      update ",table_dm,"
-     	              	  SET ",varia," = ",variacalA,"-",variacalB,sep=""))
-    
-	  # Ajout d'un commentaire sur la nouvelle colonne crée
-	print(sqlQuery(loc,paste("
-		COMMENT ON COLUMN ",table_dm,".",varia," IS \'Evolution ",signification[cpt]," entre ",periodref," et ",p," par rapport à la SAU de ",p," (occupA/SAUA)-(occupB/SAUB).\';",sep="")))
-	}
-}
+  	  sqlQuery(loc,paste("alter table ",table_dm,"
+	                        add column ",varia," numeric;
+	                        update ",table_dm,"
+                     	   SET ",varia," = ",variacalA,"-",variacalB,sep=""))
+
+      # Ajout d'un commentaire sur la nouvelle colonne crée
+	    print(sqlQuery(loc,paste("
+		  COMMENT ON COLUMN ",table_dm,".",varia," IS \'Evolution ",signification[cpt]," entre ",i," et ",p," par rapport à la SAU de ",p," (occupA/SAUA)-(occupB/SAUB).\';",sep="")))
+	    }
+    }
+}#fin boucle finale
 ```
 
 ## Evolution des UGB tous aliments
@@ -382,7 +401,7 @@ for(v in p_variable){
 ## Pourcentage d'occupation du sol
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
-varia <- c("p_sth","p_sfp","p_prairie","p_c","p_mf") # Variable à analyser 
+varia <- c("p_sth","p_sfp","p_prairie","p_c","p_mf","p_cop") # Variable à analyser 
 period <- c("1970","1979","1988","2000","2010") #Période de temps
 id <- c("code_canton","code_reg","nom_region") #Nom de l'identifiant
 style_classe <- "pretty"
@@ -437,9 +456,10 @@ for(i in varia){
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
-p_variable <- c("sth","c","sfp","mf","prairie")
-period <- c("1970_2010","1979_2010","1988_2010")
-varia <- apply(expand.grid(p_variable,period),1, function(x){paste("var_",x[1],x[2],sep="")})
+p_variable <- c("sth","c","sfp","mf","prairie","cop")
+periodref <- c("2010","2000")
+period <- c("1970","1979","1988","2000")
+varia <- apply(expand.grid(p_variable,period,periodref),1, function(x){paste("var_",x[1],x[2],"_",x[3],sep="")})
 style_classe <- "quantile" # fixed", "sd", "equal", "pretty", "quantile", "kmeans", "hclust", "bclust", "fisher", or "jenks"
 nclasse <- 5
 table_dm <- "dm_vecteurs.canton"
@@ -451,7 +471,12 @@ for(i in varia){
   print(i)
 
   # Classement des valeurs
-  stats.value <- melt(mapcanton[,i])$value
+  stats.value <- try(melt(mapcanton[,i])$value,silent=TRUE)
+
+  if(class(stats.value)[1]=="try-error"){
+    print("Combinaison impossible (erreur normale")
+    next
+  }
   classe_valeur <- classIntervals(stats.value,n=nclasse,style=style_classe,digits=1,na.rm=TRUE)[[2]]
 
   vName <- paste("classe_",i,sep="")# Nom de la variable type classe
@@ -494,14 +519,13 @@ for(i in varia){
     }
 }
 ```
-
-
 ## Préparation des tables au format "long".
 
 Les données du recencement (pourcentage de prairie par SAU par exemple) sont ré-organisées pour faciliter les traitements statistiques et la production de graphique. La fonction `melt` est utilisée pour transformer les données d'un format "large" à un format "long".
 
 ### Occupation du sol
-Problème avec les données ugbta, 
+Problème avec les données ugbta, revoir!
+
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
 varia <- c("p_sth","p_sfp","p_prairie","p_c","ugbta") # Variable à analyser 
@@ -550,7 +574,7 @@ A la suite de ce traitement, la table de travail est stockée sous le nom de `r 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
 varia <- c("sth","c","sfp","mf","prairie","ugbta")
-period <- c("1970_2010","1979_2010","1988_2010")
+period <- c("1970_2010","1979_2010","1988_2010","2000_2010")
 #varia <- apply(expand.grid(p_variable,period),1, function(x){paste("var2_",x[1],x[2],sep="")})
 
 id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt") #Nom des identifiants

@@ -104,8 +104,8 @@ La figure `r fig$ref("cdf_fr",link=TRUE)` présente les courbes de fréquences c
 **Ces observations mettent en évidence une diminution des teneurs en carbone entre les périodes 1990-1999 et 2000-2009 et une légère augmentation pour la période 2010-2014.**
 
 ```{r cdf_fr,highlight=TRUE,echo=FALSE,eval=TRUE,warning=FALSE,error=FALSE,fig.height=5, fig.width=6,fig.cap = fig$cap("cdf_fr","Courbe de fréquences cumulées"),fig.align="center"}
-#Problème avec l'ouverture de la table
 
+#Problème avec l'ouverture de la table
 period <- c("9094","9599","0004","0509","1014")
 xlabel <- "Carbone organique (g/kg)"
 ylabel <- "Fréquence"
@@ -123,6 +123,30 @@ cdf <- ggplot(melted.bdat, aes(x=value))+
              axis.title = element_text(face="bold"),
              axis.text.x=element_text(size = 11))
 cdf
+```
+
+Ci-dessous, le zoom sur les fréquences cumulées des classes de valeurs en carbone organique les plus mobilisées (entre 14 et 45 g/kg)
+
+```{r cdf_fr,highlight=TRUE,echo=FALSE,eval=TRUE,warning=FALSE,error=FALSE,fig.height=5, fig.width=6,fig.cap = fig$cap("cdf_fr","Courbe de fréquences cumulées"),fig.align="center"}
+
+#Problème avec l'ouverture de la table
+period <- c("9094","9599","0004","0509","1014")
+xlabel <- "Carbone organique (g/kg)"
+ylabel <- "Fréquence"
+nperiod <- length(period)
+colors <- brewer.pal(nperiod,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
+
+# Courbe de fréquence cumulée
+cdfzoom <- ggplot(melted.bdat[(melted.bdat$value > 17) & (melted.bdat$value < 45) ,], aes(x=value))+
+       stat_ecdf(aes(colour=annees))+
+       scale_color_manual(values=colors, 
+                          name="Périodes")+
+       scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+       theme(plot.title = element_text(size = 14, face = "bold"), 
+             text = element_text(size = 12),
+             axis.title = element_text(face="bold"),
+             axis.text.x=element_text(size = 11))
+cdfzoom
 ```
 
 ```{r summarybdatfrance,echo=FALSE,eval=TRUE}
@@ -192,9 +216,6 @@ Dans cette partie, les facteurs contrôlant la distribution spatiale des teneurs
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE}
 # Sélection des variables de travail
-#Rcovar <- c("ttemp_an","jfroids_an","jchauds_an","hpluie_an","ugbta1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sth1970","p_sth1979","p_sth1988","p_sfp1970","p_sfp1979","p_sfp1988","p_mf1970","p_mf1979","p_mf1988","p_c1970","p_c1979","p_c1988","altimean","classe_C")#,"grdcultures1988","elevagehorsol1988","polyelevage1988","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90")
-#vNames <- c("corgox_medequi9094",Rcovar)
-#vNames <- c("corgox_medequi9094","corgox_medequi9599","corgox_medequi0004","corgox_medequi0509","corgox_medequi1014",Rcovar)
 
 Rcovarclimato <- c("hpluie_an","jchauds_an","jfroids_an","ttemp_an","pluie_ecart_janv","pluie_ecart_juil","ampli_t_juil_janv","jpluie_janv","jpluie_juil")
 typeclimato <- replicate(length(Rcovarclimato), "climat")
@@ -202,12 +223,12 @@ typeclimato <- replicate(length(Rcovarclimato), "climat")
 Rcovartopo <- "altimean"
 typetopo <- replicate(length(Rcovartopo), "topographie")
 
-Rcovaroccup <- c("p_sfp1988","elevage1988","grdcultures1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_c1988","p_c1970","p_c1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbta1988")
+Rcovaroccup <- c("p_sfp1988","elevage1988","grdcultures1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_c1988","p_c1970","p_c1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbta1988","p_cop1970","p_cop1979","p_cop1988")
 typeoccup <- replicate(length(Rcovaroccup), "occup")
 
 type <- c(typeclimato,typetopo,typeoccup)
 Rcovar <- c(Rcovarclimato,Rcovartopo,Rcovaroccup,"classe_C")
-vNames <- c("corgox_medequi9094",Rcovar)
+vNames <- c("corgox_medequi9599",Rcovar)
 
 # Lecture de la table sans les NA
 lvNames <- length(vNames)
@@ -223,9 +244,6 @@ res.pca <- PCA(dcast.bdat_variables[,!names(dcast.bdat_variables) %in% "classe_C
 pca <- fviz_pca_var(res.pca, axes = c(1,2),col.var="contrib") +
 scale_color_gradient2(low="white", mid="blue", 
                   high="red", midpoint=50) + theme_minimal()
-
-
-
 ```
 La figure `r fig$ref("pca_fr",link=TRUE)` présente la distribution des variables sur les axes 1 et 2 de l'ACP. Environ `r round(res.pca$eig[1,2]+res.pca$eig[2,2])` pourcent de l'information est contenu dans ces deux premiers axes. Description de la distribution des variables dans l'espace des ACP : 
 
@@ -272,7 +290,7 @@ typeclimato <- replicate(length(Rcovarclimato), "climat")
 Rcovartopo <- "altimean"
 typetopo <- replicate(length(Rcovartopo), "topographie")
 
-Rcovaroccup <- c("p_sfp1988","grdcultures1988","elevagehorsol1988","polyelevage1988","elevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_c1988","p_c1970","p_c1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","ugbta1988","zonage_simple","zonage_cplt")#"clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90"
+Rcovaroccup <- c("p_sfp1988","grdcultures1988","elevagehorsol1988","polyelevage1988","elevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_c1988","p_c1970","p_c1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","ugbta1988","zonage_simple","zonage_cplt","p_cop1970","p_cop1979","p_cop1988")#"clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90"
 typeoccup <- replicate(length(Rcovaroccup), "occup")
 
 type <- c(typeclimato,typetopo,typeoccup)
@@ -306,21 +324,23 @@ mgbm_fr <- train(formula,data=train,"gbm",tuneGrid = tuneGrid,trControl = trCont
 
 save(mgbm_fr,file=paste(repsortie,"mgbm_fr.RData",sep=""))
 
+# Test rapide sur qq classes de teneurs en carbone organique...
+
 # Prédiction sur le jeu test
-pred <- predict(mgbm_fr$finalModel,test, n.trees = mgbm_fr$bestTune$n.trees)
+#pred <- predict(mgbm_fr$finalModel,test, n.trees = mgbm_fr$bestTune$n.trees)
 
 #from http://stats.stackexchange.com/questions/21152/obtaining-knowledge-from-a-random-forest
-plotData <- lapply(names(test[,c("pluie_ecart_janv","hpluie_an","altimean","elevage1988")]), function(x){
-  out <- data.frame(
-    var = x,
-    type = c(rep('Apprentissage',nrow(test)),rep('Prediction',nrow(test))),
-    value = c(test[,x],test[,x]),
-    corgox_medequi9599 = c(as.numeric(test$corgox_medequi9599)-1,pred)
-    )
-  out$value <- out$value-min(out$value) #Normalize to [0,1]
-  out$value <- out$value/max(out$value)
-  out
-})
+#plotData <- lapply(names(test[,c("pluie_ecart_janv","hpluie_an","altimean","elevage1988")]), function(x){
+#  out <- data.frame(
+#    var = x,
+#    type = c(rep('Apprentissage',nrow(test)),rep('Prediction',nrow(test))),
+#    value = c(test[,x],test[,x]),
+#    corgox_medequi9599 = c(as.numeric(test$corgox_medequi9599)-1,pred)
+#    )
+#  out$value <- out$value-min(out$value) #Normalize to [0,1]
+#  out$value <- out$value/max(out$value)
+#  out
+#})
 ```
 Les principales variables explicatives de la distribution des teneurs en carbone organique sont présentées figure `r fig$ref("gbm_fr",link=TRUE)`. Les facteurs les plus importants sont d'ordre climatiques et topographiques. Ces résultats confirment les premières observations de l'ACP.
 Les variables d'occupation du sol ont une influence secondaire et celles qui agissent significativement sont la proportion des exploitations ayant une OTEX de type élevage en 1988, la proportion de surface fourragère principale en 1988 et les proportions de maïs fourrage dans la SAU pour les années 1988, 1979 et 1970. Parmis ces variables d'occupation du sol, l'années 1988 explique bien les teneurs en carbone organique pour la période 1995-1999.
@@ -702,13 +722,17 @@ p
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=8, fig.width=12,fig.cap = fig$cap("boxplot_regelevage2",""),fig.align="center"}
 #ylim1 <- boxplot.stats(melted.bdat$value)$stats[c(1,5)]
+
+
+# Relancer
 ylim1 <- c(min(melted.bdat_regelevage$value,na.rm=TRUE),quantile(melted.bdat$value,0.99,na.rm=TRUE))
+colors <- brewer.pal(5,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
 
 boxplot_reg_elevage <- ggplot(melted.bdat_regelevage) +
             geom_boxplot(aes(x=annees,y=value,col=annees),outlier.shape = NA,outlier.size=NA)+
             facet_wrap(~zonage_cplt,scales="free")+
-            scale_color_manual(values=colour,name="Périodes")+
-            #geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
+            scale_color_manual(values=colors,name="Périodes")+
+            geom_smooth(aes(x=as.integer(annees),y=value),method=loess,color="black")+
             scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone (g/kg)")+
             theme(plot.title = element_text(size = 14, face = "bold"), 
                   text = element_text(size = 12),
@@ -718,6 +742,7 @@ boxplot_reg_elevage <- ggplot(melted.bdat_regelevage) +
 boxplot_reg_elevage
 ```
 
+  
 
 ## Par classe de pourcentage d'occupation du sol (données du recensement agricole)
 

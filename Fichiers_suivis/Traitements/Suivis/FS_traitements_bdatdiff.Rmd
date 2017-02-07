@@ -71,11 +71,22 @@ sessionInfo()
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
 # Lecture des tables de travail
+
+##RA
+tablename <- paste("dm_traitements.","melted_ra",sep="")
+melted.ra <- sqlQuery(loc,paste("select * from ",tablename,sep=""))
+melted.radiff <- sqlQuery(loc,paste("select * from ",tablename,"diff",sep=""))
+melted.radiff <- melted.radiff[complete.cases(melted.radiff$value) & complete.cases(melted.radiff$zonage_simple) & complete.cases(melted.radiff$zonage_cplt),]
+melted.ra <- melted.ra[complete.cases(melted.ra$value) & complete.cases(melted.ra$zonage_simple) & complete.cases(melted.ra$zonage_cplt),]
+melted.ra$annees <- factor(melted.ra$annees)
+
+##BDATDiff
 melted.bdatdiff <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdatdiff",sep=""))#,as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE))
 melted.bdatdiff$diffmedian <- as.numeric(melted.bdatdiff$diffmedian)
 dcast.bdat <- sqlQuery(loc,paste("select * from dm_vecteurs.canton",sep=""))
 melted.bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff),]
 
+##BDAT
 melted.bdat <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdat",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE))
 period <- c("9094","9599","0004","0509","1014")
 melted.bdat$value <- as.numeric(melted.bdat$value)
@@ -232,7 +243,7 @@ cat(paste("![](",fichiers,")",sep=""))
 
 ## Focus sur la Picardie et le Nord-Pas-De-Calais
 
-### Cartographie
+### Cartographie des évolutions en teneurs en carbone organique
 
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,message=FALSE}
 tablecarto <- "dm_vecteurs.canton" 
@@ -246,10 +257,292 @@ couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brew
 reg <- "31|22"
 #reg <- "31"
 
-for(i in reg){
-    nomfichier <- paste("Median_evolu_c",i,sep="")
-    carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=i,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=10,ggsavewidth=10)
+nomfichier <- "Median_evolu_c31_32.png"
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=i,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=10,ggsavewidth=10)
+
+```
+
+```{r map_carbo_fr_picar, echo=F, eval=T,results = 'asis'}
+# Pour insérer l'image
+nomfichier <- "Median_evolu_c31_32.png"
+fichiers <- paste(repsortie,nomfichier,sep="")
+cat(paste("![](",fichiers,")",sep=""))
+```
+
+### Analyse de la distribution pour les différentes périodes
+
+```{r cdf_fr,highlight=TRUE,echo=FALSE,eval=TRUE,warning=FALSE,error=FALSE,fig.height=5, fig.width=6,fig.cap = fig$cap("cdf_picardieNPC","Courbe de fréquences cumulées"),fig.align="center"}
+reg_focus <- c("31","22")
+period <- c("9094","9599","0004","0509","1014")
+xlabel <- "Carbone organique (g/kg)"
+ylabel <- "Fréquence"
+nperiod <- length(period)
+colors <- brewer.pal(nperiod,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
+
+melted_focus <- melted.bdat[melted.bdat$code_reg %in% reg_focus,]
+
+# Courbe de fréquence cumulée
+cdf <- ggplot(melted_focus, aes(x=value))+
+       stat_ecdf(aes(colour=annees))+
+       scale_color_manual(values=colors, 
+                          name="Périodes")+
+       scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+       theme(plot.title = element_text(size = 14, face = "bold"), 
+             text = element_text(size = 12),
+             axis.title = element_text(face="bold"),
+             axis.text.x=element_text(size = 11))
+cdf
+```
+
+```{r boxplot_fr,highlight=TRUE,echo=FALSE,eval=TRUE,fig.height=5, fig.width=6,fig.cap = fig$cap("boxplot_picardieNPC","Boxplot des teneurs en carbone organiques par périodes"),fig.align="center"}
+p_bdat <- ggplot(melted_focus, aes(x=annees,y=value)) + 
+  geom_violin(trim=FALSE)+
+  geom_boxplot(width=0.1, fill="white")+
+  #scale_color_manual(values=colors,name="Années")+
+  geom_smooth(method = "loess", se=FALSE, color="black", aes(group=1))+
+  scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone organique (g/kg)")+
+  theme(plot.title = element_text(size = 14, face = "bold"), 
+        text = element_text(size = 12),
+        axis.title = element_text(face="bold"),
+        axis.text.x=element_text(size = 11))
+ 
+
+##
+
+melted.ra_focus <- melted.ra[melted.ra$code_reg %in% reg_focus & melted.ra$variable != "ugbta",]
+
+p_ra <- ggplot(melted.ra_focus) +
+            geom_boxplot(aes(x=annees,y=value,col=variable))+
+            #facet_wrap(~zonage_simple,scales="free")+
+            geom_smooth(aes(x=as.integer(annees),y=value,color=variable,fill=variable),method=loess)+
+            #scale_color_manual(values=colors,name="Années")+
+            scale_x_discrete("Périodes")+scale_y_continuous("% d'occupation du sol")+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+                  text = element_text(size = 12),
+                  axis.title = element_text(face="bold"),
+                  axis.text.x=element_text(size = 11))
+
+grid.arrange(p_bdat,p_ra)
+# A creuser.
+```
+
+```{r summarybdatfrance,echo=FALSE,eval=TRUE}
+# Résumé des statistiques 
+bdatsummary <- apply(melted_focus["value"],2, function(x) tapply(x, melted_focus[,"annees"],summary))
+bdatsummary <- lapply(bdatsummary, do.call, what = rbind)
+```
+
+```{r summarybdatfrancetable,highlight=TRUE,echo=FALSE,eval=TRUE,results = 'asis'}
+pander(bdatsummary[[1]],caption = "Statistiques descriptives des teneurs en carbone organique par périodes")
+```
+### Analyses des facteurs explicatifs
+
+Rapidement, on regarde les acp puis tentative de modélisation avec GBM
+
+#### ACP
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=10,fig.cap = fig$cap("acp_evolution_picardie","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
+
+########################
+Rcovarclimato <- c("std_temp_janv","std_temp_juil","std_pluie_janv","std_pluie_juil")
+typeclimato <- replicate(length(Rcovarclimato), "climat")
+#
+Rcovaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000")
+typeoccup <- replicate(length(Rcovaroccup), "occup")
+
+type <- c(typeclimato,typeoccup)
+Rcovar <- c(Rcovarclimato,Rcovaroccup,"diff24")
+vNames <- c("diffmedian24",Rcovar)
+########################
+
+# Lecture de la table & sélection
+lvNames <- length(vNames)
+reg_focus <- c("31","22")
+dcast.focus <- dcast.bdat[(dcast.bdat$code_reg %in% reg_focus) & complete.cases(dcast.bdat[,vNames]),][,vNames]
+
+res.pca <- PCA(dcast.focus[,!names(dcast.focus) %in% "diff24"], quanti.sup=1,graph = FALSE)
+#fviz_screeplot(res.pca, ncp=10)
+
+pca <- fviz_pca_var(res.pca, axes = c(1,2),col.var="contrib") +
+scale_color_gradient2(low="white", mid="blue", 
+                  high="red", midpoint=50) + theme_minimal()
+#pca
+
+fviz_pca_biplot(res.pca, label="var",habillage=dcast.focus$diff24,axes=c(1,2),
+     addEllipses=FALSE, ellipse.level=0.95, ggtheme = theme_minimal())
+```
+
+#### GBM
+
+```{r,eval=FALSE,echo=FALSE}
+Rcovarclimato <- c("std_temp_janv","std_temp_juil","std_pluie_janv","std_pluie_juil")
+typeclimato <- replicate(length(Rcovarclimato), "climat")
+#
+Rcovaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000")
+typeoccup <- replicate(length(Rcovaroccup), "occup")
+
+type <- c(typeclimato,typeoccup)
+Rcovar <- c(Rcovarclimato,Rcovaroccup,"diff24")
+vNames <- c("diffmedian24",Rcovar)
+#####################
+
+# Sélection du jeu de données
+id <- "id_geofla"# Nom du champs présentant un identifiant unique
+d <- dcast.bdat[(dcast.bdat$code_reg %in% reg_focus) & complete.cases(dcast.bdat[,vNames]),][,c(vNames,id)]
+
+trainrows <- runif(nrow(d)) > 0.3
+train <- d[trainrows,] #Données pour l'apprentissage
+test <- d[!trainrows,] #Données pour test
+
+formula <- as.formula(paste(vNames[1],"~",paste(vNames[-1],collapse="+"),sep=""))
+
+# France entière
+set.seed(157) #Pour assurer la reproductibilité
+registerDoMC(4)
+
+# a priori, on peut garder les na avec gbmhttp://stackoverflow.com/questions/18657754/r-how-do-boosted-regression-trees-deal-with-missing-data
+# Pour les paramètres
+#http://stats.stackexchange.com/questions/25748/what-are-some-useful-guidelines-for-gbm-parameters
+
+trControl <- trainControl(method = "cv",p=0.8,number=5)
+tuneGrid <- expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 20)
+
+mgbm_picardiNPC <- train(formula,data=train,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T,na.action = na.omit)
+
+save(mgbm_picardiNPC,file=paste(repsortie,"mgbm_picardiNPC.RData",sep=""))
+```
+
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("gbm_fr","Importance des variables explicatives"),fig.align="center"}
+load(paste(repsortie,"mgbm_picardiNPC.RData",sep=""))
+plot(varImp(mgbm_picardiNPC), top = 10)
+```
+
+#### Autres représentations
+
+
+```{r,echo=FALSE,eval=TRUE,fig.height=12, fig.width=16,fig.cap = fig$cap("boxplot_NPC_picardie","boxplot NPC_picardie"),fig.align="center"}
+# Analyse sur les périodes retenues et les régions identifiée
+diffmedian <- c("14","24","15","25")#différences des médianes d'intérêts
+#reg_focus <- c("31","22","53","24")#code_region d'intérêts
+
+vNames <- c("diff_var_prairie1988_2010","diff_var_sfp1988_2010","diff_var_c1988_2010","diff_var_mf1988_2010")
+
+#vNames2 <- c("classe_var_prairie1988_2010","classe_var_sfp1988_2010","classe_var_c1988_2010","classe_var_mf1988_2010")# A faire...
+
+# Pour Picardie et Pas de Calais (31,22)
+p <- list()
+for(i in vNames){
+    reg_focus <- c("31","22")#code_region d'intérêts
+    # Sélection
+    melted_focus <- melted.bdatdiff[complete.cases(melted.bdatdiff[,i]) & (melted.bdatdiff$code_reg %in% reg_focus) & (melted.bdatdiff$period %in% diffmedian),]
+
+    p[[i]] <- ggplot(melted_focus,aes_string(x=i,y="diffmedian")) +
+              geom_boxplot()+
+              geom_point(position=position_jitter(width=0.3), alpha=0.5,aes(colour = diff)) +
+              facet_wrap(~period)+
+              #scale_color_manual(values=colors,name="Années")+
+              #geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
+              scale_x_discrete(i)+scale_y_continuous("Différences des teneurs en carbone organique (g/kg)")+
+              theme(plot.title = element_text(size = 14, face = "bold"), 
+                    text = element_text(size = 12),
+                    axis.title = element_text(face="bold"),
+                    axis.text.x = element_text(size = 11))
+             
 }
+do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
+```
+
+```{r,echo=FALSE,eval=TRUE,fig.height=12, fig.width=16,fig.cap = fig$cap("boxplot_NPC_picardie","boxplot NPC_picardie"),fig.align="center"}
+# Analyse sur les périodes retenues et les régions identifiée
+diffmedian <- c("14","24","15","25")#différences des médianes d'intérêts
+#reg_focus <- c("31","22","53","24")#code_region d'intérêts
+
+vNames <- c("diff_var_prairie1988_2010","diff_var_sfp1988_2010","diff_var_c1988_2010","diff_var_mf1988_2010")
+
+#vNames2 <- c("classe_var_prairie1988_2010","classe_var_sfp1988_2010","classe_var_c1988_2010","classe_var_mf1988_2010")# A faire...
+
+# Pour Picardie et Pas de Calais (31,22)
+p <- list()
+for(i in vNames){
+    reg_focus <- c("31","22")#code_region d'intérêts
+    # Sélection
+    melted_focus <- melted.bdatdiff[complete.cases(melted.bdatdiff[,i]) & (melted.bdatdiff$code_reg %in% reg_focus) & (melted.bdatdiff$period %in% diffmedian),]
+
+    p[[i]] <- ggplot(melted_focus,aes_string(x=i,y="diffmedian")) +
+              geom_boxplot()+
+              geom_point(position=position_jitter(width=0.3), alpha=0.5,aes(colour = diff)) +
+              facet_wrap(~period)+
+              #scale_color_manual(values=colors,name="Années")+
+              #geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
+              scale_x_discrete(i)+scale_y_continuous("Différences des teneurs en carbone organique (g/kg)")+
+              theme(plot.title = element_text(size = 14, face = "bold"), 
+                    text = element_text(size = 12),
+                    axis.title = element_text(face="bold"),
+                    axis.text.x = element_text(size = 11))
+             
+}
+do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE}
+dcast.focus <- dcast.bdat[dcast.bdat$code_reg %in% reg_focus,]
+
+xlabel <- "Teneur en carbone organique initiale (g/kg)"
+ylabel <- "Différence des teneurs en carbone organique (g/kg)(14)"
+x <- "corgox_medequi9094"
+y <- "diffmedian14"
+
+ggplot(dcast.focus, aes_string(x,y)) +
+            geom_point(aes(colour = factor(diff14)),alpha = 0.8, size = 1) +
+            scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+            text = element_text(size = 12),
+            axis.title = element_text(face="bold"),
+            axis.text.x=element_text(size = 11))+ labs(title=i)+
+            annotate("text", x=20, y=10, label=lm_eqn(lm(dcast.focus[,y]~dcast.focus[,x], dcast.focus,na.rm=TRUE)), parse=TRUE)+
+            geom_smooth(method = "lm", se = FALSE,color="black")    
+
+```
+## Focus sur la Bretagne
+
+Regard sur les évolutions pour la Bretagne
+
+```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,message=FALSE}
+tablecarto <- "dm_vecteurs.canton" 
+dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
+variablecarto <- c("diffmedian13","diffmedian24","diffmedian35","diffmedian14") #variable à spatialiser
+l_legend <- "Evolution des teneurs en C"#label de la variable
+nclasse <- 4 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "quantile" #"pretty"#"jenks","fixed"
+couleur <- "Dark2"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+
+reg <- "53"
+#reg <- "31"
+
+nomfichier <- "Median_evolu_c53.png"
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=i,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=10,ggsavewidth=10)
+
 ```
 
 ```{r map_carbo_fr_picar, echo=F, eval=T,results = 'asis'}
@@ -307,142 +600,21 @@ bdatsummary <- lapply(bdatsummary, do.call, what = rbind)
 ```{r summarybdatfrancetable,highlight=TRUE,echo=FALSE,eval=TRUE,results = 'asis'}
 pander(bdatsummary[[1]],caption = "Statistiques descriptives des teneurs en carbone organique par périodes")
 ```
-### Analyses des facteurs explicatifs
-
-Rapidement, on regarde les acp puis tentative de modélisation avec GBM
-
-#### ACP
-
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=10,fig.cap = fig$cap("acp_evolution_picardie","Classification de l'importance des variables explicatives par classes de région d'élevage après une modélisation par arbres de régressions boostés"),fig.align="center"}
-
-########################
-Rcovarclimato <- c("std_temp_janv","std_temp_juil","std_pluie_janv","std_pluie_juil")
-typeclimato <- replicate(length(Rcovarclimato), "climat")
-#
-Rcovaroccup <- c("var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010")
-typeoccup <- replicate(length(Rcovaroccup), "occup")
-
-type <- c(typeclimato,typeoccup)
-Rcovar <- c(Rcovarclimato,Rcovaroccup,"diff24")
-vNames <- c("diffmedian24",Rcovar) #9599 car meilleure représentation spatiale
-########################
-
-# Lecture de la table sans les NA
-lvNames <- length(vNames)
-reg_focus <- c("31","22","53","24")
-dcast.focus <- dcast.bdat[(dcast.bdat$code_reg %in% reg_focus) & complete.cases(dcast.bdat[,vNames]),][,vNames]
-
-res.pca <- PCA(dcast.focus[,!names(dcast.focus) %in% "diff24"], quanti.sup=1,graph = FALSE)
-#fviz_screeplot(res.pca, ncp=10)
-
-pca <- fviz_pca_var(res.pca, axes = c(1,2),col.var="contrib") +
-scale_color_gradient2(low="white", mid="blue", 
-                  high="red", midpoint=50) + theme_minimal()
-#pca
-
-fviz_pca_biplot(res.pca, label="var",habillage=dcast.focus$diff24,axes=c(1,2),
-     addEllipses=FALSE, ellipse.level=0.95, ggtheme = theme_minimal())
-```
-
-#### GBM
-
-```{r,eval=FALSE,echo=FALSE}
-Rcovarclimato <- c("std_temp_janv","std_temp_juil","std_pluie_janv","std_pluie_juil")
-typeclimato <- replicate(length(Rcovarclimato), "climat")
-#
-Rcovaroccup <- c("var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010")
-typeoccup <- replicate(length(Rcovaroccup), "occup")
-
-type <- c(typeclimato,typeoccup)
-Rcovar <- c(Rcovarclimato,Rcovaroccup,"diff24")
-vNames <- c("diffmedian24",Rcovar) #9599 car meilleure représentation spatiale
-#####################
-
-# Sélection du jeu de données
-id <- "id_geofla"# Nom du champs présentant un identifiant unique
-d <- dcast.focus[,c(vNames,id)]
-
-trainrows <- runif(nrow(d)) > 0.3
-train <- d[trainrows,] #Données pour l'apprentissage
-test <- d[!trainrows,] #Données pour test
-
-formula <- as.formula(paste(vNames[1],"~",paste(vNames[-1],collapse="+"),sep=""))
-
-# France entière
-set.seed(157) #Pour assurer la reproductibilité
-registerDoMC(4)
-
-# a priori, on peut garder les na avec gbmhttp://stackoverflow.com/questions/18657754/r-how-do-boosted-regression-trees-deal-with-missing-data
-# Pour les paramètres
-#http://stats.stackexchange.com/questions/25748/what-are-some-useful-guidelines-for-gbm-parameters
-
-trControl <- trainControl(method = "cv",p=0.8,number=5)
-tuneGrid <- expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 20)
-
-mgbm_picardiNPC <- train(formula,data=train,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T,na.action = na.omit)
-
-save(mgbm_picardiNPC,file=paste(repsortie,"mgbm_picardiNPC.RData",sep=""))
-```
-
-
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("gbm_fr","Importance des variables explicatives"),fig.align="center"}
-load(paste(repsortie,"mgbm_picardiNPC.RData",sep=""))
-plot(varImp(mgbm_picardiNPC), top = 10)
-```
 
 
 
-#### Autres représentations
 
 
-```{r,echo=FALSE,eval=TRUE,fig.height=12, fig.width=16,fig.cap = fig$cap("boxplot_NPC_picardie","boxplot NPC_picardie"),fig.align="center"}
-# Analyse sur les périodes retenues et les régions identifiée
-diffmedian <- c("14","24","15","25")#différences des médianes d'intérêts
-#reg_focus <- c("31","22","53","24")#code_region d'intérêts
 
-#vNames <- c("diff_var_prairie1988_2010","diff_var_sfp1988_2010","diff_var_c1988_2010","diff_var_mf1988_2010")
 
-vNames2 <- c("classe_var_prairie1988_2010","classe_var_sfp1988_2010","classe_var_c1988_2010","classe_var_mf1988_2010")# A faire...
+## Focus sur la région Centre
 
-# Pour Picardie et Pas de Calais (31,22)
-p <- list()
-for(i in vNames2){
-    reg_focus <- c("31","22")#code_region d'intérêts
-    # Sélection
-    melted_focus <- melted.bdatdiff[complete.cases(melted.bdatdiff[,i]) & (melted.bdatdiff$code_reg %in% reg_focus) & (melted.bdatdiff$period %in% diffmedian),]
 
-    p[[i]] <- ggplot(melted_focus,aes_string(x=i,y="diffmedian")) +
-              geom_boxplot()+
-              geom_point(position=position_jitter(width=0.3), alpha=0.5,aes(colour = diff)) +
-              facet_wrap(~period)+
-              #scale_color_manual(values=colors,name="Années")+
-              #geom_smooth(aes(x=as.integer(annees),y=value,color=nom_region,fill=nom_region),method=loess)+
-              scale_x_discrete(i)+scale_y_continuous("Différences des teneurs en carbone organique (g/kg)")+
-              theme(plot.title = element_text(size = 14, face = "bold"), 
-                    text = element_text(size = 12),
-                    axis.title = element_text(face="bold"),
-                    axis.text.x = element_text(size = 11))
-             
-}
-do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
-```
 
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE}
-dcast.focus <- dcast.bdat[dcast.bdat$code_reg %in% reg_focus,]
 
-xlabel <- "Teneur en carbone organique initiale (g/kg)"
-ylabel <- "Différence des teneurs en carbone organique (g/kg)(14)"
-x <- "corgox_medequi9094"
-y <- "diffmedian14"
 
-ggplot(dcast.focus, aes_string(x,y)) +
-            geom_point(aes(colour = factor(diff14)),alpha = 0.8, size = 1) +
-            scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
-            theme(plot.title = element_text(size = 14, face = "bold"), 
-            text = element_text(size = 12),
-            axis.title = element_text(face="bold"),
-            axis.text.x=element_text(size = 11))+ labs(title=i)+
-            annotate("text", x=20, y=10, label=lm_eqn(lm(dcast.focus[,y]~dcast.focus[,x], dcast.focus,na.rm=TRUE)), parse=TRUE)+
-            geom_smooth(method = "lm", se = FALSE,color="black")    
 
-```
+
+## Focus sur la Picardie et le Poitou-Charentes
+
+

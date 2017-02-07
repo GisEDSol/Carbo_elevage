@@ -121,7 +121,7 @@ Les données de la BDAT sont ré-organisées pour faciliter les traitements stat
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
 varia <- "corgox_medequi" # Variable à analyser 
 period <- c("9094","9599","0004","0509","1014")
-variaoccup <- c("p_sth","p_sfp","p_prairie")
+variaoccup <- c("p_sth","p_sfp","p_prairie","p_cop","p_c")
 #id_class <- apply(expand.grid(varia,period), 1, paste, collapse="")
 periodoccup <- c("1970","1979","1988","2000","2010")
 id_class <- apply(expand.grid(variaoccup,periodoccup),1, function(x){paste("classe_",x[1],x[2],sep="")})
@@ -164,8 +164,6 @@ tablename <- paste("dm_traitements.","melted_bdat",sep="")
 sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
 sqlSave(loc,melted.bdat,tablename=tablename)
 
-# Rajouter les commentaires
-
 ```
 
 ## Evolution des teneurs en carbone organique
@@ -177,17 +175,24 @@ sqlSave(loc,melted.bdat,tablename=tablename)
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
 varia <- c("diffmedian","diff") # Préfixe de la variable à intégrer (varia+period)
 period <- c("12","13","14","15","23","24","25","34","35","45")
-variaoccup <- c("sth","sfp","prairie","c")
+variaoccup <- c("sth","sfp","prairie","c","mf","cop")
 periodra <- c("1970","1979","1988","2000","2010")
 # Classes d'occupation du sol
 id_class <- apply(expand.grid(variaoccup,periodra),1,function(x){paste("classe_p_",x[1],x[2],sep="")})
-periodoccup <- c("1970_2010","1979_2010","1988_2010")
-id_varclass <- apply(expand.grid(variaoccup,periodoccup),1, function(x){paste("classe_var_",x[1],x[2],sep="")})
-id_diff <- apply(expand.grid(variaoccup,periodoccup),1, function(x){paste("diff_var_",x[1],x[2],sep="")})
+
+## Variables associées aux changements d'occupation du sol
+periodref_ra <- c("2010","2000")
+period_ra <- c("1970","1979","1988","2000")
+id_varclass <- apply(expand.grid(p_variable,period_ra,periodref_ra),1, function(x){paste("classe_var_",x[1],x[2],"_",x[3],sep="")})
+id_varclass <- id_varclass[1:(length(id_varclass)-length(variaoccup))] # Ici, on supprime les dernières combinaisons représentant une différence 2000-2000
+id_diff <- apply(expand.grid(p_variable,period_ra,periodref_ra),1, function(x){paste("diff_var_",x[1],x[2],"_",x[3],sep="")})
+id_diff <- id_diff[1:(length(id_diff)-length(id_diff))]# Ici, on supprime les dernières combinaisons représentant une différence 2000-2000
+
 id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean",id_class,id_diff,id_varclass)
 
 # Lecture de la table dm_vecteurs.canton
 mapcanton <- sqlQuery(loc,paste("select * from ",table_dm,sep=""))
+#mapcanton <- sqlQuery(loc,paste("select ",paste(id,collapse=","),",",paste(variaperiod,collapse=",")," from ",table_dm,sep=""))
 
 # Boucle pour séparer les périodes analysées du nom de la variable étudiée
 cpt <- 0
@@ -196,8 +201,8 @@ for(i in varia){
   cpt <- cpt + 1
   variaperiod <- paste(i,period,sep="")  
   stats.canton <- mapcanton[,c(id,variaperiod)]
- 
-   # Modification de la structure de la table
+
+  # Modification de la structure de la table
   stats.canton <- melt(data=stats.canton,id.vars=id)
 
   # Extraction de l'année et renommage des colonnes
@@ -218,10 +223,8 @@ melted.bdatdiff <- melt.canton
 melted.bdatdiff$typo_clim <- as.factor(melted.bdatdiff$typo_clim)
 
 # Enregistrement dans le schéma dm_traitements
-tablename <- paste("dm_traitements.","melted_bdatdiff2",sep="")
+tablename <- paste("dm_traitements.","melted_bdatdiff",sep="")
 sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
 sqlSave(loc,melted.bdatdiff,tablename=tablename)
-
-# Rajouter les commentaires
 
 ```

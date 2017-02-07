@@ -41,15 +41,26 @@ Deux types de données sont intégrées dans la base : les données brutes et le
 
 Elles proviennent de différentes sources et représentent des données qui ne sont pas directement exploitables pour des traitements statistiques ou de la cartographie. Elles sont stockées dans des schémas portant le nom de leur thématique associées (voir tableau ci-dessous). Ces données sont traitées et stockées dans des data marts.
 
-### les data marts
+```{r,evaL=TRUE,echo=FALSE}
+# Description des tables (voir pour rajouter les métadonnées dans les commentaires de table)
+metatable <- read.csv(paste(repmetadonnees,"Catalogue_schema.csv",sep=""),sep=";")
+pander(metatable[metatable$Type %in% "Brute",][,c("Schéma","Description")])
+```
+
+### Les data marts
 
 Les data marts (magasins de données) sont les données qui sont directement utilisables dans des traitements. Ces data marts se présentent sous la forme d'une ou plusieurs tables classées dans des schémas distincts. Le nom de ces schémas est préfixé par « dm_». Le tableau suivant dresse la liste des data marts disponibles :
 
+```{r,evaL=TRUE,echo=FALSE}
+metatable <- read.csv(paste(repmetadonnees,"Catalogue_schema.csv",sep=""),sep=";")
+pander(metatable[metatable$Type %in% "Data_mart",][,c("Schéma","Description")])
+```
+
 ## Documentation
 
-La documentation de cette base de données s'articule autours d'un document général et de plusieurs modes opératoires destinés aux différents types d'utilisateurs (administrateur, développeur et utilisateur). Ces documents sont présents sur la forge du projet à cette adresse.
+La documentation de cette base de données s'articule autours d'un document général et de plusieurs modes opératoires destinés aux différents types d'utilisateurs (administrateur, développeur et utilisateur). Ces documents sont présents sur la forge du projet à cette [adresse](https://github.com/Rosalien/GISEDSol/tree/master/Documentation).
 
-## Création de la base
+# Création de la base
 
 La création de la base postgresql/postgis est réalisée selon la procédure suivante :
 
@@ -107,6 +118,8 @@ Les données dites de "bases" concernent les données administratives utilisées
 
 ```{r,highlight=TRUE,eval=FALSE}
 
+schema <- "dm_vecteurs"#nom du schéma pour intégrer les vecteurs
+
 # Intégration des données communales et cantonnales dans la base
 for(i in c("DEPARTEMENTS","CANTON","COMMUNE")){
   # Téléchargement
@@ -117,28 +130,20 @@ for(i in c("DEPARTEMENTS","CANTON","COMMUNE")){
   system(paste("7z e ",repBase,"GEOFLA_1-1_SHP_LAMB93_FR-ED111.7z -o",repBase," -y",sep=""))
   
   # Intégration dans la BDD (suppression si le vecteur exsite déjà)
-  sqlQuery(loc,paste("drop table if exists public.",tolower(i),sep=""))
+  sqlQuery(loc,paste("drop table if exists dm_vecteurs.",tolower(i),sep=""))
   if(i=="DEPARTEMENTS"){i <- "DEPARTEMENT"}else{}
-  system(paste("shp2pgsql -s 2154 -c -D -W \"latin1\" -I ",repBase,i,".shp | psql -d sol_elevage -h localhost -U jb",sep=""))
+  system(paste("shp2pgsql -s 2154 -c -D -W \"latin1\" -I ",repBase,i,".shp ",schema,".",i," | psql -d sol_elevage -h localhost -U jb",sep=""))
   
   # Nettoyage
   system(paste("rm -d ",repBase,"*",sep=""))
 }
 
 # Construction du code canton pour les jointures avec les données agreste >> "code_canton"
-sqlQuery(loc,"alter table canton
+sqlQuery(loc,paste("alter table ",schema,".canton
               add column code_canton varchar(5);
-              UPDATE public.canton
-              SET code_canton = code_dept || code_cant")
+              UPDATE ",schema,".canton
+              SET code_canton = code_dept || code_cant",sep=""))
 
-# Déplacement de la table canton ves le schema dm_vecteurs
-sqlQuery(loc,"alter table public.canton set schema dm_vecteurs;")
-
-# Déplacement de la table département
-sqlQuery(loc,"alter table public.departement set schema dm_vecteurs;")
-
-# Déplacement de la table département
-sqlQuery(loc,"alter table public.commune set schema dm_vecteurs;")
 ```
 
 ```{r,highlight=TRUE,eval=FALSE}
@@ -396,16 +401,14 @@ Dans les tables de sorties de Disard, le numéro de canton et le nom du chef lie
 
 ```{r importagreste,eval=TRUE,warning=FALSE,}
 installXLSXsupport()
-
-catalogue <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=";")
-Liste_fichiers <- catalogue[,2]
-Commentaires <- catalogue[,3]
-#Liste_fichiers <- gsub("\\.xls$","",list.files(repagreste,pattern="\\.xls$"))# Liste des xls présent dans le répertoire de travail (repagreste)
 schema <- "ra" #Nom du schema de stockage des données
+catalogue <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=";")
+Liste_fichiers <- catalogue[(catalogue[,1] %in% schema),2]
+Commentaires <- catalogue[(catalogue[,1] %in% schema),3]
+#Liste_fichiers <- gsub("\\.xls$","",list.files(repagreste,pattern="\\.xls$"))# Liste des xls présent dans le répertoire de travail (repagreste)
 
 cpt <- 0
 for(i in Liste_fichiers){
-  
   if(i=="UGBTA_canton880010"){
   # Intégration spéciale pour la table UGBTA_canton880010.csv" (Téléchargé http://agreste.agriculture.gouv.fr/IMG/xls/Donnees_principales__canton_departement_.xls)
   tablecsv <- read.csv(paste(repagreste,"UGBTA_canton880010.csv",sep=""),header=TRUE,sep=";",colClasses=c("num_canton"="character"))
@@ -461,7 +464,7 @@ for(i in Liste_fichiers){
 
 Les grandes régions d'élevage représentent un zonage basé sur l'utilisation du sol (part de la SFP/des cultures et dans la SFP part de la STH, des PT et du maïs, et recroisement avec les zones à contraintes naturelles (montagne et zones sèches)). Le zonage a évolué depuis 1995, avec des correctifs dans certaines zones (Limousin notamment) et surtout un redécoupage en fonction de l’orientation des productions d’élevage, notamment bovin (lait ou viande) et du contexte pédoclimatique (séparer la Bretagne et les piémonts, les Bassin parisien et aquitain par exemple).
 
-Le zonage intégré dans la base a été fourni par Christophe Perrot. Pour plus d'information sur la construction, contacter l'auteur.
+Le zonage intégré dans la base a été fourni par Christophe Perrot. Pour plus d'information sur la construction, contacter l'auteur (rajouter adresse)
 Pour faciliter la distinction des différents niveaux de régions, une nomenclature a été créée. Elle est consultable [ici](https://github.com/Rosalien/GISEDSol/tree/master/Documentation/Metadonnees/Nomenclature_regionelevage.csv)
 
 ```{r importRegionElevage,eval=FALSE}
