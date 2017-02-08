@@ -29,7 +29,7 @@ ipak <- function(pkg){
 
 # Chargement des librairies
 listpaquets <- c("RODBC","gdata","fields","stringr","ggplot2","rgdal","maptools","RColorBrewer","classInt","devtools","reshape2","Hmisc","gridExtra","mapproj","wesanderson","FactoMineR",
-	"knitr","pander","GGally","factoextra","caret","plyr","doMC","sp","raster")
+	"knitr","pander","GGally","factoextra","caret","plyr","doMC","sp","raster","RPostgreSQL","corrplot")
 ipak(listpaquets)
 #new.packages <- listpaquets[!(listpaquets %in% installed.packages()[,"Package"])]
 #if(length(new.packages)) install.packages(new.packages)
@@ -126,7 +126,11 @@ assign("loc",odbcConnect("solelevage",case="postgresql", believeNRows=FALSE),.Gl
 # Paramètres de connexion de la BDD
 assign("dsn",dsn,.GlobalEnv)
 
-# Chargement des fonction
+# Connexion avec RPostgreSQL
+assign("m",dbDriver("PostgreSQL"),.GlobalEnv)
+assign("con",dbConnect(m, dbname="sol_elevage"),.GlobalEnv)
+
+# Chargement des fonctions
 source(paste(repfonctions,"R/F_carto.R",sep=""))
 
 # Fonction très pratique pour remplacer une suite de charact?res par une autre
@@ -189,3 +193,6 @@ assign("lm_eqn",lm_eqn,.GlobalEnv)
 
 #return(list(grid_arrange_shared_legend,gsub2,fig=fig))
 }#Fin fonction
+
+
+

@@ -247,7 +247,7 @@ ggplot(bdatdiffBCD,aes(diff,fill=zonage_simple)) + geom_bar(position="dodge") + 
 
 ## Graphiques de correlation
 Rajouter les droites de régressions 
-Rajouter les variation climatiques
+Rajouter les variation climatiques + l'occupation du sol
 
 Figure ci-dessous à commenter pour aller plus loin.
 

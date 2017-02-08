@@ -99,7 +99,7 @@ Important, dans l'analyse spatiale des teneurs en carbone organique, rajouter le
 
 ### Statistiques descriptives
 
-La figure `r fig$ref("cdf_fr",link=TRUE)` présente les courbes de fréquences cumulées des teneurs en carbone organique distribuées pour les 5 périodes. Les courbes de fréquences des 5 périodes présentent la même forme en "S" et s'individualisent juste avant le plateau, présentant une différence affectant les sols riches en teneurs organiques. Sur cette zone, la figure montre un décalage des courbes des périodes 2000-2004, 2005-2009 et 2010-2014 vers des valeurs plus faibles. Parmi ces 3 périodes, la période 2005-2009 est celle qui se décale le plus vers des teneurs plus faible tandis que la période 2010-2014 se rapproche des valeurs de 1990-1994 et 1995-1999, présentant ainsi une inversion de la tendance observée. Ces trois périodes se distinguent clairement des périodes de 1990-1994 et 1995-1999 qui sont rapprochées.
+La figure `r fig$ref("cdf_fr",link=TRUE)` présente les courbes de fréquences cumulées des teneurs en carbone organique distribuées pour les 5 périodes. Les courbes de fréquences des 5 périodes présentent la même forme en "S" et s'individualisent juste avant le plateau, présentant une différence affectant les sols riches en teneurs organiques (entre 17 et 45 g/kg). Sur cette zone (figure à droite), la figure montre un décalage des courbes des périodes 2000-2004, 2005-2009 et 2010-2014 vers des valeurs plus faibles. Parmi ces 3 périodes, la période 2005-2009 est celle qui se décale le plus vers des teneurs plus faible tandis que la période 2010-2014 se rapproche des valeurs de 1990-1994 et 1995-1999, présentant ainsi une inversion de la tendance observée. Ces trois périodes se distinguent clairement des périodes de 1990-1994 et 1995-1999 qui sont rapprochées.
 
 **Ces observations mettent en évidence une diminution des teneurs en carbone entre les périodes 1990-1999 et 2000-2009 et une légère augmentation pour la période 2010-2014.**
 
@@ -112,8 +112,9 @@ ylabel <- "Fréquence"
 nperiod <- length(period)
 colors <- brewer.pal(nperiod,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
 
+p <- list()
 # Courbe de fréquence cumulée
-cdf <- ggplot(melted.bdat, aes(x=value))+
+p[[1]] <- ggplot(melted.bdat, aes(x=value))+
        stat_ecdf(aes(colour=annees))+
        scale_color_manual(values=colors, 
                           name="Périodes")+
@@ -122,22 +123,8 @@ cdf <- ggplot(melted.bdat, aes(x=value))+
              text = element_text(size = 12),
              axis.title = element_text(face="bold"),
              axis.text.x=element_text(size = 11))
-cdf
-```
 
-Ci-dessous, le zoom sur les fréquences cumulées des classes de valeurs en carbone organique les plus mobilisées (entre 14 et 45 g/kg)
-
-```{r cdf_fr,highlight=TRUE,echo=FALSE,eval=TRUE,warning=FALSE,error=FALSE,fig.height=5, fig.width=6,fig.cap = fig$cap("cdf_fr","Courbe de fréquences cumulées"),fig.align="center"}
-
-#Problème avec l'ouverture de la table
-period <- c("9094","9599","0004","0509","1014")
-xlabel <- "Carbone organique (g/kg)"
-ylabel <- "Fréquence"
-nperiod <- length(period)
-colors <- brewer.pal(nperiod,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
-
-# Courbe de fréquence cumulée
-cdfzoom <- ggplot(melted.bdat[(melted.bdat$value > 17) & (melted.bdat$value < 45) ,], aes(x=value))+
+p[[2]] <- ggplot(melted.bdat[(melted.bdat$value > 17) & (melted.bdat$value < 45) ,], aes(x=value))+
        stat_ecdf(aes(colour=annees))+
        scale_color_manual(values=colors, 
                           name="Périodes")+
@@ -146,7 +133,8 @@ cdfzoom <- ggplot(melted.bdat[(melted.bdat$value > 17) & (melted.bdat$value < 45
              text = element_text(size = 12),
              axis.title = element_text(face="bold"),
              axis.text.x=element_text(size = 11))
-cdfzoom
+
+do.call(grid_arrange_shared_legend,c(p,list(nrow=1,ncol=2,position="bottom")))
 ```
 
 ```{r summarybdatfrance,echo=FALSE,eval=TRUE}
@@ -161,9 +149,10 @@ pander(bdatsummary[[1]],caption = "Statistiques descriptives des teneurs en carb
 ```
 
 ```{r boxplot_fr,highlight=TRUE,echo=FALSE,eval=TRUE,fig.height=5, fig.width=6,fig.cap = fig$cap("boxplot_fr","Boxplot des teneurs en carbone organiques par périodes"),fig.align="center"}
-p <- ggplot(melted.bdat, aes(x=annees,y=value)) + 
-  geom_violin(trim=FALSE)+
-  geom_boxplot(width=0.1, fill="white")+
+p <- ggplot(melted.bdat[(melted.bdat$value > 17) & (melted.bdat$value < 45) ,], aes(x=annees,y=value)) + 
+  #geom_violin(trim=FALSE)+
+  #geom_boxplot(width=0.1, fill="white")+
+  geom_boxplot()+
   #scale_color_manual(values=colors,name="Années")+
   geom_smooth(method = "loess", se=FALSE, color="black", aes(group=1))+
   scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone organique (g/kg)")+
@@ -197,9 +186,9 @@ nclasse <- 5
 style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
 couleur <- "YlOrRd" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
 l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
-nomfichier <- "corgoxmed_period_fr" #Nom du fichier
+nomfichier <- "corgoxmed_period_fr2" #Nom du fichier
 
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=5,position="bottom",ggsaveheight=5,ggsavewidth=20)  
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=5,position="bottom",ggsaveheight=5,ggsavewidth=20)
 ```
 
 ```{r map_carbo_fr, echo = F, results = 'asis'}
@@ -325,6 +314,25 @@ mgbm_fr <- train(formula,data=train,"gbm",tuneGrid = tuneGrid,trControl = trCont
 save(mgbm_fr,file=paste(repsortie,"mgbm_fr.RData",sep=""))
 
 # Test rapide sur qq classes de teneurs en carbone organique...
+
+id <- "id_geofla"# Nom du champs présentant un identifiant unique
+d_classC <- d[(d[,1] > 14) & (d[,1] < 45),]
+
+trainrows <- runif(nrow(d)) > 0.3
+train <- d_classC[trainrows,] #Données pour l'apprentissage
+test <- d_classC[!trainrows,] #Données pour test
+
+formula <- as.formula(paste(vNames[1],"~",paste(vNames[-1],collapse="+"),sep=""))
+
+# France entière
+set.seed(157) #Pour assurer la reproductibilité
+registerDoMC(4)
+
+trControl <- trainControl(method = "cv",p=0.8,number=5)
+tuneGrid <- expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 20)
+
+mgbm_fr_classC <- train(formula,data=train,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T,na.action = na.omit)
+plot(varImp(mgbm_fr_classC), top = 10)
 
 # Prédiction sur le jeu test
 #pred <- predict(mgbm_fr$finalModel,test, n.trees = mgbm_fr$bestTune$n.trees)

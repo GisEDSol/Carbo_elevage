@@ -528,10 +528,10 @@ Problème avec les données ugbta, revoir!
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
-varia <- c("p_sth","p_sfp","p_prairie","p_c","ugbta") # Variable à analyser 
+varia <- c("p_mf","p_sth","p_sfp","p_prairie","p_c","p_cop","ugbta") # Variable à analyser 
 id_class <- apply(expand.grid(varia,period),1, function(x){paste("classe_",x[1],x[2],sep="")})
 id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt") #Nom des identifiants
-mapcanton <- sqlQuery(loc,paste("select * from ",dm_table,sep=""))
+mapcanton <- sqlQuery(loc,paste("select * from ",table_dm,sep=""))
 
 # Boucle pour séparer l'année du nom de la variable étudiée
 cpt <- 0

@@ -57,15 +57,7 @@ carto <- function(
 {
 
 library(rgdal);library(ggplot2);library(maptools);library(reshape2);library(classInt);
-library(gridExtra);library(RPostgreSQL);library(stringr)
-
-# Fonction pour gérer la légende 
-g_legend<-function(a.gplot){
-  tmp <- ggplot_gtable(ggplot_build(a.gplot))# + theme(legend.position="bottom")
-  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
-  legend <- tmp$grobs[[leg]]
-return(legend)
-}
+library(gridExtra);library(RPostgreSQL);library(stringr);library(rgeos)
 
 # Fonction pour partager une même légende pour plusieurs plots (https://github.com/tidyverse/ggplot2/wiki/Share-a-legend-between-two-ggplot2-graphs)
 # http://stackoverflow.com/questions/13649473/add-a-common-legend-for-combined-ggplots
@@ -127,60 +119,165 @@ readOgrSql = function (dsn, sql, ...) {
 
   # Connect, create spatial view, read spatial view, drop spatial view
   conn = eval(parse(text=strExpression))
+  print(dbSendQuery(conn, "DROP VIEW if exists vw_tmp_read_ogr;"))
   strCreateView = paste("CREATE VIEW vw_tmp_read_ogr AS", sql)
   dbSendQuery(conn, strCreateView)
   temp = readOGR(dsn = dsn, layer = "vw_tmp_read_ogr", ...)
-  dbSendQuery(conn, "DROP VIEW vw_tmp_read_ogr;")
-  dbDisconnect(conn)
+  print(dbDisconnect(conn))
   return(temp)
 }
 
 ##############################
 # Lecture du postgis selon plusieurs conditions
+id <- "id_geofla"
 
 if((is.character(dept)==FALSE) & (is.character(reg)==FALSE)){
-  map <- readOGR(dsn = dsn, tablecarto)
-  #map <- map[complete.cases(map@data[variablecarto]),]
-  dep <- readOGR(dsn = dsn, "dm_vecteurs.departement")
+ # map <- readOGR(dsn = dsn, tablecarto)
+#  dep <- readOGR(dsn = dsn, "dm_vecteurs.departement")
+
+#save(map,file=paste(repsortie,"map.RData",sep=""))
+#save(dep,file=paste(repsortie,"dep.RData",sep=""))
+
+load(paste(repsortie,"map.RData",sep=""))
+load(paste(repsortie,"dep.RData",sep=""))
+
+#  variablecartobis <- paste(variablecarto,collapse=",")
+  #strSQL <- paste("SELECT ",id,",",variablecartobis,",ST_AsText(geom) AS geom from ",tablecarto,sep="")
+  #rs = dbSendQuery(con,strSQL)
+  #df = fetch(rs,n=-1)
+  #dfTemp = dbGetQuery(con,strSQL)
+  #row.names(dfTemp) = dfTemp[,id]
+
+#for(i in seq(nrow(dfTemp))){
+  #print(i)
+  #if(i == 1){
+  #  spTemp <- readWKT(dfTemp$geom[i], dfTemp$id_geofla[i])
+  #}else{
+    #spTemp <- rbind(spTemp, readWKT(dfTemp$geom[i], dfTemp$id_geofla[i]))
+    #}
+  #}
+
+  #map <- SpatialPolygonsDataFrame(spTemp, dfTemp[-(length(variablecarto)+2)])
+
+#  variablecartobis <- paste(variablecarto,collapse=",")
+ # strSQL <- paste("SELECT ",id,",ST_AsText(geom) AS geom",sep="")
+#  rs = dbSendQuery(con,strSQL)
+#  df = fetch(rs,n=-1)
+  #dfTemp = dbGetQuery(con,strSQL)
+  #row.names(dfTemp) = dfTemp[,id]
+
+#  for(i in seq(nrow(dfTemp))){
+    #if(i == 1){
+    #  spTemp <- readWKT(dfTemp$geom[i], dfTemp$id_geofla[i])
+    #}
+  #else{
+    #spTemp <- rbind(spTemp, readWKT(dfTemp$geom[i], dfTemp$id_geofla[i]))
+    #}
+  #}
+  
+  #dep <- SpatialPolygonsDataFrame(spTemp, dfTemp[-2])
   }else{}
 
 if(is.character(dept)==TRUE){
   # Sélection de la zone d'étude
-  #print(paste("Sélection département(s) ",dept,sep=""))
+  variablecartobis <- paste(variablecarto,collapse=",")
+  strSQL <- paste("SELECT ",id,",",variablecartobis,",ST_AsText(geom) AS geom from ",tablecarto," where code_dept similar to '",dept,"'",sep="")
+  rs = dbSendQuery(con,strSQL)
+  df = fetch(rs,n=-1)
+  dfTemp = dbGetQuery(con,strSQL)
+  row.names(dfTemp) = dfTemp[,id]
 
-  strSQL <- paste("select * 
-                   from ",tablecarto,"
-                   where code_dept similar to '",dept,"'",sep="")
+for(i in seq(nrow(dfTemp))){
+  if(i == 1){
+    spTemp <- readWKT(dfTemp$geom[i], dfTemp$id_geofla[i])
+  }else{
+    spTemp <- rbind(spTemp, readWKT(dfTemp$geom[i], dfTemp$id_geofla[i]))
+    }
+  }
 
-  map <- readOgrSql(dsn, strSQL, stringsAsFactors=FALSE)
+  map <- SpatialPolygonsDataFrame(spTemp, dfTemp[-(length(variablecarto)+2)])
+  #map <- readOgrSql(dsn, strSQL, stringsAsFactors=FALSE)
   #map <- map[complete.cases(map@data[variablecarto]),]
 
-  depSQL <- paste("select * 
-                   from dm_vecteurs.departement
-                   where code_dept similar to '",dept,"'",sep="")
-  dep <- readOgrSql(dsn, depSQL, stringsAsFactors=FALSE)
+  variablecartobis <- paste(variablecarto,collapse=",")
+  strSQL <- paste("SELECT ",id,",ST_AsText(geom) AS geom
+                   from dm_vecteurs.departement where code_reg similar to '",reg,"'",sep="")
+  rs = dbSendQuery(con,strSQL)
+  df = fetch(rs,n=-1)
+  dfTemp = dbGetQuery(con,strSQL)
+  row.names(dfTemp) = dfTemp[,id]
+
+  for(i in seq(nrow(dfTemp))){
+    if(i == 1){
+      spTemp <- readWKT(dfTemp$geom[i], dfTemp$id_geofla[i])
+    }
+  else{
+    spTemp <- rbind(spTemp, readWKT(dfTemp$geom[i], dfTemp$id_geofla[i]))
+    }
+  }
+  
+  dep <- SpatialPolygonsDataFrame(spTemp, dfTemp[-2])
+
+  #depSQL <- paste("select * 
+                   #from dm_vecteurs.departement
+                   #where code_dept similar to '",dept,"'",sep="")
+  #dep <- readOgrSql(dsn, depSQL, stringsAsFactors=FALSE)
   }else{}
   
 if(reg!=FALSE){# Sélection de la zone d'étude
-  #print(paste("Sélection région(s) ",reg,sep=""))
+  
+  variablecartobis <- paste(variablecarto,collapse=",")
+  strSQL <- paste("SELECT ",id,",",variablecartobis,",ST_AsText(geom) AS geom
+                   from ",tablecarto," where code_reg similar to '",reg,"'",sep="")
+  rs = dbSendQuery(con,strSQL)
+  df = fetch(rs,n=-1)
+  dfTemp = dbGetQuery(con,strSQL)
+  row.names(dfTemp) = dfTemp[,id]
 
-  strSQL <- paste("select * 
-                   from ",tablecarto,"
-                   where code_reg similar to '",reg,"'",sep="")
+  for(i in seq(nrow(dfTemp))){
+    if(i == 1){
+      spTemp <- readWKT(dfTemp$geom[i], dfTemp$id_geofla[i])
+    }
+  else{
+    spTemp <- rbind(spTemp, readWKT(dfTemp$geom[i], dfTemp$id_geofla[i]))
+    }
+  }
+  
+  map <- SpatialPolygonsDataFrame(spTemp, dfTemp[-(length(variablecarto)+2)])
+# strSQL <- paste("select * 
+ #                  from ",tablecarto,"
+  #                 where code_reg similar to '",reg,"'",sep="")
 
-  map <- readOgrSql(dsn, strSQL, stringsAsFactors=FALSE)
+  #map <- readOgrSql(dsn, strSQL, stringsAsFactors=FALSE)
   #map <- map[complete.cases(map@data[variablecarto]),]
 
-  regSQL <- paste("select * 
-                   from dm_vecteurs.departement
-                   where code_reg similar to '",reg,"'",sep="")
-  dep <- readOgrSql(dsn, regSQL, stringsAsFactors=FALSE)
+  strSQL <- paste("SELECT ",id,",ST_AsText(geom) AS geom
+                   from dm_vecteurs.departement where code_reg similar to '",reg,"'",sep="")
+  rs = dbSendQuery(con,strSQL)
+  df = fetch(rs,n=-1)
+  dfTemp = dbGetQuery(con,strSQL)
+  row.names(dfTemp) = dfTemp[,id]
+
+  for(i in seq(nrow(dfTemp))){
+    if(i == 1){
+      spTemp <- readWKT(dfTemp$geom[i], dfTemp$id_geofla[i])
+    }
+  else{
+    spTemp <- rbind(spTemp, readWKT(dfTemp$geom[i], dfTemp$id_geofla[i]))
+    }
+  }
+  
+  dep <- SpatialPolygonsDataFrame(spTemp, dfTemp[-2])
+  #regSQL <- paste("select * 
+                   #from dm_vecteurs.departement
+                   #where code_reg similar to '",reg,"'",sep="")
+#  dep <- readOgrSql(dsn, regSQL, stringsAsFactors=FALSE)
   }else{}
   
 # Conversion des spatialdataframe pour la cartographie sous ggpplot2
 gpclibPermit()
-cartodep <- fortify(dep,region="id_geofla")
-cartofor <- fortify(map, region="id_geofla")
+cartodep <- fortify(dep,region=id)
+cartofor <- fortify(map,region=id)
 
 # Représentation cartographique
 
@@ -190,13 +287,13 @@ if(length(variablecarto)==1){
 
   if(style_classe=="fixed"){
     # Jointure et changement de nom
-  	carto <- merge(cartofor, map@data[,c("id_geofla",variablecarto)], by.x="id", by.y="id_geofla")
+  	carto <- merge(cartofor, map@data[,c(id,variablecarto)], by.x="id", by.y=id)
   	colnames(carto)[8] <- "fill"
   	carto$fill <- as.factor(carto$fill)
     }else{
       classe_valeur <- classIntervals(melt.map,n=nclasse,style=style_classe,digits=2,na.rm=TRUE)[[2]]
       # Jointure et changement de nom
-      carto <- merge(cartofor, map@data[,c("id_geofla",variablecarto)], by.x="id", by.y="id_geofla")
+      carto <- merge(cartofor, map@data[,c(id,variablecarto)], by.x="id", by.y=id)
       colnames(carto)[8] <- "fill"
       carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
     }
@@ -221,24 +318,35 @@ if(length(variablecarto)>1){
 
 # Extraction de toutes les valeurs à cartographier pour établir des classes de valeurs à cartographier
 melt.map <- melt(map@data[,variablecarto])[,2]
-
+ 
 cpt <- 0
 p <- list()
-for(i in variablecarto){#CHANGER CETTE VARIABLE
+
+for(i in variablecarto){
   cpt <- cpt + 1
  
   if(style_classe=="fixed"){
+    niveaux <- levels(factor(melt.map))
     carto <- merge(cartofor, map@data[,c("id_geofla",i)], by.x="id", by.y="id_geofla")
   	colnames(carto)[8] <- "fill"
   	carto$fill <- as.factor(carto$fill)
+
+    # Définition de la couleur
+    myColors <- brewer.pal(length(niveaux),couleur)
+    names(myColors) <- levels(factor(melt.map))
+    colScale <- scale_fill_manual(name=l_legend,values = myColors)
+
     }else{
-      # Classement (voir pour round)
+      # Classement
       classe_valeur <- round(classIntervals(melt.map,n=nclasse,style=style_classe,digits=2,na.rm=TRUE)[[2]],1)
   
       # Jointure et changement de nom
       carto <- merge(cartofor, map@data[,c("id_geofla",i)], by.x="id", by.y="id_geofla")
       colnames(carto)[8] <- "fill"
       carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)
+
+      # Définition de la couleur
+      colScale <- scale_fill_brewer(palette = couleur,name=l_legend)
       }
 
     # Création de la carte
@@ -246,7 +354,7 @@ for(i in variablecarto){#CHANGER CETTE VARIABLE
               geom_polygon(data=carto, aes(group=group, fill=fill),size=0.1) +
               geom_path(data=carto, aes(x=long,y=lat,group=group),color="white",size=0.1)+# Représente les cantons
               geom_path(data=cartodep, aes(x=long,y=lat,group=group),color="black",size=0.1)+# Représente les contours des départements
-              scale_fill_brewer(palette = couleur,name=l_legend)+
+              colScale+
               theme(plot.title = element_text(size=10,face="bold"),
                     text = element_text(size=10),
                     axis.text =element_blank(),# change the theme options
@@ -256,14 +364,7 @@ for(i in variablecarto){#CHANGER CETTE VARIABLE
               labs(title=i)
 	}#fin boucle 
 
-# Provisoire/temporaire
-#save(p,file=paste(repsortie,nomfichier,"1.RData",sep=""))
-#save(plotLegend,file="plotLegend.RData")
-
-#png(paste(repsortie,nomfichier,".png",sep=""),width=res, height=res)#,pointsize=10)
 tt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=nrowlayout,ncol=ncollayout,position=position)))
-#dev.off()
-
 #save(tt,file="tt.RData")
 
 ggsave(tt, file = paste(repsortie,nomfichier,".png",sep=""),width = ggsavewidth, height = ggsaveheight)  

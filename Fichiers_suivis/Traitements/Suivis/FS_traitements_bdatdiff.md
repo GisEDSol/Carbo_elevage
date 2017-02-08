@@ -8,7 +8,6 @@ Jean-Baptiste Paroissien
     -   [Analyse du nombre d'évolution significative par canton](#analyse-du-nombre-devolution-significative-par-canton)
     -   [Analyse sur les périodes identifiées](#analyse-sur-les-periodes-identifiees)
     -   [Cartographie des évolutions](#cartographie-des-evolutions)
-    -   [Focus sur la Picardie et le Nord-Pas-De-Calais](#focus-sur-la-picardie-et-le-nord-pas-de-calais)
 
 Objectifs
 =========
@@ -80,7 +79,7 @@ De la figure ci-dessus, les 10 principales régions touchées par des évolution
 | **126** |  Diminution  |  POITOU-CHARENTES  |   13   |  42  |
 
 La région Centre et les pays de la Loire ont une fréquence importante de canton ayant une augmentation de C.
-Le Nord-pas-de-Calais, la Bretagne, la Picardie et le Poitou-Charentes sont les principales régions touchées par des diminutions en C.
+Le Nord-pas-de-Calais, la Bretagne, la Picardie et la région Poitou-Charentes sont les principales régions touchées par des diminutions en C.
 
 Cartographie des évolutions
 ---------------------------
@@ -88,140 +87,4 @@ Cartographie des évolutions
 On retrouve ces observations sur les cartes d'évolution des teneurs. Dans le détail, c'est le morbihan qui est surtout affecté par des chutes de teneurs en carbone organique et en région Centre, on observe une augmentation des teneurs concentrée dans le Perche.
 Ces résultats très ciblés font penser à un effet de bord (différences liés aux laboratoires?), surtout pour les régions Picardie, Nord-Pas-De-Calais et le département du Morbihan. **La suite des analyses se concentrera sur ces zones.**
 
-Focus sur la Picardie et le Nord-Pas-De-Calais
-----------------------------------------------
-
-### Cartographie
-
-![](/media/sf_GIS_ED/Dev/Scripts/master//Fichiers_suivis/Traitements/Fichiers/Median_evolu_c31_32.png)
-
-### Analyse de la distribution pour les différentes périodes
-
-<figure style="text-align:center;">
-<a name="cdf_picardieNPC"></a><img src="FS_traitements_bdatdiff_files/figure-markdown_github/cdf_fr-1.png">
-<figcaption>
-</figcaption>
-</figure>
-<figure style="text-align:center;">
-<a name="boxplot_picardieNPC"></a><img src="FS_traitements_bdatdiff_files/figure-markdown_github/boxplot_fr-1.png">
-<figcaption>
-</figcaption>
-</figure>
-<table style="width:83%;">
-<caption>Statistiques descriptives des teneurs en carbone organique par périodes<br />
-### Analyses des facteurs explicatifs</caption>
-<colgroup>
-<col width="15%" />
-<col width="9%" />
-<col width="13%" />
-<col width="12%" />
-<col width="9%" />
-<col width="13%" />
-<col width="8%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="center"> </th>
-<th align="center">Min.</th>
-<th align="center">1st Qu.</th>
-<th align="center">Median</th>
-<th align="center">Mean</th>
-<th align="center">3rd Qu.</th>
-<th align="center">Max.</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="center"><strong>9094</strong></td>
-<td align="center">5.34</td>
-<td align="center">11.6</td>
-<td align="center">13.4</td>
-<td align="center">15.49</td>
-<td align="center">17.05</td>
-<td align="center">41.1</td>
-</tr>
-<tr class="even">
-<td align="center"><strong>9599</strong></td>
-<td align="center">5.35</td>
-<td align="center">11.05</td>
-<td align="center">12.96</td>
-<td align="center">15.05</td>
-<td align="center">17</td>
-<td align="center">40.3</td>
-</tr>
-<tr class="odd">
-<td align="center"><strong>0004</strong></td>
-<td align="center">4.6</td>
-<td align="center">10.42</td>
-<td align="center">12</td>
-<td align="center">14.31</td>
-<td align="center">16.28</td>
-<td align="center">40.12</td>
-</tr>
-<tr class="even">
-<td align="center"><strong>0509</strong></td>
-<td align="center">5.58</td>
-<td align="center">10.84</td>
-<td align="center">12.2</td>
-<td align="center">14.88</td>
-<td align="center">16.93</td>
-<td align="center">40.47</td>
-</tr>
-<tr class="odd">
-<td align="center"><strong>1014</strong></td>
-<td align="center">6.38</td>
-<td align="center">11</td>
-<td align="center">12.72</td>
-<td align="center">14.67</td>
-<td align="center">16.3</td>
-<td align="center">36.92</td>
-</tr>
-</tbody>
-</table>
-
-Rapidement, on regarde les acp puis tentative de modélisation avec GBM
-
-#### ACP
-
-<figure style="text-align:center;">
-<a name="acp_evolution_picardie"></a><img src="FS_traitements_bdatdiff_files/figure-markdown_github/unnamed-chunk-11-1.png">
-<figcaption>
-</figcaption>
-</figure>
-#### GBM
-
-    ## Loading required package: gbm
-
-    ## Loading required package: splines
-
-    ## Loaded gbm 2.1.1
-
-<figure style="text-align:center;">
-<a name="gbm_fr"></a><img src="FS_traitements_bdatdiff_files/figure-markdown_github/unnamed-chunk-13-1.png">
-<figcaption>
-</figcaption>
-</figure>
-#### Autres représentations
-
-<figure style="text-align:center;">
-<a name="boxplot_NPC_picardie"></a><img src="FS_traitements_bdatdiff_files/figure-markdown_github/unnamed-chunk-14-1.png">
-<figcaption>
-</figcaption>
-</figure>
-    ## TableGrob (2 x 1) "arrange": 2 grobs
-    ##   z     cells    name              grob
-    ## 1 1 (1-1,1-1) arrange   gtable[arrange]
-    ## 2 2 (2-2,1-1) arrange gtable[guide-box]
-
-    ## Warning: In lm.fit(x, y, offset = offset, singular.ok = singular.ok, ...) :
-    ##  extra argument 'na.rm' will be disregarded
-
-    ## Warning: Removed 109 rows containing non-finite values (stat_smooth).
-
-    ## Warning: Removed 109 rows containing missing values (geom_point).
-
-<figure>
-<img src="FS_traitements_bdatdiff_files/figure-markdown_github/unnamed-chunk-15-1.png">
-<figcaption>
-</figcaption>
-</figure>
+![](/media/sf_GIS_ED/Dev/Scripts/master//Fichiers_suivis/Traitements/Fichiers/Median_evolu_c.png) ![](/media/sf_GIS_ED/Dev/Scripts/master//Fichiers_suivis/Traitements/Fichiers/Median_diff_c.png)
