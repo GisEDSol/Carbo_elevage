@@ -28,4 +28,8 @@ Pour une lecture aisée des traitements et résultats en cours sur l'analyse des
 * **[l'analyse des teneurs en carbone organique pour différentes périodes](https://rawgit.com/Rosalien/GISEDSol/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdat.html)**
 * **[l'analyse de l'évolution des teneurs en carbone organique](https://rawgit.com/Rosalien/GISEDSol/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdatdiff.html)**
 
+Pour aller plus loin, plusieurs documents détaillent l'analyse à l'échelle régionale :
+* **[Nord Pas de Calais et la Picardie](https://rawgit.com/Rosalien/GISEDSol/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_NPCPicardie.html)**
+* **[Bretagne](https://rawgit.com/Rosalien/GISEDSol/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_Bretagne.html)**
+* **[Région Centre](https://rawgit.com/Rosalien/GISEDSol/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_Centre.html)**
 ----

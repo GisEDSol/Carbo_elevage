@@ -141,7 +141,7 @@ for(i in period){
 }
 ```
 
-## Calcul de la COP (Céréales+Oléagineux+Protéagineux) A FAIRE
+## Calcul de la COP (Céréales+Oléagineux+Protéagineux)
 
 Le type d'occupation nommé `COP` correspond à la somme des surfaces en céréales+oléagineux et Protéagineux. Le code ci-dessous calcul la proportion de COP pour les 5 périodes du recencement agricole.
 
