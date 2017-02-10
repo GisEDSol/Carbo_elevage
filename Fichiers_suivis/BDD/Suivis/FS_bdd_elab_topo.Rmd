@@ -118,6 +118,26 @@ sqlQuery(loc,"drop table if exists dm_vecteurs.tmp")
 print(sqlQuery(loc,paste("
   COMMENT ON COLUMN ",table_dm,".",vName," IS \'Classes des altitudes moyennes par canton avec la méthode ",style_classe," et établies sur la variable altimean.\';",sep="")))
 ```
+## Cartographie
+
+```{r,echo=FALSE,eval=TRUE}
+tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
+variablecarto <- "altimean"
+style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
+couleur <- "Spectral" #RdYlBu
+nclasse <- 6
+#Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+l_variable <- "Altitude moyenne par canton (m)" #label de la variable
+nomfichier <- "elevation_fr" #Nom du fichier
+
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=1,position="bottom",ggsaveheight=7,ggsavewidth=10)
+```
+
+```{r map_topo_fr, echo = F, results = 'asis'}
+# Pour insérer l'image
+fichiers <- paste(repsortie,"elevation_fr.png",sep="")
+cat(paste("![](",fichiers,")",sep=""))
+```
 
 
 

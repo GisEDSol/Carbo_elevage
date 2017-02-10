@@ -8,12 +8,9 @@ Jean-Baptiste Paroissien
     -   [Analyse de la distribution pour les différentes périodes](#analyse-de-la-distribution-pour-les-differentes-periodes)
     -   [Analyses des facteurs explicatifs](#analyses-des-facteurs-explicatifs)
     -   [Analyses des variables sélectionnées pour les périodes 13 et 14](#analyses-des-variables-selectionnees-pour-les-periodes-13-et-14)
-    -   [Cartographie des variations](#cartographie-des-variations)
+    -   [Cartographie des facteurs explicatifs](#cartographie-des-facteurs-explicatifs)
     -   [Analyses des variables sélectionnées pour la période 35](#analyses-des-variables-selectionnees-pour-la-periode-35)
     -   [Analyses des variables sélectionnées pour la période 24](#analyses-des-variables-selectionnees-pour-la-periode-24)
-
-    ## Warning in readLines(rmdCon): ligne finale incomplète trouvée dans
-    ## 'FS_traitements_NPCPicardie.Rmd'
 
 Objectifs
 =========
@@ -21,7 +18,7 @@ Objectifs
 Cartographie des évolutions en teneurs en carbone organique
 ===========================================================
 
-![](/media/sf_GIS_ED/Dev/Scripts/master//Fichiers_suivis/Traitements/Fichiers/Median_evolu_c31_22.png) ![](/media/sf_GIS_ED/Dev/Scripts/master//Fichiers_suivis/Traitements/Fichiers/Median_diff_c31_22.png) ![](/media/sf_GIS_ED/Dev/Scripts/master//Fichiers_suivis/Traitements/Fichiers/corgox_31_22.png)
+![](/media/sf_GIS_ED/Dev/Scripts/master//Fichiers_suivis/Traitements/Fichiers/Median_evolu_c31_22.png) ![](/media/sf_GIS_ED/Dev/Scripts/master//Fichiers_suivis/Traitements/Fichiers/Median_diff_c31_22.png) ![](/media/sf_GIS_ED/Dev/Scripts/master//Fichiers_suivis/Traitements/Fichiers/corgox_31_22.png) ![](/media/sf_GIS_ED/Dev/Scripts/master//Fichiers_suivis/Traitements/Fichiers/effectif_31_22.png)
 
 Analyse de la distribution pour les différentes périodes
 --------------------------------------------------------
@@ -119,6 +116,8 @@ Dans un premier temps, l'ensemble des variables potentiellement explicatives est
 <figcaption>
 </figcaption>
 </figure>
+    ## Warning: Removed 1 rows containing missing values (geom_point).
+
 <figure style="text-align:center;">
 <img src="FS_traitements_NPCPicardie_files/figure-markdown_github/unnamed-chunk-5-2.png">
 <figcaption>
@@ -126,6 +125,18 @@ Dans un premier temps, l'ensemble des variables potentiellement explicatives est
 </figcaption>
 </figure>
 ### GBM
+
+    ## [1] "13"
+
+    ## Loading required package: gbm
+
+    ## Loading required package: splines
+
+    ## Loaded gbm 2.1.1
+
+    ## [1] "24"
+    ## [1] "35"
+    ## [1] "14"
 
 <figure style="text-align:center;">
 <a name="gbm_picardiNPC"></a><img src="FS_traitements_NPCPicardie_files/figure-markdown_github/unnamed-chunk-7-1.png">
@@ -162,19 +173,19 @@ Analyses des variables sélectionnées pour les périodes 13 et 14
     ## Warning: In lm.fit(x, y, offset = offset, singular.ok = singular.ok, ...) :
     ##  extra argument 'na.rm' will be disregarded
 
-    ## Warning: Removed 109 rows containing non-finite values (stat_smooth).
+    ## Warning: Removed 108 rows containing non-finite values (stat_smooth).
 
-    ## Warning: Removed 109 rows containing missing values (geom_point).
+    ## Warning: Removed 108 rows containing missing values (geom_point).
 
 <figure style="text-align:center;">
 <a name="Correl_cinitiale"></a><img src="FS_traitements_NPCPicardie_files/figure-markdown_github/unnamed-chunk-12-1.png">
 <figcaption>
 </figcaption>
 </figure>
-Cartographie des variations
----------------------------
+Cartographie des facteurs explicatifs
+-------------------------------------
 
-![](/media/sf_GIS_ED/Dev/Scripts/master//Fichiers_suivis/Traitements/Fichiers/p_mf_31_22.png)
+![](/media/sf_GIS_ED/Dev/Scripts/master//Fichiers_suivis/Traitements/Fichiers/p_mf_31_22.png) ![](/media/sf_GIS_ED/Dev/Scripts/master//Fichiers_suivis/Traitements/Fichiers/var_climat_31_22.png) ![](/media/sf_GIS_ED/Dev/Scripts/master//Fichiers_suivis/Traitements/Fichiers/var_mf_31_22.png)
 
 Analyses des variables sélectionnées pour la période 35
 -------------------------------------------------------

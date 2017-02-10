@@ -125,11 +125,19 @@ variablecarto <- c("corgox_medequi9094","corgox_medequi9599","corgox_medequi0004
 style_classe <- "quantile"
 couleur <- "Spectral"
 carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=reg,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=5,ggsavewidth=5.5)
+
+nomfichier <- "effectif_31_22"
+l_legend <- "Nombre d'échantillon"
+variablecarto <- c("eff9094","eff9599","eff0004","eff0509","eff1014") #variable à spatialiser
+style_classe <- "quantile"
+couleur <- "Spectral"
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=reg,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=5,ggsavewidth=5.5)
+
 ```
 
 ```{r map_carbo_fr_picar, echo=FALSE, eval=TRUE,results = 'asis'}
 # Pour insérer l'image
-nomfichier <- c("Median_evolu_c31_22.png","Median_diff_c31_22.png","corgox_31_22.png")
+nomfichier <- c("Median_evolu_c31_22.png","Median_diff_c31_22.png","corgox_31_22.png","effectif_31_22.png")
 fichiers <- paste(repsortie,nomfichier,sep="")
 cat(paste("![](",fichiers,")",sep=""))
 ```
@@ -205,12 +213,12 @@ Dans un premier temps, l'ensemble des variables potentiellement explicatives est
 Rcovarclimato <- c("std_temp_janv","std_temp_juil","std_pluie_janv","std_pluie_juil")
 typeclimato <- replicate(length(Rcovarclimato), "climat")
 #
-Rcovaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000")
+Rcovaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000","eff9094","eff9599","eff0004","eff0509","eff1014")
 typeoccup <- replicate(length(Rcovaroccup), "occup")
 
 type <- c(typeclimato,typeoccup)
-Rcovar <- c(Rcovarclimato,Rcovaroccup,"diff24")
-vNames <- c("diffmedian24",Rcovar)
+Rcovar <- c(Rcovarclimato,Rcovaroccup,"diff13")
+vNames <- c("diffmedian13",Rcovar)
 ########################
 
 # Lecture de la table & sélection
@@ -218,7 +226,7 @@ lvNames <- length(vNames)
 reg_focus <- c("31","22")
 dcast.focus <- dcast.bdat[(dcast.bdat$code_reg %in% reg_focus) & complete.cases(dcast.bdat[,vNames]),][,vNames]
 
-res.pca <- PCA(dcast.focus[,!names(dcast.focus) %in% "diff24"], quanti.sup=1,graph = FALSE)
+res.pca <- PCA(dcast.focus[,!names(dcast.focus) %in% "diff13"], quanti.sup=1,graph = FALSE)
 #fviz_screeplot(res.pca, ncp=10)
 
 pca <- fviz_pca_var(res.pca, axes = c(1,2),col.var="contrib") +
@@ -226,17 +234,17 @@ scale_color_gradient2(low="white", mid="blue",
                   high="red", midpoint=50) + theme_minimal()
 pca
 
-fviz_pca_biplot(res.pca, label="var",habillage=dcast.focus$diff24,axes=c(1,2),
+fviz_pca_biplot(res.pca, label="var",habillage=dcast.focus$diff13,axes=c(1,2),
      addEllipses=FALSE, ellipse.level=0.95, ggtheme = theme_minimal())
 ```
 
 ### GBM
 
-```{r,eval=FALSE,echo=FALSE}
+```{r,eval=TRUE,echo=FALSE}
 Rcovarclimato <- c("std_temp_janv","std_temp_juil","std_pluie_janv","std_pluie_juil")
 typeclimato <- replicate(length(Rcovarclimato), "climat")
 #
-Rcovaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000","var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010","var_cop1988_2010","var_cop1979_2010")
+Rcovaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000","var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010","var_cop1988_2010","var_cop1979_2010","eff9094","eff9599","eff0004","eff0509","eff1014")
 
 typeoccup <- replicate(length(Rcovaroccup), "occup")
 
@@ -303,9 +311,9 @@ p_bdat <- ggplot(melted_focus, aes(x=annees,y=value)) +
         axis.title = element_text(face="bold"),
         axis.text.x=element_text(size = 11))
 
-melted.ra_focus <- melted.ra[melted.ra$code_reg %in% reg_focus & melted.ra$variable %in% c("p_c","p_mf","p_prairie"),]
+melted.ra_focus <- melted.ra[melted.ra$code_reg %in% reg_focus & melted.ra$variable %in% c("p_c","p_mf","p_prairie","p_cop"),]
 
-colors <- brewer.pal(3,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
+colors <- brewer.pal(4,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
 p_ra <- ggplot(melted.ra_focus) +
             geom_boxplot(aes(x=annees,y=value,col=variable))+
             #facet_wrap(~zonage_simple,scales="free")+
@@ -325,36 +333,38 @@ grid.arrange(p_bdat,p_ra)
 
 ```{r,echo=FALSE,eval=TRUE,warning=FALSE,fig.height=12, fig.width=12,fig.cap = fig$cap("corplot_NPC_picardie","Matrice de correlation"),fig.align="center"}
 
-Rcovar <- c("var_mf1970_2010","var_mf1979_2010","var_mf1988_2000","var_mf1970_2000","var_sfp1970_2000","var_sfp1988_2000","std_pluie_janv","std_pluie_juil")
+Rcovar <- c("var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_mf2000_2010","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_sfp1970_2000","var_sfp1988_2000","std_pluie_janv","std_pluie_juil","eff9094","eff9599","eff0004","eff0509","eff1014")
 vNames <- c("diffmedian13","diffmedian14",Rcovar)
 
 d <- dcast.bdat[(dcast.bdat$code_reg %in% reg_focus) & complete.cases(dcast.bdat[,vNames]),][,vNames]
 M <- cor(d[,1:2],d[,3:length(vNames)])
-corrplot(M, method="circle")
+corrplot(M, method="circle",addCoef.col = "black")
 ```
 
-```{r,echo=FALSE,eval=TRUE,fig.height=7, fig.width=7,fig.cap = fig$cap("Graphs_correl_NPC_picardie","Matrice de correlation"),fig.align="center"}
-periodc <- "diffmedian13"
-Rcovar <- c("var_mf1979_2010","var_mf1988_2000")
-vNames <- c("diffmedian13","diff13",Rcovar)
+```{r,echo=FALSE,eval=TRUE,fig.height=12, fig.width=12,fig.cap = fig$cap("Graphs_correl_NPC_picardie","Matrice de correlation"),fig.align="center"}
+
+periodc <- "diffmedian14"
+#Rcovar <- c("var_mf1979_2010","var_mf1988_2000")
+Rcovar <- c("var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_mf2000_2010","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000")
+vNames <- c("diffmedian14","diff14",Rcovar)
 
 p <- list()
 for(i in Rcovar){
     dataplot <- dcast.bdat[(dcast.bdat$code_reg %in% reg_focus) & complete.cases(dcast.bdat[,vNames]),][,vNames]
 
-    p[[i]] <- ggplot(dataplot, aes_string(i,"diffmedian13")) +
-                geom_point(aes(colour = factor(diff13)),alpha = 0.8, size = 1) +
+    p[[i]] <- ggplot(dataplot, aes_string(i,"diffmedian14")) +
+                geom_point(aes(colour = factor(diff14)),alpha = 0.8, size = 1) +
                 scale_color_manual(values=colors,name="Test statistique")+
-                scale_x_continuous(i)+scale_y_continuous("Différence teneur en carbone organique")+
+                scale_x_continuous(i)+scale_y_continuous("Différence teneur en carbone organique (14)")+
                 theme(plot.title = element_text(size = 14, face = "bold"), 
                 text = element_text(size = 12),
                 axis.title = element_text(face="bold"),
                 axis.text.x=element_text(size = 11))+ labs(title=i)+
-                annotate("text", x=0, y=5, label=lm_eqn(lm(dataplot[,"diffmedian13"]~dataplot[,i], dataplot)), parse=TRUE)+
+                annotate("text", x=0, y=5, label=lm_eqn(lm(dataplot[,"diffmedian14"]~dataplot[,i], dataplot)), parse=TRUE)+
                 geom_smooth(method = "lm", se = FALSE,color="black")    
 }
  
-do.call(grid_arrange_shared_legend,c(p,list(nrow=1,ncol=2,position="bottom")))
+do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=4,position="bottom")))
 ```
 
 ```{r,echo=FALSE,eval=FALSE,fig.height=12, fig.width=16,fig.cap = fig$cap("boxplot_NPC_picardie","boxplot NPC_picardie"),fig.align="center"}
@@ -367,7 +377,7 @@ vNames <- "classe_var_mf1988_2010"
 
 melted_focus <- melted.bdatdiff[complete.cases(melted.bdatdiff[,i]) & (melted.bdatdiff$code_reg %in% reg_focus) & (melted.bdatdiff$period %in% diffmedian),]
 
-ggplot(melted_focus,aes_string(x=vNames,y="diffmedian")) +
+ggplot(melted_focus,aes_string(x=vNames,y="diffmedian"))
               geom_boxplot()+
               geom_point(position=position_jitter(width=0.3), alpha=0.5,aes(colour = diff)) +
               facet_wrap(~period)+
@@ -401,7 +411,7 @@ ggplot(dcast.focus, aes_string(x,y)) +
 
 ```
 
-## Cartographie des variations
+## Cartographie des facteurs explicatifs
 
 ```{r,echo=FALSE,eval=FALSE}
 tablecarto <- "dm_vecteurs.canton" 
@@ -418,11 +428,32 @@ reg <- "31|22"
 
 nomfichier <- "p_mf_31_22"
 carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=reg,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=7,ggsavewidth=5.5)
+
+#
+variablecarto <- c("var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_mf2000_2010") #variable à spatialiser
+l_legend <- "Variation des surfaces en maïs fourrage (% de SAU)"#label de la variable
+nclasse <- 4 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "quantile" #"pretty"#"jenks","fixed"
+couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+
+nomfichier <- "var_mf_31_22"
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=reg,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=7,ggsavewidth=5.5)
+
+# Climat
+variablecarto <- c("std_pluie_janv","std_pluie_juil") #variable à spatialiser
+l_legend <- "Variabilité 1971-2000 mensuelle (mm) "#label de la variable
+nclasse <- 4 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "quantile" #"pretty"#"jenks","fixed"
+couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+
+nomfichier <- "var_climat_31_22"
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=reg,nrowlayout=1,ncollayout=2,position="bottom",ggsaveheight=5,ggsavewidth=7)
+
 ```
 
 ```{r map_carbo_fr_picar_occup, echo=FALSE, eval=TRUE,results = 'asis'}
 # Pour insérer l'image
-nomfichier <- "p_mf_31_22.png"
+nomfichier <- c("p_mf_31_22.png","var_climat_31_22.png","var_mf_31_22.png")
 fichiers <- paste(repsortie,nomfichier,sep="")
 cat(paste("![](",fichiers,")",sep=""))
 ```
@@ -487,13 +518,15 @@ ggplot(dataplot, aes_string(Rcovar,periodc)) +
                 geom_smooth(method = "lm", se = FALSE,color="black")    
 ```
 
-```{r,echo=FALSE,eval=TRUE,fig.height=7, fig.width=7,fig.cap = fig$cap("boxplot_diffC_occup","boxplot NPC_picardie"),fig.align="center"}
+```{r,echo=FALSE,eval=TRUE,fig.height=7, fig.width=15,fig.cap = fig$cap("boxplot_diffC_occup","boxplot NPC_picardie"),fig.align="center"}
 # Temporaire
 
 # Analyse sur les périodes retenues et les régions identifiée
 diffmedian <- c("14","24","15","25")
 
-vNames <- c("diff_var_prairie1988_2010","diff_var_sfp1988_2010","diff_var_c1988_2010","diff_var_mf1988_2010")
+vNames <- "classe_var_mf1988_2010"
+classe <- c("[-10.8,-1.22]","(-1.22,-0.296]","(-0.296,0.417]","(0.417,1.75]","(1.75,16.6]")
+
 
 # Pour Picardie et Pas de Calais (31,22)
 p <- list()
@@ -501,6 +534,9 @@ for(i in vNames){
     reg_focus <- c("31","22")#code_region d'intérêts
     # Sélection
     melted_focus <- melted.bdatdiff[complete.cases(melted.bdatdiff[,i]) & (melted.bdatdiff$code_reg %in% reg_focus) & (melted.bdatdiff$period %in% diffmedian),]
+
+    #Pour l'ordre des levels
+    melted_focus$classe_var_mf1988_2010 <- factor(melted_focus$classe_var_mf1988_2010,levels=classe)
 
     p[[i]] <- ggplot(melted_focus,aes_string(x=i,y="diffmedian")) +
               geom_boxplot()+
@@ -515,6 +551,6 @@ for(i in vNames){
                     axis.text.x = element_text(size = 11))
              
 }
-do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
+do.call(grid_arrange_shared_legend,c(p,list(nrow=1,ncol=1,position="bottom")))
 ```
 

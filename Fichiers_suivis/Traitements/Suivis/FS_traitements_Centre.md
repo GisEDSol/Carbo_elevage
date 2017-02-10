@@ -170,15 +170,21 @@ Cartographie des variations
 
     ## No id variables; using all as measure variables
 
+    ## Warning in classIntervals(melt.map, n = nclasse, style = style_classe,
+    ## digits = 2, : var has missing values, omitted in finding classes
+
+    ## Warning in classIntervals(melt.map, n = nclasse, style = style_classe,
+    ## digits = 2, : var has missing values, omitted in finding classes
+
+    ## Warning in classIntervals(melt.map, n = nclasse, style = style_classe,
+    ## digits = 2, : var has missing values, omitted in finding classes
+
 <figure>
 <img src="FS_traitements_Centre_files/figure-markdown_github/unnamed-chunk-10-1.png">
 <figcaption>
 </figcaption>
 </figure>
-    ## TableGrob (2 x 1) "arrange": 2 grobs
-    ##   z     cells    name              grob
-    ## 1 1 (1-1,1-1) arrange   gtable[arrange]
-    ## 2 2 (2-2,1-1) arrange gtable[guide-box]
+![](/media/sf_GIS_ED/Dev/Scripts/master//Fichiers_suivis/Traitements/Fichiers/p_olea24.png)
 
 Analyses simples avec boxplot
 -----------------------------

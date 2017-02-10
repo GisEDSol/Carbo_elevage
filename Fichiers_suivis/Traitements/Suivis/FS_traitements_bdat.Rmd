@@ -103,7 +103,7 @@ La figure `r fig$ref("cdf_fr",link=TRUE)` présente les courbes de fréquences c
 
 **Ces observations mettent en évidence une diminution des teneurs en carbone entre les périodes 1990-1999 et 2000-2009 et une légère augmentation pour la période 2010-2014.**
 
-```{r cdf_fr,highlight=TRUE,echo=FALSE,eval=TRUE,warning=FALSE,error=FALSE,fig.height=5, fig.width=6,fig.cap = fig$cap("cdf_fr","Courbe de fréquences cumulées"),fig.align="center"}
+```{r cdf_fr,highlight=TRUE,echo=FALSE,eval=TRUE,warning=FALSE,error=FALSE,fig.height=5, fig.width=7,fig.cap = fig$cap("cdf_fr","Courbe de fréquences cumulées"),fig.align="center"}
 
 #Problème avec l'ouverture de la table
 period <- c("9094","9599","0004","0509","1014")
@@ -145,11 +145,12 @@ bdatsummary <- lapply(bdatsummary, do.call, what = rbind)
 La distribution des teneurs en carbone organique par période est présentée dans la figure `r fig$ref("boxplot_fr",link=TRUE)` et les principales statistiques sont présentées dans le tableau ci-dessus. La tendance de diminution des teneurs observée dans la figure `r fig$ref("cdf_fr",link=TRUE)` est également constatée dans ces deux éléments. La période 2000-2004 montre la valeur médiane la plus faible avec une valeur de `r bdatsummary$value["0004","Median"]` g/kg. Les valeurs les plus importantes sont observées pour les périodes 1990-1994 et 1995-1999 avec respectivement des teneurs en carbone organique de `r bdatsummary$value["9094","Median"]` et `r bdatsummary$value["9599","Median"]`. En terme de tendance, on remarque une augmentation des teneurs pour la période 2010-2014 avec une médiane des valeurs de `r bdatsummary$value["1014","Median"]`. Ces évolutions sont très légèrement marquées sur la figure `r fig$ref("boxplot_fr",link=TRUE)` où l'évolution moyenne des teneurs en carbone organique baisse légèrement après la période 1995-1999.
 
 ```{r summarybdatfrancetable,highlight=TRUE,echo=FALSE,eval=TRUE,results = 'asis'}
-pander(bdatsummary[[1]],caption = "Statistiques descriptives des teneurs en carbone organique par périodes")
+pander(bdatsummary[[1]],caption = "Statistiques descriptives des teneurs en carbone organique pour les différentes périodes")
 ```
 
 ```{r boxplot_fr,highlight=TRUE,echo=FALSE,eval=TRUE,fig.height=5, fig.width=6,fig.cap = fig$cap("boxplot_fr","Boxplot des teneurs en carbone organiques par périodes"),fig.align="center"}
-p <- ggplot(melted.bdat[(melted.bdat$value > 17) & (melted.bdat$value < 45) ,], aes(x=annees,y=value)) + 
+
+p <- ggplot(melted.bdat, aes(x=annees,y=value)) + 
   #geom_violin(trim=FALSE)+
   #geom_boxplot(width=0.1, fill="white")+
   geom_boxplot()+
@@ -160,11 +161,25 @@ p <- ggplot(melted.bdat[(melted.bdat$value > 17) & (melted.bdat$value < 45) ,], 
         text = element_text(size = 12),
         axis.title = element_text(face="bold"),
         axis.text.x=element_text(size = 11))
-p  
+
+p_zoom <- ggplot(melted.bdat[(melted.bdat$value > 17) & (melted.bdat$value < 45) ,], aes(x=annees,y=value)) + 
+  #geom_violin(trim=FALSE)+
+  #geom_boxplot(width=0.1, fill="white")+
+  geom_boxplot()+
+  #scale_color_manual(values=colors,name="Années")+
+  geom_smooth(method = "loess", se=FALSE, color="black", aes(group=1))+
+  scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone organique (g/kg)")+
+  theme(plot.title = element_text(size = 14, face = "bold"), 
+        text = element_text(size = 12),
+        axis.title = element_text(face="bold"),
+        axis.text.x=element_text(size = 11))
+
+grid.arrange(p,p_zoom,nrow=1,ncol=2)
+
 #ggsave(p,file = paste(repsortie,"boxplotbdat.png",sep=""), width = 6, height = 5)  
 ```
 
-Les résultats du test de Wilcoxon présentés ci-dessous montrent que **les différences globales entre les périodes sont significatives pour [1990-1994 et 2000-2004], [1995-1999 et 2000-2004], [1995-1999 et 2005-2009] et [2000-2004 et 2010-2014]**. Ces résulats sont à prendre avec mesure, car réalisé sur l'ensemble des cantons. Ils confirment néanmoins les tendances observées sur les courbes de fréquences cumulées (voir figure `r fig$ref("cdf_fr",link=TRUE)`).
+Les résultats du test de Wilcoxon présentés ci-dessous montrent que **les différences globales entre les périodes sont significatives pour [1990-1994 et 2000-2004], [1995-1999 et 2000-2004], [1995-1999 et 2005-2009] et [2000-2004 et 2010-2014]**. Ces résulats sont à prendre avec mesure, car réalisés sur l'ensemble des cantons. Ils confirment néanmoins les tendances observées sur les courbes de fréquences cumulées (voir figure `r fig$ref("cdf_fr",link=TRUE)`).
 
 ```{r,highlight=TRUE,eval=TRUE,echo=TRUE}
 pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"])
@@ -186,14 +201,26 @@ nclasse <- 5
 style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
 couleur <- "YlOrRd" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
 l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
-nomfichier <- "corgoxmed_period_fr2" #Nom du fichier
+nomfichier <- "corgoxmed_period_fr" #Nom du fichier
 
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=5,position="bottom",ggsaveheight=5,ggsavewidth=20)
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=7,ggsavewidth=9.2)
+
+variable <- "eff"
+period <- c("9094","9599","0004","0509","1014") #
+variablecarto <- paste(variable,period,sep="")#variables à cartographier
+nclasse <- 5 
+style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
+couleur <- "YlOrRd" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+l_variable <- "Nombre d'échantillon par canton" #label de la variable
+nomfichier <- "effectif_bdat" #Nom du fichier
+
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=7,ggsavewidth=9.2)
 ```
 
 ```{r map_carbo_fr, echo = F, results = 'asis'}
 # Pour insérer l'image
-fichiers <- paste(repsortie,"corgoxmed_period_fr.png",sep="")
+nomfichier <- c("corgoxmed_period_fr.png","effectif_bdat.png")
+fichiers <- paste(repsortie,nomfichier,sep="")
 cat(paste("![](",fichiers,")",sep=""))
 ```
 
@@ -237,7 +264,7 @@ scale_color_gradient2(low="white", mid="blue",
 La figure `r fig$ref("pca_fr",link=TRUE)` présente la distribution des variables sur les axes 1 et 2 de l'ACP. Environ `r round(res.pca$eig[1,2]+res.pca$eig[2,2])` pourcent de l'information est contenu dans ces deux premiers axes. Description de la distribution des variables dans l'espace des ACP : 
 
 - L'axe 1 représente `r round(res.pca$eig[1,2])`% de l'information. Cet axe est fortement associé à l'occupation du sol. Les différentes variables associées aux grandes cultures et à l'élevage sont bien représentées et ont une forte contribution dans la variance du jeu de données. Les statistiques liées à la part d'STH, de prairies, de SFP et d'OTEX polyculture élevage sont corrélées et sont opposées aux variables associées aux grandes cultures (proportion des surfaces de céréales/SAU et OTEX grandes cultures). 
-- L'axe 2 représente `r round(res.pca$eig[1,2])`% de l'information. La correlation avec les variables est moins nette que l'axe 1. Les variables de type climat et topographie sont légèrement correlées à cet axe. D'autres variables d'occupation du sol sont associées à l'axe 2. Celles-ci concernent les zones agricoles hétérogènes ($clc_25_90$), les zones de maïs fourrage et les zones qui ont une densité importante en UGBTA. Logiquement, ces deux dernière variables sont liées.
+- L'axe 2 représente `r round(res.pca$eig[2,2])`% de l'information. La correlation avec les variables est moins nette que l'axe 1. Les variables de type climat et topographie sont légèrement correlées à cet axe. D'autres variables d'occupation du sol sont associées à l'axe 2. Celles-ci concernent les zones agricoles hétérogènes ($clc_25_90$), les zones de maïs fourrage et les zones qui ont une densité importante en UGBTA. Logiquement, ces deux dernière variables sont liées.
 
 - Plusieurs variables ont un faible impact et seront écartées par la suite :
   - Pour l'occupation du sol : les variables liées à Corine Land Cover
@@ -246,11 +273,11 @@ La figure `r fig$ref("pca_fr",link=TRUE)` présente la distribution des variable
 Dans cet espace, la teneur en carbone organique initiale (période 90-94) est moyennement représentée (-50% de contribution). Cette variable est directement opposée aux variables climatiques ce qui met en valeur l'importance de ce facteur dans la distribution spatiale des teneurs à l'échelle de la France.
 Dans une moindre mesure, la teneur en CO est correlée aux surfaces fourragères principales et aux UGBTA.
 
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=7,fig.cap = fig$cap("pca_fr",""),fig.align="center"}
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=8, fig.width=8,fig.cap = fig$cap("pca_fr",""),fig.align="center"}
 pca
 # revoir cette discussion sur l'intérêt de la PCA pour la sélection des variables. A titre de conclusion, c'est assez intéressant.http://stats.stackexchange.com/questions/27300/using-principal-component-analysis-pca-for-feature-selection
 ```
-Dans la figure `r fig$ref("pcabiplot_fr",link=TRUE)`, les échantillons sont rajoutées dans l'espace de correlation des variables. La représentation des échantillons classés par teneurs en carbone organique permet de visualiser le lien entre les variables et ...(mal dit).
+Dans la figure `r fig$ref("pcabiplot_fr",link=TRUE)`, les échantillons sont rajoutés dans l'espace de correlation des variables. La représentation des échantillons classés par teneurs en carbone organique permet de visualiser le lien entre les variables et ...(mal dit).
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=7,fig.cap = fig$cap("pcabiplot_fr",""),fig.align="center"}
 fviz_pca_biplot(res.pca, label="var",habillage=dcast.bdat_variables$classe_C,
@@ -273,13 +300,13 @@ L'algo permet d'ajuster un modèle en fonction d'un processus itératif. A chaqu
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,error=FALSE}
 
 ##### Sélection des variables explicatives (revoir cette sélection, se baser sur un tableau à charger en fonction des périodes à analyser)
-Rcovarclimato <- c("hpluie_an","jfroids_an","ampli_t_juil_janv","pluie_ecart_janv")#,"typo_clim")#,"pluie_ecart_juil","ampli_t_juil_janv","jpluie_janv","jpluie_juil",ttemp_an,"jchauds_an"
+Rcovarclimato <- c("hpluie_an","jfroids_an","ampli_t_juil_janv","pluie_ecart_janv","typo_clim","pluie_ecart_juil","ampli_t_juil_janv","jpluie_janv","jpluie_juil","ttemp_an","jchauds_an")
 typeclimato <- replicate(length(Rcovarclimato), "climat")
 
 Rcovartopo <- "altimean"
 typetopo <- replicate(length(Rcovartopo), "topographie")
 
-Rcovaroccup <- c("p_sfp1988","grdcultures1988","elevagehorsol1988","polyelevage1988","elevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_c1988","p_c1970","p_c1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","ugbta1988","zonage_simple","zonage_cplt","p_cop1970","p_cop1979","p_cop1988")#"clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90"
+Rcovaroccup <- c("p_sfp1988","grdcultures1988","elevagehorsol1988","polyelevage1988","elevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_c1988","p_c1970","p_c1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","ugbta1988","zonage_simple","zonage_cplt","p_cop1970","p_cop1979","p_cop1988","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90")
 typeoccup <- replicate(length(Rcovaroccup), "occup")
 
 type <- c(typeclimato,typetopo,typeoccup)
@@ -291,6 +318,9 @@ vNames <- c("corgox_medequi9599",Rcovar) #9599 car meilleure représentation spa
 id <- "id_geofla"# Nom du champs présentant un identifiant unique
 d <- dcast.bdat[,c(vNames,id)]
 d$typo_clim <- as.factor(d$typo_clim)
+
+# Log
+#d[vNames[1]] <- log(d[vNames[1]])
 
 trainrows <- runif(nrow(d)) > 0.3
 train <- d[trainrows,] #Données pour l'apprentissage
@@ -306,7 +336,7 @@ registerDoMC(4)
 # Pour les paramètres
 #http://stats.stackexchange.com/questions/25748/what-are-some-useful-guidelines-for-gbm-parameters
 
-trControl <- trainControl(method = "cv",p=0.8,number=5)
+trControl <- trainControl(method = "cv",p=0.8,number=100)
 tuneGrid <- expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 20)
 
 mgbm_fr <- train(formula,data=train,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T,na.action = na.omit)
@@ -316,23 +346,46 @@ save(mgbm_fr,file=paste(repsortie,"mgbm_fr.RData",sep=""))
 # Test rapide sur qq classes de teneurs en carbone organique...
 
 id <- "id_geofla"# Nom du champs présentant un identifiant unique
-d_classC <- d[(d[,1] > 14) & (d[,1] < 45),]
-
-trainrows <- runif(nrow(d)) > 0.3
-train <- d_classC[trainrows,] #Données pour l'apprentissage
-test <- d_classC[!trainrows,] #Données pour test
-
-formula <- as.formula(paste(vNames[1],"~",paste(vNames[-1],collapse="+"),sep=""))
+classe_valeur <- classIntervals(d[,1],n=5,style="quantile",digits=2,na.rm=TRUE)[[2]]
+d[,"classeC"] <- cut(d[,1] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
+#d_classC <- d[(d[,1] > 14) & (d[,1] < 45),]
 
 # France entière
-set.seed(157) #Pour assurer la reproductibilité
+set.seed(157) 
 registerDoMC(4)
 
-trControl <- trainControl(method = "cv",p=0.8,number=5)
-tuneGrid <- expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 20)
+p <- list()
+for(i in levels(d[,"classeC"])){
+  print(i)
+  d_classC <- d[d$classeC %in% i,]
+  trainrows <- runif(nrow(d)) > 0.3
+  train <- d_classC[trainrows,] #Données pour l'apprentissage
+  test <- d_classC[!trainrows,] #Données pour test
 
-mgbm_fr_classC <- train(formula,data=train,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T,na.action = na.omit)
-plot(varImp(mgbm_fr_classC), top = 10)
+  formula <- as.formula(paste(vNames[1],"~",paste(vNames[-1],collapse="+"),sep=""))
+
+  trControl <- trainControl(method = "cv",p=0.8,number=5)
+  tuneGrid <- expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 20)
+
+  mgbm_fr_classC <- try(train(formula,data=train,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T,na.action = na.omit),silent=TRUE)
+
+  if(class(mgbm_fr_classC)[1]=="try-error"){
+    print("Pas assez d'échantillons pour la modélisation")
+    next
+  }
+
+  varimport <- varImp(mgbm_fr_classC)
+  varimport <- as.data.frame(varimport[[1]])
+  varimport$variable <- rownames(varimport)
+  colnames(varimport) <- c("importance","variable")
+  varimport$variable <- reorder(varimport$variable, varimport$importance)
+  varimport <- varimport[1:10,]
+  varimport$type <- gsub2(as.character(Rcovar),type,as.character(varimport$variable))#Ajout du type de facteurs
+
+  p[[i]] <- ggplot(varimport, aes(x = variable, y = importance,fill=type)) + 
+  geom_bar(stat = "identity") + coord_flip() + labs(title=i)
+}
+save(p,file=paste(repsortie,"p_mgbm_classeC.RData",sep=""))
 
 # Prédiction sur le jeu test
 #pred <- predict(mgbm_fr$finalModel,test, n.trees = mgbm_fr$bestTune$n.trees)
@@ -353,28 +406,29 @@ plot(varImp(mgbm_fr_classC), top = 10)
 Les principales variables explicatives de la distribution des teneurs en carbone organique sont présentées figure `r fig$ref("gbm_fr",link=TRUE)`. Les facteurs les plus importants sont d'ordre climatiques et topographiques. Ces résultats confirment les premières observations de l'ACP.
 Les variables d'occupation du sol ont une influence secondaire et celles qui agissent significativement sont la proportion des exploitations ayant une OTEX de type élevage en 1988, la proportion de surface fourragère principale en 1988 et les proportions de maïs fourrage dans la SAU pour les années 1988, 1979 et 1970. Parmis ces variables d'occupation du sol, l'années 1988 explique bien les teneurs en carbone organique pour la période 1995-1999.
 
-**Ces résultats mettent en valeur l'intérêt de travailler sur différentes zones géographiques aux conditions climatiques homogènes.**
+**En conclusion** Ces résultats montrent le caractère multifactoriel de la répartition des teneurs en carbone organique à l'échelle national. Pour évaluer l'effet de l'évolution de l'occupation du sol sur les teneurs en C, il est nécessaire de travailler sur des zones géographiques contextes topographiques et climatiques homogènes.
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("gbm_fr","Importance des variables explicatives"),fig.align="center"}
 load(paste(repsortie,"mgbm_fr.RData",sep=""))
 plot(varImp(mgbm_fr), top = 10)
-
-#plotData <- do.call(rbind,plotData)
-#qplot(value, species, data=plotData, facets = type ~ var, geom='smooth', span = 0.5)
 ```
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=10, fig.width=10,fig.cap = fig$cap("gbm_classeC_fr","Importance des variables explicatives"),fig.align="center"}
+load(paste(repsortie,"p_mgbm_classeC.RData",sep=""))
+do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=3,position="bottom")))
+```
+
 
 ```{r gbmstratification,eval=FALSE,echo=FALSE}
 # Stratification par zonage des grandes régions d'élevage
 set.seed(157) #Pour assurer la reproductibilité
 registerDoMC(4)
 
-#dcast.bdat$classe_altimean
-#dcast.bdat$typo_clim
 p <- list()
 for(i in levels(as.factor(dcast.bdat$typo_clim))){
   print(i)
   d_typo <- dcast.bdat[dcast.bdat$typo_clim %in% i,vNames]
-#  d <- dcast.bdat[complete.cases(dcast.bdat[,c(vNames,"zonage_cplt")]) & dcast.bdat$typo_clim %in% i,vNames] # Pour supprimer les NA
+  #d_typo[vNames[1]] <- log(d_typo[vNames[1]])
   
   formula <- as.formula(paste(vNames[1],"~",paste(vNames[-1],collapse="+"),sep=""))
  
@@ -409,15 +463,104 @@ load(paste(repsortie,"p_mgbm_stratefr.RData",sep=""))
 do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
 ```
 
-#### Graphiques de correlation
+```{r gbmstratificationelevage,eval=FALSE,echo=FALSE}
+# Stratification par zonage des grandes régions d'élevage
+set.seed(157) #Pour assurer la reproductibilité
+registerDoMC(4)
 
+#dcast.bdat$classe_altimean
+p <- list()
+for(i in levels(as.factor(dcast.bdat$zonage_simple))){
+  print(i)
+  d_typo <- dcast.bdat[dcast.bdat$zonage_simple %in% i,vNames]
+ # d_typo[vNames[1]] <- log(d_typo[vNames[1]])
+  
+  formula <- as.formula(paste(vNames[1],"~",paste(vNames[-1],collapse="+"),sep=""))
+ 
+  trControl <- trainControl(method = "cv",p=0.8,number=5)
+  tuneGrid <-  expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:50)*10,shrinkage = 0.1,n.minobsinnode = 20)
+
+  mgbm_elevage <- try(train(formula,data=d_typo,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T,na.action = na.omit),silent=TRUE)
+
+  if(class(mgbm_elevage)[1]=="try-error"){
+    print("Pas assez d'échantillons pour la modélisation")
+    next
+  }
+
+  varimport <- varImp(mgbm_elevage)
+  varimport <- as.data.frame(varimport[[1]])
+  varimport$variable <- rownames(varimport)
+  colnames(varimport) <- c("importance","variable")
+  #varimport <- varimport[order(varimport$importance,decreasing = TRUE),]
+  varimport$variable <- reorder(varimport$variable, varimport$importance)
+  varimport <- varimport[1:10,]
+  varimport$type <- gsub2(as.character(Rcovar),type,as.character(varimport$variable))#Ajout du type de facteurs
+
+  p[[i]] <- ggplot(varimport, aes(x = variable, y = importance,fill=type)) + 
+  geom_bar(stat = "identity") + coord_flip() + labs(title=i)
+}
+
+save(p,file=paste(repsortie,"p_mgbm_elevage.RData",sep=""))
+```
+Ci-dessous, commenter les résultats de la stratification avec les principales régions d'élevage
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=12,fig.cap = fig$cap("gbm_strat_elevage","Importance des variables explicatives"),fig.align="center"}
+load(paste(repsortie,"p_mgbm_elevage.RData",sep=""))
+do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=3,position="bottom")))
+```
+
+```{r gbmstratregion,eval=FALSE,echo=FALSE}
+# Stratification par région administrative
+set.seed(157) #Pour assurer la reproductibilité
+registerDoMC(4)
+
+p <- list()
+for(i in levels(as.factor(dcast.bdat$nom_region))){
+  print(i)
+  d_typo <- dcast.bdat[dcast.bdat$nom_region %in% i,vNames]
+#  d_typo[vNames[1]] <- log(d_typo[vNames[1]])
+  
+  formula <- as.formula(paste(vNames[1],"~",paste(vNames[-1],collapse="+"),sep=""))
+ 
+  trControl <- trainControl(method = "cv",p=0.8,number=5)
+  tuneGrid <-  expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:50)*10,shrinkage = 0.1,n.minobsinnode = 20)
+
+  mgbm_region <- try(train(formula,data=d_typo,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T,na.action = na.omit),silent=TRUE)
+
+  if(class(mgbm_region)[1]=="try-error"){
+    print("Pas assez d'échantillons pour la modélisation")
+    next
+  }
+
+  varimport <- varImp(mgbm_region)
+  varimport <- as.data.frame(varimport[[1]])
+  varimport$variable <- rownames(varimport)
+  colnames(varimport) <- c("importance","variable")
+  #varimport <- varimport[order(varimport$importance,decreasing = TRUE),]
+  varimport$variable <- reorder(varimport$variable, varimport$importance)
+  varimport <- varimport[1:10,]
+  varimport$type <- gsub2(as.character(Rcovar),type,as.character(varimport$variable))#Ajout du type de facteurs
+
+  p[[i]] <- ggplot(varimport, aes(x = variable, y = importance,fill=type)) + 
+  geom_bar(stat = "identity") + coord_flip() + labs(title=i)
+}
+
+save(p,file=paste(repsortie,"p_mgbm_strateregion.RData",sep=""))
+```
+Ci-dessous, commenter les résultats de la stratification avec les types de climat
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=15,fig.cap = fig$cap("gbm_region_fr","Importance des variables explicatives"),fig.align="center"}
+load(paste(repsortie,"p_mgbm_strateregion.RData",sep=""))
+do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=3,position="bottom")))
+```
+
+#### Graphiques de correlation
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=10,fig.cap = fig$cap("correlation","Graphiques de correlation"),fig.align="center"}
 
 Rcovar <- c("pluie_ecart_janv","hpluie_an","altimean","jfroids_an","p_sfp1988","polyelevage1988","ampli_t_juil_janv","p_prairie1988","p_mf1979","p_sfp1970","elevagehorsol1988","p_mf1970","p_mf1988","p_c1979","grdcultures1988")
 vNames <- c("corgox_medequi9599",Rcovar) #9599 car meilleure représentation spatiale, il faudra mieux justifier l'étude de cette variable
 
-dataplot <- dcast.bdat[complete.cases(dcast.bdat[,vNames]),][,vNames]
 
 xlabel <- "Pluie annuelle (mm)"
 ylabel <- "Carbone organique (g/kg)"
@@ -429,6 +572,7 @@ for(i in period){
   c_period <- paste("corgox_medequi",i,sep="")
   
   dataplot <- dcast.bdat[complete.cases(dcast.bdat$classe_p_sfp1988) & complete.cases(dcast.bdat$hpluie_an) & complete.cases(dcast.bdat[,c_period]),]
+#  dataplot[,c_period] <- log(dataplot[,c_period])
   
   p[[i]] <- ggplot(dataplot, aes_string("hpluie_an",c_period)) +
             geom_point(aes(colour = factor(classe_p_sfp1988)),alpha = 0.8, size = 1) +
@@ -467,7 +611,6 @@ for(i in period){
             axis.text.x=element_text(size = 11))+ labs(title=i)+
             annotate("text", x=650, y=70, label=lm_eqn(lm(dataplot[,c_period]~dataplot[,"altimean"], dataplot)), parse=TRUE)+
             geom_smooth(method = "lm", se = FALSE,color="black")        
-
 }
    
 do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=3,position="bottom")))
@@ -687,7 +830,29 @@ Cette section développe une analyse des teneurs en carbone organique pour les p
 
 ###Cartographie des régions d'élevage
 
-Rajouter la cartographie des régions d'élevage
+```{r,echo=FALSE,eval=FALSE}
+tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
+variablecarto <- "zonage_cplt"
+style_classe <- "fixed"#Nombre de classes de valeurs pour la cartographie
+couleur <- "Paired" #RdYlBu
+l_variable <- "Principales régions d'élevage" #label de la variable
+nomfichier <- "reg_elevage_cplt" #Nom du fichier
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=1,position="bottom",ggsaveheight=7,ggsavewidth=10)
+
+variablecarto <- "zonage_simple"
+style_classe <- "fixed"#Nombre de classes de valeurs pour la cartographie
+couleur <- "Paired" #RdYlBu
+l_variable <- "Principales régions d'élevage" #label de la variable
+nomfichier <- "reg_elevage_simple" #Nom du fichier
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=1,position="bottom",ggsaveheight=7,ggsavewidth=10)
+```
+
+```{r map_regelevage_fr, echo = F, results = 'asis'}
+# Pour insérer l'image
+nomfichier <- c("reg_elevage_cplt.png","reg_elevage_simple.png")
+fichiers <- paste(repsortie,nomfichier,sep="")
+cat(paste("![](",fichiers,")",sep=""))
+```
 
 ### Analyses par régions d'élevage
 
@@ -750,11 +915,8 @@ boxplot_reg_elevage <- ggplot(melted.bdat_regelevage) +
 boxplot_reg_elevage
 ```
 
-  
+```{r boxplotbdat_classeoccup,highlight=TRUE,eval=FALSE,echo=FALSE}
 
-## Par classe de pourcentage d'occupation du sol (données du recensement agricole)
-
-```{r boxplotbdat_classeoccup,highlight=TRUE,eval=FALSE}
 for(i in id_class){
   melted.bdat_ra <- melted.bdat[complete.cases(melted.bdat[,i]),]
   names(melted.bdat_ra)[names(melted.bdat_ra)==i] <- "classe"
@@ -772,9 +934,7 @@ for(i in id_class){
 }
 ```
 
-# Résumé des statistiques 
-
-```{r,highlight=TRUE,eval=FALSE,message=FALSE, warning=FALSE, highlight=TRUE}
+```{r,highlight=TRUE,eval=FALSE,message=FALSE,echo=FALSE}
 # Ici, voir pour rajouter année+zonage_simple ou année+climato ou année+région
 bdatsummary_regelevage <- apply(melted.bdat["value"],2, function(x) tapply(x, list(melted.bdat[,"zonage_simple"],melted.bdat[,"annees"]),summary))
 bdatsummary_regelevage <- data.frame(bdatsummary_regelevage[[1]])

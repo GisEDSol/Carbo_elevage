@@ -133,7 +133,7 @@ id <- "id_geofla"
 
 if((is.character(dept)==FALSE) & (is.character(reg)==FALSE)){
  # map <- readOGR(dsn = dsn, tablecarto)
-#  dep <- readOGR(dsn = dsn, "dm_vecteurs.departement")
+ # dep <- readOGR(dsn = dsn, "dm_vecteurs.departement")
 
 #save(map,file=paste(repsortie,"map.RData",sep=""))
 #save(dep,file=paste(repsortie,"dep.RData",sep=""))
@@ -302,7 +302,7 @@ if(length(variablecarto)==1){
     	                geom_polygon(data=carto, aes(group=group, fill=fill),size=0.1) +
                      	geom_path(data=carto, aes(x=long,y=lat,group=group),color="white",size=0.1)+# Représenter les cantons
                      	geom_path(data=cartodep, aes(x=long,y=lat,group=group),color="black",size=0.1)+# Représenter les contours des départements
-                     	scale_fill_brewer(type=qual,palette = couleur,name=l_legend,guide = guide_legend(reverse=TRUE,nrow=1))+theme(legend.position="bottom")+
+                     	scale_fill_brewer(type=qual,palette = couleur,name=l_legend,guide = guide_legend(reverse=FALSE,nrow=2))+theme(legend.position="bottom")+
                      	theme(plot.title = element_text(size=12,face="bold"),
                            	text = element_text(size=12),
                            	axis.text =element_blank(),# change the theme options
@@ -371,6 +371,6 @@ ggsave(tt, file = paste(repsortie,nomfichier,".png",sep=""),width = ggsavewidth,
 
 }else{}
 
-return(tt)
+#return(tt)
 
 }#Fin

@@ -231,7 +231,7 @@ for(i in ListBDAT){
 ## La BDGSF (en cours)
 
 La base de données européenne des sols a été téléchargée sur ce [cite](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDB_data_1k_raster_intro/ESDB_1k_raster_data_intro.html). 
-Le shapefiles a des soucis de topologie et son découpage pose qq problèmes avec gdal (ERROR 1: TopologyException: Input geom 1 is invalid: Self-intersection at or near point 199362.60000010004 6798705.2000011709 at 199362.60000010004 6798705.2000011709). Une solution serai d'importer la base européenne vers la base postgis, controler la topo et faire le découpage ensuite.
+Le shapefiles semble avoir des soucis de topologie et son découpage pose qq problèmes avec gdal (ERROR 1: TopologyException: Input geom 1 is invalid: Self-intersection at or near point 199362.60000010004 6798705.2000011709 at 199362.60000010004 6798705.2000011709). Une solution serai d'importer la base européenne vers la base postgis, controler la topo et faire le découpage ensuite.
 
 Contrôle de la topologie avec QGis ([vérificateur de la topologie](http://smsgis.co.za/using-qgis-fix-geometry-errors/))
 

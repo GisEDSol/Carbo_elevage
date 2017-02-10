@@ -129,11 +129,19 @@ variablecarto <- c("corgox_medequi9094","corgox_medequi9599","corgox_medequi0004
 style_classe <- "quantile"
 couleur <- "Spectral"
 carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=reg,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=4.5,ggsavewidth=9)
+
+##
+nomfichier <- "effectif_53"
+l_legend <- "Nombre d'échantillon"
+variablecarto <- c("eff9094","eff9599","eff0004","eff0509","eff1014") #variable à spatialiser
+style_classe <- "quantile"
+couleur <- "Spectral"
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=reg,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=4.5,ggsavewidth=9)
 ```
 
 ```{r map_carbo_fr_bretagne, echo=F, eval=T,results = 'asis'}
 # Pour insérer l'image
-nomfichier <- c("Median_evolu_c53.png","Median_diff_c53.png","corgox_53.png")
+nomfichier <- c("Median_evolu_c53.png","Median_diff_c53.png","corgox_53.png","effectif_53.png")
 fichiers <- paste(repsortie,nomfichier,sep="")
 cat(paste("![](",fichiers,")",sep=""))
 ```
@@ -321,11 +329,22 @@ reg <- "53"
 
 nomfichier <- "p_elevagehorsol_53"
 carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=reg,nrowlayout=1,ncollayout=3,position="bottom",ggsaveheight=2.5,ggsavewidth=8)
+
+# std_pluie_juil
+variablecarto <- "std_pluie_juil"
+l_legend <- "Variabilité 1971-2010 mensuelle (mm)"#label de la variable
+nclasse <- 4 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "quantile" #"pretty"#"jenks","fixed"
+couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+
+nomfichier <- "std_pluiejuil_53"
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=reg,nrowlayout=1,ncollayout=3,position="bottom",ggsaveheight=3,ggsavewidth=8)
+
 ```
 
 ```{r map_occup_fr_bretagne, echo=FALSE, eval=TRUE,results = 'asis'}
 # Pour insérer l'image
-nomfichier <- c("p_prairie_53.png","p_elevagehorsol_53.png")
+nomfichier <- c("p_prairie_53.png","p_elevagehorsol_53.png","std_pluiejuil_53.png")
 fichiers <- paste(repsortie,nomfichier,sep="")
 cat(paste("![](",fichiers,")",sep=""))
 ```

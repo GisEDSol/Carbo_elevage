@@ -245,7 +245,7 @@ corrplot(M, method="circle",,addCoef.col = "black")
 load(paste(repsortie,"plot_mgbm_centre.RData",sep=""))
 tt <- do.call(grid.arrange,p)
 tt
-ggsave(tt, file = paste(repsortie,"plot_mgbm_bretagne.png",sep=""),width = 8, height = 8)  
+ggsave(tt, file = paste(repsortie,"plot_mgbm_centre.png",sep=""),width = 8, height = 8)  
 ```
 **En conclusion** 
 
@@ -301,16 +301,23 @@ do.call(grid_arrange_shared_legend,c(p,list(nrow=1,ncol=2,position="bottom")))
 tablecarto <- "dm_vecteurs.canton" 
 
 # Pour les prairies
-variablecarto <- c("p_cop1979","p_cop1988","p_cop1988","p_cop1988") #variable à spatialiser
-l_legend <- "COP (% de SAU)"#label de la variable
+variablecarto <- c("p_olea1988","p_olea2000","p_olea2010") #variable à spatialiser
+l_legend <- "Oléagineux (% de SAU)"#label de la variable
 nclasse <- 4 #Nombre de classes de valeurs pour la cartographie
 style_classe <- "quantile" #"pretty"#"jenks","fixed"
 couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
 
-nomfichier <- "p_cop23"
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=reg_focus,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=5,ggsavewidth=7)
-
+nomfichier <- "p_olea24"
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=reg_focus,nrowlayout=1,ncollayout=3,position="bottom",ggsaveheight=5,ggsavewidth=7)
 ```
+
+```{r map_carbo_fr_centre, echo=F, eval=T,results = 'asis'}
+# Pour insérer l'image
+nomfichier <- paste("p_olea",reg_focus,sep="")
+fichiers <- paste(repsortie,nomfichier,".png",sep="")
+cat(paste("![](",fichiers,")",sep=""))
+```
+
 ## Analyses simples avec boxplot
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("boxplot_occup_Centre","Importance des variables explicatives"),fig.align="center"}
@@ -323,9 +330,9 @@ p_bdat <- ggplot(melted_focus, aes(x=annees,y=value)) +
         axis.title = element_text(face="bold"),
         axis.text.x=element_text(size = 11))
 
-melted.ra_focus <- melted.ra[melted.ra$code_reg %in% reg_focus & melted.ra$variable %in% c("p_c","p_mf","p_prairie"),]
+melted.ra_focus <- melted.ra[melted.ra$code_reg %in% reg_focus & melted.ra$variable %in% c("p_c","p_mf","p_prairie","p_cop"),]
 
-colors <- brewer.pal(3,"Set1")#
+colors <- brewer.pal(4,"Set1")#
 
 p_ra <- ggplot(melted.ra_focus) +
             geom_boxplot(aes(x=annees,y=value,col=variable))+
