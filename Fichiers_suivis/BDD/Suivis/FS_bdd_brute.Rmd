@@ -190,7 +190,9 @@ Présenter rapidement données sols inclusent dans la base
 
 Deux types de données sont intégrées dans la base de données. Dans un premier temps, les données BDAT disponibles sur le XXX sont intégrées. Il s'agit de statistiques descriptives aggrégées à l'échelle du canton. Ces données ne sont pas exploitables dans le cadre d'une étude sur l'évolution temporelle car le nombre d'effectif n'est pas le même d'une année à l'autre. Le deuxième jeu de données intégrées prend en compte ce biais par un ré-échantillonnage artificiel des analyses afin d'assurer le calcul de statistiques descriptives basées sur un même nombre d'effectif.
 
-### Importation des données de la BDAT non harmonisées (obsolète)
+### Importation des données de la BDAT non harmonisées 
+
+Ces données sont uniquement utilisées pour les analyses pédologiques où les variations temporelles sont minimes. Pour le moment, seules les analyses sur la texture du sol sont exploitées (taux d'argile notamment).
 
 ```{r importBDAT, eval=FALSE}
 period <- c("9094","9599","0004","0509")
@@ -208,6 +210,11 @@ for(i in ListBDAT){
   sqlQuery(loc,paste("drop table if exists bdat.",i,sep=""))
   sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
 }
+
+# Ajout des données texturales (médianes sur les années 1990-2009)
+
+
+
 ```
 ### Importation des données de la BDAT harmonisées
 

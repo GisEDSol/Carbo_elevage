@@ -131,17 +131,46 @@ cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l
 ## Autres variables
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
-tablecarto <- "dm_vecteurs.canton" 
-dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
-variablecarto <- "typo_clim" #variable à spatialiser
-l_legend <- "Type de climat"#label de la variable
-nclasse <- 8 #Nombre de classes de valeurs pour la cartographie
-style_classe <- "fixed" #"pretty"#"jenks","fixed"
-couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
-nomfichier <- "typo_clim"
+tablecarto <- "canton" #Nom de la table utilisée pour la cartographie (table postgis)
+variablecarto <- c("ttemp_an","ampli_t_juil_janv","hpluie_an","jpluie_janv")
+style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
+couleur <- "Spectral" #RdYlBu
+nclasse <- 6
+#Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+l_variable <- c("Température moyenne annuelle (°C)","Amplitude thermique (°C) (juillet-janvier)","Cumul annuel (mm)","Jours de précipitation en janvier") #label de la variable
 
-# Lancement
-cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE)
+cpt <- 0
+for(i in variablecarto){
+  cpt <- cpt + 1
+  l_variable_i <- l_variable[cpt]
+  nomfichier <- i
+
+  carto(dsn,tablecarto,i,nclasse,style_classe,couleur,l_legend=l_variable_i,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=1,position="bottom",ggsaveheight=7,ggsavewidth=10)  
+}
+
+tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
+variablecarto <- "argi_med"
+l_legend <- "Médiane du taux d'argile (g/kg)"
+nomfichier <- "argi_medBDAT"
+style_classe <- "quantile"
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=1,position="bottom",ggsaveheight=7,ggsavewidth=10)  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ```
 
 

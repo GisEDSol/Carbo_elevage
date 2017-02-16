@@ -133,12 +133,12 @@ id <- "id_geofla"
 
 if((is.character(dept)==FALSE) & (is.character(reg)==FALSE)){
  # map <- readOGR(dsn = dsn, tablecarto)
- # dep <- readOGR(dsn = dsn, "dm_vecteurs.departement")
+  dep <- readOGR(dsn = dsn, "dm_vecteurs.departement")
 
-#save(map,file=paste(repsortie,"map.RData",sep=""))
+#save(map,file=paste(repsortie,tablecarto,".RData",sep=""))
 #save(dep,file=paste(repsortie,"dep.RData",sep=""))
 
-load(paste(repsortie,"map.RData",sep=""))
+load(paste(repsortie,tablecarto,".RData",sep=""))
 load(paste(repsortie,"dep.RData",sep=""))
 
 #  variablecartobis <- paste(variablecarto,collapse=",")

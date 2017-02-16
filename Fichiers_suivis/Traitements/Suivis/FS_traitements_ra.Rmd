@@ -447,3 +447,34 @@ for(i in p_variable){
   #ggsave(tt, file = paste("map_",reg,"_",v,".png",sep=""), width = 10, height = 10)  
 ```
 
+# Différentes cartographies
+
+```{r,highlight=TRUE,eval=FALSE,echo=FALSE,fig.height=5, fig.width=8}
+
+tablecarto <- "dm_vecteurs.canton" 
+period <- c("1979","1988","2000","2010") #Périodes de temps prise en compte
+variablecarto <- c("p_prairie","p_sth","p_sfp","p_mf","p_c","p_cop")#variable(s) à cartographier
+#variablecarto <- "p_prairie"
+l_legend <- c("Prairie/SAU (%)","STH/SAU (STH)", "SFP/SAU (%)", "MF/SAU (%)","Céréale/SAU (%)","COP/SAU (%)")# Nom des labels associés aux variables à cartographier. Vecteur utilisé pour les titres des cartes
+
+nclasse <- 5 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "pretty" #"pretty"#"jenks"
+couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+
+# Lancement
+cpt <- 0
+for(v in variablecarto){
+  cpt <- cpt + 1
+  nomfichier <- paste(v,style_classe,"_2",sep="")
+  l_legendvaria <- l_legend[cpt]
+  variableperiod <- paste(v,period,sep="")
+
+  carto(dsn,tablecarto,variableperiod,nclasse,style_classe,couleur,l_legend=l_legendvaria,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=8,ggsavewidth=8)  
+}
+
+## Variation 
+tablecarto <- "dm_vecteurs.canton"  #Nom de la table utilisée pour la cartographie (table postgis)
+variablecarto <- "var_prairie1979_2010"
+l_variable <- "Evolution prairie/SAU entre 1979 et 2010 (%)"
+nomfichier <- "var_prairie1979_2010"
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=1,position="bottom",ggsaveheight=7,ggsavewidth=10)  
