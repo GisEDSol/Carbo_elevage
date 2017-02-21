@@ -25,38 +25,9 @@ importparametres(repmaster=repmaster,repdata=repdata,dsn="PG:dbname='sol_elevage
 
 # Objectifs
 
-L'objectif de ce document est de centraliser dans un même fichier la création et la description d'une base de données pour étudier l'impact de l'élevage sur la qualité des sols. Cette base contient plusieurs types de données en lien avec les données pédologiques, les données associées à l'occupation du sol et les données environnementales générales telles que le climat ou la topographie. Le document décrit dans un premier temps l'architecture choisie et l'organisation des données. Il présente dans un second temps les scripts d'intégration des données. 
+L'objectif de ce document est de centraliser dans un même fichier la création d'une base de données pour étudier l'impact de l'élevage sur la qualité des sols. Cette base contient plusieurs types de données en lien avec les données pédologiques, les données associées à l'occupation du sol et les données environnementales générales telles que le climat ou la topographie.
 
-# L'architecture et l'organisation de la base de données
-
-## Architecture technique
-
-L'ensemble des données est stocké dans une base de données type postgresql/postgis. Le serveur de la base est en local et des conversions seront réalisées régulièrement vers une base SQLite/Spatialite pour faciliter le partage des données. SQLite diffère de la plupart des systèmes de gestion de base de données par la gestion d'un fichier de base directement sur le disque dur. A la différence de postgresql/postgis, il ne nécessit pas la création d'un serveur, ce qui facilite les échanges. Plus d'infos, [ici](http://www.developpez.com/actu/94614/Un-developpeur-evoque-cinq-raisons-pour-vous-faire-utiliser-SQLite-en-2016-que-pensez-vous-de-ses-arguments/).
-
-## Organisation de la base de données
-
-Deux types de données sont intégrées dans la base : les données brutes et les données élaborées
-
-### Les données brutes
-
-Elles proviennent de différentes sources et représentent des données qui ne sont pas directement exploitables pour des traitements statistiques ou de la cartographie. Elles sont stockées dans des schémas portant le nom de leur thématique associées (voir tableau ci-dessous). Ces données sont traitées et stockées dans des data marts.
-
-```{r,evaL=TRUE,echo=FALSE}
-# Description des tables (voir pour rajouter les métadonnées dans les commentaires de table)
-metatable <- read.csv(paste(repmetadonnees,"Catalogue_schema.csv",sep=""),sep=";")
-pander(metatable[metatable$Type %in% "Brute",][,c("Schéma","Description")])
-```
-
-### Les data marts
-
-Les data marts (magasins de données) sont les données qui sont directement utilisables dans des traitements. Ces data marts se présentent sous la forme d'une ou plusieurs tables classées dans des schémas distincts. Le nom de ces schémas est préfixé par « dm_». Le tableau suivant dresse la liste des data marts disponibles :
-
-```{r,evaL=TRUE,echo=FALSE}
-metatable <- read.csv(paste(repmetadonnees,"Catalogue_schema.csv",sep=""),sep=";")
-pander(metatable[metatable$Type %in% "Data_mart",][,c("Schéma","Description")])
-```
-
-## Documentation
+# Documentation
 
 La documentation de cette base de données s'articule autours d'un document général et de plusieurs modes opératoires destinés aux différents types d'utilisateurs (administrateur, développeur et utilisateur). Ces documents sont présents sur la forge du projet à cette [adresse](https://github.com/Rosalien/GISEDSol/tree/master/Documentation).
 
@@ -92,24 +63,7 @@ Protocol = 8.1
 ReadOnly = 0
 ```
 
-# Intégration des données de travail
-
-| Catégorie                             | Type de données                     | Source                         | Contacts                                     |
-|---------------------------------------|-------------------------------------|--------------------------------|----------------------------------------------|
-| Données sols                          | Raster et ShapeFiles (L93)          | InfoSol                        | infosol@inra.fr                              |
-| Données d'occupation du sol           | .xls, raster (L93)                  | RA, Corine Land Cover          | AGRESTE + christophe.perrot@idele.fr         |
-| Données MAFOR                         | ShapeFiles (L93)                    | Interne IDELE                  | chritophe.perrot@idele.fr                    |
-| Données administratives               | ShapeFiles (L93)                    | IGN + Agreste                  |                                              |
-
-
-## Caractéristiques techniques
-
-```{r, tidy=FALSE,eval=TRUE}
-Sys.Date()
-sessionInfo()
-```
-
-## Les données de bases
+# Les données de bases
 
 Les données dites de "bases" concernent les données administratives utilisées pour agréger certaines variables environnementales. Dans ce travail, les contours des communes, des cantons et des petites régions agricoles sont les principales échelles de travail utilisées. Elles ont été récupérées de la manière suivante :
 
@@ -188,7 +142,9 @@ Présenter rapidement données sols inclusent dans la base
 
 ## La BDAT
 
-Deux types de données sont intégrées dans la base de données. Dans un premier temps, les données BDAT disponibles sur le XXX sont intégrées. Il s'agit de statistiques descriptives aggrégées à l'échelle du canton. Ces données ne sont pas exploitables dans le cadre d'une étude sur l'évolution temporelle car le nombre d'effectif n'est pas le même d'une année à l'autre. Le deuxième jeu de données intégrées prend en compte ce biais par un ré-échantillonnage artificiel des analyses afin d'assurer le calcul de statistiques descriptives basées sur un même nombre d'effectif.
+Deux types de données sont intégrées dans la base de données. Dans un premier temps, les données BDAT disponibles sur le XXX sont intégrées. Il s'agit de statistiques descriptives agrégées à l'échelle du canton. Ces données ne sont pas exploitables dans le cadre d'une étude sur l'évolution temporelle car le nombre d'effectif n'est pas le même d'une année à l'autre. Ce jeu de données est utilisé pour l'analyse de variable "stable" dans le temps, comme la texture du sol par exemple.
+
+Le deuxième jeu de données intégrée prend en compte ce biais par un ré-échantillonnage artificiel des analyses afin d'assurer le calcul de statistiques descriptives basées sur un même nombre d'effectif. Ces données sont exploitées pour analyser l'évolution des teneurs en carbone organique dans les sols. 
 
 ### Importation des données de la BDAT non harmonisées 
 
@@ -212,13 +168,23 @@ for(i in ListBDAT){
 }
 
 # Ajout des données texturales (médianes sur les années 1990-2009)
+ListBDAT <- c("bdat_pra_9009","bdat_canton_9009")
 
-
+for(i in ListBDAT){
+  print(i)
+  # Lecture du fichier
+  txtBDAT <- read.table(paste(repBDAT,"BDAT_datapaper/",i,".txt",sep=""),sep="\t",header=TRUE)
+  txtBDAT[,2] <- as.character(txtBDAT[,2])
+  
+  # Intégration dans la bdd
+  sqlQuery(loc,paste("drop table if exists bdat.",i,sep=""))
+  sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
+}
 
 ```
 ### Importation des données de la BDAT harmonisées
 
-la liste d'instructions suivante intègre les analyses de la BDAT ré-échantillonnées dans la base de données.
+la liste d'instructions suivante intègre les analyses des teneurs de la BDAT ré-échantillonnées dans la base de données. Ci-dessous, ce sont les analyses provenant des deux méthodes de mesures du carbone qui sont intégrées (oxydation humide+combustion sèche)
 
 ```{r importBDAT_harmo, eval=FALSE}
 # Selection des fichiers à importer
@@ -235,6 +201,24 @@ for(i in ListBDAT){
 }
 ```
 
+Ci-dessous, les analyses des teneurs en C classées par méthode de mesure sont intégrées dans la base de données. Les analyses réalisées avec la méthode oxydation humide sont nommée `corgox` et les analyses mesurées avec la méthode combustion sèche `corgco`
+
+```{r importBDAT_harmo, eval=FALSE}
+# Selection des fichiers à importer
+repmethodo <- c("Oxydationhumide","Combustionseche")
+for(r in repmethodo){
+  ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/",r,"/",sep=""),pattern="\\.csv$"))
+  for(i in ListBDAT){
+    print(i)
+    # Lecture du fichier
+    txtBDAT <- read.csv(paste(repBDAT,"BDAT_harmonisee/",r,"/",i,".csv",sep=""),sep=";",header=TRUE,colClasses=c("canton"="character"))
+
+    # Intégration dans la bdd
+    sqlQuery(loc,paste("drop table if exists bdat.",i,sep=""))
+    sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
+  }
+}
+```
 ## La BDGSF (en cours)
 
 La base de données européenne des sols a été téléchargée sur ce [cite](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDB_data_1k_raster_intro/ESDB_1k_raster_data_intro.html). 
@@ -243,19 +227,32 @@ Le shapefiles semble avoir des soucis de topologie et son découpage pose qq pro
 Contrôle de la topologie avec QGis ([vérificateur de la topologie](http://smsgis.co.za/using-qgis-fix-geometry-errors/))
 
 ```{r importBDGSF, eval=FALSE}
-repbdgsf <- "/media/sf_GIS_ED/Dev/Data/Sol/bdgsf/"
-vectorname <- "sgdbe4_0.shp"
+repbdgsf <- "/media/sf_GIS_ED/Dev/Data/Sol/bdgsf/ESDB/"
+vectorname <- "SGDB_PTR.shp"
 file1 <- paste(repbdgsf,vectorname,sep="")
 file2 <- paste(repbdgsf,"L93_",vectorname,sep="")
 file3 <- paste(repbdgsf,"Fr_L93_",vectorname,sep="")
-shaperef <- "/media/sf_GIS_ED/Dev/Data/Base/DEPARTEMENT.shp"
-
-# Changement de la projection (L93) et masque pour importer uniquement les contours de la france métropolitaine
+schema <- "bdgsf"
+sortie <- "sgdb"
+# Changement de la projection (L93) 
 system(paste("ogr2ogr -t_srs EPSG:2154 ",file2," ",file1," -overwrite",sep=""))
-#system(paste("ogr2ogr -clipsrc ",shaperef," ",file3," ",file2," -overwrite",sep=""))
 
 # Intégration dans la base sous forme de postGIS
-system(paste("shp2pgsql -s 2154 -c -D -W \"latin1\" -I ",file1," | psql -d sol_elevage -h localhost -U jb -s bdgdf",sep=""))#option -s ne fonctionnne pas
+system(paste("shp2pgsql -s 2154 -c -D -W \"latin1\" -I ",file2," ",schema,".",sortie,"| psql -d sol_elevage -h localhost -U jb",sep=""))
+
+bdgsf <- sqlQuery(loc,"select * from bdgsf.sgdb")
+n_bdgsf <- names(bdgsf)[-length(bdgsf)]
+n_bdgsf <- paste(n_bdgsf,collapse=",")
+
+# Intersection avec postgis
+sqlQuery(loc,paste("CREATE TABLE ",schema,".",sortie,"_fr AS
+            select a.",n_bdgsf,",st_intersection(a.geom, b.geom) as geom
+            from bdgsf.sgdb as a, dm_vecteurs.departement as b
+            where st_intersects(a.geom, b.geom);",sep=""))
+
+# Intégration des tables attributaires
+
+
 
 # Suppression des fichiers temporaires
 system(paste("rm ",file1," ",file2,sep=""))
@@ -359,8 +356,6 @@ sqlQuery(databaracoa,"update lucastopsoil_fr set x_l93 = ST_X(ST_SetSRID(the_geo
 
 sqlQuery(databaracoa,"update lucastopsoil_fr set x_l2e = ST_X(ST_SetSRID(the_geom_l2e, 27582));
 	 update lucastopsoil_fr set y_l2e = ST_Y(ST_SetSRID(the_geom_l2e, 27582));")
-
-
 ```
 
 ```{r importLucas, eval=FALSE}

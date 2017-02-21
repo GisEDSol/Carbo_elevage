@@ -122,7 +122,7 @@ carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsort
 ##
 nomfichier <- "corgox_31_22"
 l_legend <- "Teneur en C (g/kg)"
-variablecarto <- c("corgox_medequi9094","corgox_medequi9599","corgox_medequi0004","corgox_medequi0509","corgox_medequi1014") #variable à spatialiser
+variablecarto <- c("corg_medequiv9094","corg_medequiv9599","corg_medequiv0004","corg_medequiv0509","corg_medequiv1014") #variable à spatialiser
 style_classe <- "quantile"
 couleur <- "Spectral"
 carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=reg,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=5,ggsavewidth=5.5)
@@ -255,7 +255,7 @@ typeclimato <- replicate(length(Rcovarclimato), "climat")
 Rcovaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000","var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010","var_cop1988_2010","var_cop1979_2010","eff9094","eff9599","eff0004","eff0509","eff1014")
 
 # Calcul de la différence en relatif
-dcast.bdat$reladiff14 <- ((dcast.bdat[,"corgox_medequi1014"]-dcast.bdat[,"corgox_medequi9094"])/dcast.bdat[,"corgox_medequi9094"])*100
+dcast.bdat$reladiff14 <- ((dcast.bdat[,"corg_medequiv1014"]-dcast.bdat[,"corg_medequiv9094"])/dcast.bdat[,"corg_medequiv9094"])*100
 
 typeoccup <- replicate(length(Rcovaroccup), "occup")
 
@@ -444,7 +444,7 @@ corrplot(M, method="circle",addCoef.col = "black")
 
 ```{r,echo=FALSE,eval=TRUE,fig.height=12, fig.width=12,fig.cap = fig$cap("Graphs_correl_NPC_picardie","Matrice de correlation"),fig.align="center"}
 
-dcast.bdat$reladiff14 <- ((dcast.bdat[,"corgox_medequi1014"]-dcast.bdat[,"corgox_medequi9094"])/dcast.bdat[,"corgox_medequi9094"])*100
+dcast.bdat$reladiff14 <- ((dcast.bdat[,"corg_medequiv1014"]-dcast.bdat[,"corg_medequiv9094"])/dcast.bdat[,"corg_medequiv9094"])*100
 d <- dcast.bdat[(dcast.bdat$code_reg %in% reg_focus),]
 Rcovar <- c("var_mf1988_2010","std_temp_juil","eff9094","var_mf1988_2000")
 vNames <- c("reladiff14","diff14",Rcovar)
@@ -497,7 +497,7 @@ dcast.focus <- dcast.bdat[dcast.bdat$code_reg %in% reg_focus,]
 
 xlabel <- "Teneur en carbone organique initiale (g/kg)"
 ylabel <- "Différence des teneurs en carbone organique (14) (g/kg)"
-x <- "corgox_medequi9094"
+x <- "corg_medequiv9094"
 y <- "diffmedian14"
 
 p <- ggplot(dcast.focus, aes_string(x,y)) +

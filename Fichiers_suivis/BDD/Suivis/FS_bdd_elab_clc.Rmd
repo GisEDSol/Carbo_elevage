@@ -31,7 +31,6 @@ Pour une description des champs créés, consultez les métadonnées de la table
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Lecture des métadonnées
-
 meta_clc <- read.csv(paste(repmetadonnees,"Nomenclature_clc.csv",sep=""),sep=";",header=TRUE)
 variables <- c("21","22","23","24","31","32") # Nom des champs à type d'occupation du sol à importer
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)

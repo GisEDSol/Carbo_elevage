@@ -32,15 +32,18 @@ Ce fichier permet de créer les tables de données de la BDAT utilisables pour l
 
 # Intégration des données de la BDAT vers la table `dm_vecteurs.canton`
 
-## Intégration de la médiane des teneurs en carbone organique par canton
+## Intégration de la médiane des teneurs en carbone organique par canton (teneurs + effectifs)
+
+### Les teneurs en carbone organique
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
 period <- c("9094","9599","0004","0509","1014")
 schema <- "bdat"
+#Anciennement corgox_medequi
 
 for(i in period){
-  var_variable <- paste("corgox_medequi",i,sep="")
+  var_variable <- paste("corg_medequiv",i,sep="")
   tableBDAT <- paste("bdat_canton_corgequiv",i,sep="")
   
   sqlQuery(loc,paste("alter table ",table_dm,"
@@ -56,11 +59,11 @@ for(i in period){
   
   # Ajout d'un commentaire sur la nouvelle colonne crée
   print(sqlQuery(loc,paste("
-  COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Médiane des teneurs en carbone organique après ré-échantillonnage pour la période ",i,".\';",sep="")))
+  COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Médiane des teneurs en carbone organique après ré-échantillonnage pour la période (toutes méthodes confondues)",i,".\';",sep="")))
 }
 ```
 
-## Intégration des effectifs par période
+### Les effectifs
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
@@ -69,7 +72,7 @@ period <- c("9094","9599","0004","0509","1014")
 schema <- "bdat"
 
 for(i in period){
-  var_variable <- paste("eff",i,sep="")
+  var_variable <- paste("eff_coox",i,sep="")
   tableBDAT <- paste("bdat_canton_corgequiv",i,sep="")
   
   sqlQuery(loc,paste("alter table ",table_dm,"
@@ -85,10 +88,11 @@ for(i in period){
   
   # Ajout d'un commentaire sur la nouvelle colonne crée
   print(sqlQuery(loc,paste("
-  COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Nombre d\''effectif par canton",i,".\';",sep="")))
+  COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Nombre d\''effectif par canton (toutes méthodes confondues)",i,".\';",sep="")))
 }
 ```
-## Intégration des résultats des tests statistiques des différences de teneur en carbone organique
+
+### Les résultats des tests statistiques des différences de teneur en carbone organique
 
 ```{r,highlight=TRUE,eval=FALSE}
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
@@ -133,8 +137,136 @@ for(i in period){
     }
   }
 }
+
+```
+## Intégration des analyses par type de détermination (teneurs + effectifs)
+
+Même démarche que précédemment. Ci-dessous, les analyses des teneurs en C par type de mesures sont intégrées dans la table `dm_vecteurs.canon`. Les analyses réalisées avec la méthode oxydation humide sont nommée `corgox` et les analyses mesurées avec la méthode combustion sèche `corgco`
+
+### Intégrations des teneurs
+```{r,highlight=TRUE,eval=FALSE}
+# Paramètres
+table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+period <- c("9094","9599","0004","0509","1014")
+schema <- "bdat"
+
+methodo <- c("corgox","corgco")
+m_sign <- c("Oxydation humide","Oxydation sèche")
+cpt <- 0
+for(m in methodo){
+  cpt <- cpt + 1
+  for(i in period){
+    var_variable <- paste(m,i,sep="")
+    tableBDAT <- paste("bdat_canton_",m,"_",i,sep="")
+
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        drop column if exists ",var_variable,sep=""))
+  
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        add column ",var_variable," numeric;
+                        update ",table_dm,"
+                        SET ",var_variable," = s1.med from(
+                        select med,canton
+                        from ",schema,".",tableBDAT,") as s1
+                        where ",table_dm,".code_canton=s1.canton::text",sep=""))
+  
+    # Ajout d'un commentaire sur la nouvelle colonne crée
+    print(sqlQuery(loc,paste("
+    COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Médiane des teneurs en carbone organique après ré-échantillonnage pour la période",i," et pour la méthode ",m_sign[cpt],".\';",sep="")))
+  }
+}
+```
+### Intégrations des effefifs par type de méthode
+
+```{r,highlight=TRUE,eval=FALSE}
+# Paramètres
+table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+period <- c("9094","9599","0004","0509","1014")
+schema <- "bdat"
+
+methodo <- c("corgox","corgco")
+m_sign <- c("Oxydation humide","Oxydation sèche")
+cpt <- 0
+for(m in methodo){
+  cpt <- cpt + 1
+  for(i in period){
+    var_variable <- paste("eff_",m,i,sep="")
+    tableBDAT <- paste("bdat_canton_",m,"_",i,sep="")
+
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        drop column if exists ",var_variable,sep=""))
+  
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        add column ",var_variable," numeric;
+                        update ",table_dm,"
+                        SET ",var_variable," = s1.eff from(
+                        select eff,canton
+                        from ",schema,".",tableBDAT,") as s1
+                        where ",table_dm,".code_canton=s1.canton::text",sep=""))
+  
+    # Ajout d'un commentaire sur la nouvelle colonne crée
+    print(sqlQuery(loc,paste("
+    COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Nombre d\''effectif par canton pour la période",i," et pour la méthode ",m_sign[cpt],".\';",sep="")))
+  }
+}
 ```
 
+### Les résultats des tests statistiques des différences de teneur en carbone organique par type de méthode
+
+```{r,highlight=TRUE,eval=FALSE}
+table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+period <- c("12","13","14","15","23","24","25","34","35","45")
+schema <- "bdat"
+
+bdat.bdat_canton_corgox_comp_45
+bdat_canton_corgco_comp_23
+
+methodo <- c("corgox","corgco")
+m_sign <- c("Oxydation humide","Oxydation sèche")
+cpt <- 0
+for(m in methodo){
+  cpt <- cpt + 1
+  for(i in period){
+    for(v in c("diff","diffmedian")){
+    
+    var_variable <- paste(v,"_",m,i,sep="")
+  
+    tableBDAT <- paste("bdat_canton_",m,"_comp_",i,sep="")
+    
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                      drop column if exists ",var_variable,sep=""))
+  
+    if(v=="diff"){
+      sqlQuery(loc,paste("alter table ",table_dm,"
+                        add column ",var_variable," text;
+                        update ",table_dm,"
+                        SET ",var_variable," = s1.diff from(
+                        select diff,canton
+                        from ",schema,".",tableBDAT,") as s1
+                        where ",table_dm,".code_canton=s1.canton::text",sep=""))
+    
+      # Ajout d'un commentaire sur la nouvelle colonne crée
+      print(sqlQuery(loc,paste("
+        COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Résultat du test de significacité de la différence de la médiane des teneurs en carbone organique au niveau du canton pour la méthode ",m_sign[cpt],"\';",sep="")))
+    
+    }else{
+      sqlQuery(loc,paste("alter table ",table_dm,"
+                        add column ",var_variable," numeric;
+                        update ",table_dm,"
+                        SET ",var_variable," = s1.diffmedian",i," from(
+                        select diffmedian",i,",canton
+                        from ",schema,".",tableBDAT,") as s1
+                        where ",table_dm,".code_canton=s1.canton::text",sep=""))
+    
+        # Ajout d'un commentaire sur la nouvelle colonne crée
+        print(sqlQuery(loc,paste("
+        COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Différence entre la période A et la période B (g/kg) pour la méthode de mesure ",m_sign[cpt],".\';",sep="")))
+      }
+    }
+  }
+}
+
+```
 ## Intégration des données texturales
 
 ```{r,highlight=TRUE,eval=FALSE}
@@ -162,23 +294,23 @@ for(i in vpedo){
   print(sqlQuery(loc,paste("
   COMMENT ON COLUMN ",table_dm,".",i," IS \'Médiane du taux d\''argile (g/kg) calculée sur 1990-2009.\';",sep="")))
 }
-
 ```
 
 # Création des tables de travail au format "long" 
 
+## Intégration des teneurs en carbone organique
+
 Les données de la BDAT sont ré-organisées pour faciliter les traitements statistiques et la production de graphiques. La fonction `melt` est utilisée pour transformer les données d'un format "large" à un format "long". Deux tables sont créées : 
 
 - `dm_traitements.melted.bdat` : table des valeurs des médianes teneurs en carbone organique
-- `dm_traitements.melted.bdat` : table des valeurs de différences des teneurs en carbone organique entre plusieurs périodes.
+- `dm_traitements.melted_bdatdiff` : table des valeurs de différences des teneurs en carbone organique entre plusieurs périodes.
 
 **Important :** La création de ces tables nécessite le lancement de plusieurs scripts au préalable : `FS_bdd_brute.Rmd`,`FS_bdd_elab_climat.Rmd`,`FS_bdd_elab_ra.Rmd` et `FS_bdd_elab_clc.Rmd`.
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
-varia <- "corgox_medequi" # Variable à analyser 
-period <- c("9094","9599","0004","0509","1014")
+varia <- c("corgox","corgco","corg_medequiv","eff_coox","eff_corgox","eff_corgco") # Variable à analyser test
 variaoccup <- c("p_sth","p_sfp","p_prairie","p_cop","p_c")
 #id_class <- apply(expand.grid(varia,period), 1, paste, collapse="")
 periodoccup <- c("1970","1979","1988","2000","2010")
@@ -189,8 +321,13 @@ id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonag
 mapcanton <- sqlQuery(loc,paste("select * from ",table_dm,sep=""))
 
 # Boucle pour séparer l'année du nom de la variable étudiée
+
 cpt <- 0
 for(i in varia){
+  if(i=="corgco"|i=="eff_corgco"){
+    period <- c("9599","0004","0509","1014")
+  }else{period <- c("9094","9599","0004","0509","1014")}
+
   cpt <- cpt + 1
   variaperiod <- paste(i,period,sep="")  
   
@@ -224,15 +361,12 @@ sqlSave(loc,melted.bdat,tablename=tablename)
 
 ```
 
-## Evolution des teneurs en carbone organique
-
-### Intégration des résultats dans une table au format long
+## Intégration des résultats de l'évolution des teneurs en carbone organique dans une table au format long
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
-varia <- c("diffmedian","diff") # Préfixe de la variable à intégrer (varia+period)
-period <- c("12","13","14","15","23","24","25","34","35","45")
+varia <- c("diffmedian","diff","diff_corgox","diff") # Préfixe de la variable à intégrer (varia+period)
 variaoccup <- c("sth","sfp","prairie","c","mf","cop")
 periodra <- c("1970","1979","1988","2000","2010")
 # Classes d'occupation du sol
@@ -256,26 +390,43 @@ mapcanton <- sqlQuery(loc,paste("select * from ",table_dm,sep=""))
 #mapcanton <- sqlQuery(loc,paste("select ",paste(id,collapse=","),",",paste(variaperiod,collapse=",")," from ",table_dm,sep=""))
 
 # Boucle pour séparer les périodes analysées du nom de la variable étudiée
+
+methodo <- c("","corgox")#,"corgco") 
 cpt <- 0
-for(i in varia){
-  print(i)
+for(m in methodo){
   cpt <- cpt + 1
-  variaperiod <- paste(i,period,sep="")  
-  stats.canton <- mapcanton[,c(id,variaperiod)]
+  if(m=="corgco"){
+    period <- c("23","24","34","35","45")
+}else{
+  period <- c("12","13","14","15","23","24","25","34","35","45")
+}
 
-  # Modification de la structure de la table
-  stats.canton <- melt(data=stats.canton,id.vars=id)
+  if(m==""){
+    varia <- c("diffmedian","diff")
+    }else{
+      varia <- c(paste("diffmedian_",m,sep=""),paste("diff_",m,sep=""))
+  }
+  print(varia)
 
-  # Extraction de l'année et renommage des colonnes
-  stats.canton[,"variable"] <- as.character(unlist(regmatches(stats.canton[,"variable"],gregexpr('[0-9]+.',stats.canton[,"variable"]))))
-  colnames(stats.canton)[(length(id)+1):(length(id)+2)] <- c("period",i) #revoir la sélection de ces colonnes
+  for(i in varia){
+    variaperiod <- paste(i,period,sep="")  
+    stats.canton <- mapcanton[,c(id,variaperiod)]
+
+    # Modification de la structure de la table
+    stats.canton <- melt(data=stats.canton,id.vars=id)
+
+    # Extraction de l'année et renommage des colonnes
+    stats.canton[,"variable"] <- as.character(unlist(regmatches(stats.canton[,"variable"],gregexpr('[0-9]+.',stats.canton[,"variable"]))))
+    colnames(stats.canton)[(length(id)+1):(length(id)+2)] <- c("period",i) #revoir la sélection de ces colonnes
     
-  if(cpt==1){
-    # Construction de la première table
-    melt.canton <- stats.canton
-  }else{
-    # Ajout à chaque itération de la variable (i)
-    melt.canton <- merge(melt.canton,stats.canton, by.x=c(id,"period"), by.y=c(id,"period"),all.x=TRUE,all.y=TRUE)
+    if(cpt==1){
+      # Construction de la première table
+      melt.canton <- stats.canton
+    }else{
+      # Ajout à chaque itération de la variable (i)
+      melt.canton <- merge(melt.canton,stats.canton, by.x=c(id,"period"), by.y=c(id,"period"),all.x=TRUE,all.y=TRUE)
+      print(melt.canton[,120:125])
+    }
   }
 }
 
@@ -293,7 +444,7 @@ sqlSave(loc,melted.bdatdiff,tablename=tablename)
 # Création d'une table de travail de données complète
 
 Ici, la table `dm_vecteurs.canton` est dupliquer et filtrer pour un travail basé uniquement sur un nombre de canton ayant des analyses sur l'ensemble de période étudiée. Cette table d'exploitation est nommée `dm_vecteurs.canton_cplt`. Elle servira de base pour la création de la table au format long complète également.
-**Nota. Changement de stratégie. On utilisera deux types de masques :
+**Nota. Changement de stratégie. On utilisera deux types de masques :**
 
 - canton_cplt pour toutes les périodes
 - canton_9504 pour l'exclusion de la première période
@@ -306,16 +457,16 @@ sqlQuery(loc,"DROP TABLE IF EXISTS dm_vecteurs.canton_cplt")
 sqlQuery(loc,"CREATE TABLE dm_vecteurs.canton_cplt as
 SELECT *
 FROM dm_vecteurs.canton
-where corgox_medequi9094 is not null and corgox_medequi9599 is not null and corgox_medequi0004 is not null
-and corgox_medequi0509 is not null and corgox_medequi1014 is not null
+where corgox9094 is not null and corgox9599 is not null and corgox0004 is not null
+and corgox0509 is not null and corgox1014 is not null
 ")
 
-sqlQuery(loc,"DROP TABLE IF EXISTS dm_vecteurs.canton_9504")
-sqlQuery(loc,"CREATE TABLE dm_vecteurs.canton_9504 as
+sqlQuery(loc,"DROP TABLE IF EXISTS dm_vecteurs.canton_9514")
+sqlQuery(loc,"CREATE TABLE dm_vecteurs.canton_9514 as
 SELECT *
 FROM dm_vecteurs.canton
-where corgox_medequi9599 is not null and corgox_medequi0004 is not null
-and corgox_medequi0509 is not null and corgox_medequi1014 is not null
+where corgox9599 is not null and corgox0004 is not null
+and corgox0509 is not null and corgox1014 is not null
 ")
 
 ```
@@ -327,7 +478,7 @@ Pour le canton_cplt
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
 table_dm <- "dm_vecteurs.canton_cplt" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
-varia <- "corgox_medequi" # Variable à analyser 
+varia <- "corgox" # Variable à analyser 
 period <- c("9094","9599","0004","0509","1014")
 variaoccup <- c("p_sth","p_sfp","p_prairie","p_cop","p_c")
 #id_class <- apply(expand.grid(varia,period), 1, paste, collapse="")
@@ -371,7 +522,6 @@ melted.bdat$typo_clim <- as.factor(melted.bdat$typo_clim)
 tablename <- paste("dm_traitements.","melted_bdat_cplt",sep="")
 sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
 sqlSave(loc,melted.bdat,tablename=tablename)
-
 ```
 
 Pour canton_9504
@@ -379,7 +529,7 @@ Pour canton_9504
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
 table_dm <- "dm_vecteurs.canton_9514" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
-varia <- "corgox_medequi" # Variable à analyser 
+varia <- "corgox" # Variable à analyser 
 period <- c("9599","0004","0509","1014")
 variaoccup <- c("p_sth","p_sfp","p_prairie","p_cop","p_c")
 #id_class <- apply(expand.grid(varia,period), 1, paste, collapse="")
@@ -425,4 +575,5 @@ sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
 sqlSave(loc,melted.bdat,tablename=tablename)
 
 ```
+
 

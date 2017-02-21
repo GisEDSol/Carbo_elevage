@@ -123,7 +123,7 @@ carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsort
 
 nomfichier3 <- paste("corgox_c_",reg_focus,sep="")
 l_legend <- "Teneur en C (g/kg)"
-variablecarto <- c("corgox_medequi9094","corgox_medequi9599","corgox_medequi0004","corgox_medequi0509","corgox_medequi1014") #variable à spatialiser
+variablecarto <- c("corg_medequiv9094","corg_medequiv9599","corg_medequiv0004","corg_medequiv0509","corg_medequiv1014") #variable à spatialiser
 style_classe <- "quantile"
 couleur <- "Spectral"
 carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier3,dept=FALSE,reg=reg_focus,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=5.5,ggsavewidth=6)

@@ -31,25 +31,59 @@ Important de bien décrire la fonction `importparametres.R` pour faciliter la co
 
 ## Le dépôt GitHub
 
-Description de l'arborescence des fichiers et comment importer le dépôt GitHub.
-
+Description de l'arborescence des fichiers et le fonctinnement avec GitHub et 
 
 
 ## La base de données
 
 Description de la base de données. Ici, renvoyer vers un mode opératoire basé un fichier sqlite/spatialite.
 
+
+# Etapes pour la prise en main du projet
+
+Pour prendre en main cette méthode de travail, voici un exemple d'application.
+
+## Importation du projet sur GitHub
+
+Ici, décrire la procédure pour importer le projet dans un dépôt personnel
+Adresse:
+
+```{r}
+# Création du dépot git en local (ajout des fichiers)
+cd /media/sf_GIS_ED/Dev/Scripts/
+git init
+git add trunk/*
+git commit -m "Ajout des fichiers et des réperoires de travail"
+
+# Connexion vers le dépôt local
+git remote add origin https://github.com/Rosalien/GISEDSol.git
+git remote -v
+```
+
+
+## Importation de la base de données
+
+
+
+## Configuration des paramètres de connexion
+
+
+
+
 # Les logiciels utilisés
 
 ## R
 
-## Les fonctions gdal/ogr
+La gestion des fonctions, des paquets et des variables locales utilisées dans le projet est centralisée au sein d'une seule fonction, appelée `importparametres.R`. En important cette fonction dans R, les paquets utiles au projet seront installés, les fonctions et les variables locales seront chargées.
+Voici les commandes utiles pour charger les paramètres
 
-## Les logiciels SIG
+```{r chargement, echo=TRUE,eval=FALSE}
+repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/" #Chemin du dépôt GitHub en local
+source(paste(repmaster,"Fonctions/R/importparametres.R",sep="")
 
+importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/Data/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
+```
 
-
-Pour prendre en main cette méthode de travail, voici un exemple d'application.
 
 ## Préparation/installation des paquets
 
@@ -76,6 +110,7 @@ Une fois le modèle de fichier de suivi importé dans votre espace de travail (p
 ![](Figures/compilation_markdown.png)
 
 ## Création d'un fichier en dehors de Rstudio (en ligne de commande pour linux)
+
 Si vous souhaitez utiliser ces fonctionnalités en dehors de Rstudio (le logiciel peut se révéler parfois très lent lors de la génération de rapport complexe et long), il est possible de créer les fichiers de suivi à travers une ligne de commande (en **bash**). Le rendu est identique aux sorties de Rstudio (selon https://stat.ethz.ch/pipermail/r-help/2014-August/421215.html) :
 
 - Ouvrir un terminal linux et lancer la commande suivante dans le répertoire où se trouve le fichier `.Rmd` : `echo "rmarkdown::render('nomfichier.Rmd')" | R --vanilla`

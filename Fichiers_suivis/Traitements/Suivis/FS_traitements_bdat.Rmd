@@ -1,7 +1,7 @@
 ---
 title: "Analyse des teneurs en carbone organique de la BDAT"
 author: "Jean-Baptiste Paroissien"
-date: "31/01/2017"
+date: "20/02/2017"
 output:
   github_document:
     toc: true
@@ -78,28 +78,28 @@ melted.bdat$value <- as.numeric(melted.bdat$value)
 melted.bdat <- melted.bdat[complete.cases(melted.bdat$value),]
 melted.bdat$annees <- factor(melted.bdat$annees,levels=period)
 
-
-# Option2 Nettoyage : Sélection d'un jeu de données où le nombre de canton est constant d'une période à une autre (pour éviter les biais entre les périodes)
-bdat.cplt <- sqlQuery(loc,paste("select * from dm_vecteurs.canton_cplt",sep=""))
-melted.cplt <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdat_cplt",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE))
-
-# 9514
+# Jeu de données sur 4 périodes de temps
 bdat9514 <- sqlQuery(loc,paste("select * from dm_vecteurs.canton_9514",sep=""))
 melted.9514 <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdat_9514",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE))
 melted.9514$value <- as.numeric(melted.9514$value)
 melted.9514 <- melted.9514[complete.cases(melted.9514$value),]
 melted.9514$annees <- factor(melted.9514$annees,levels=c("9599","0004","0509","1014"))
+
+# Sélection des teneurs mesurées avec la méthode OX
+melted.9514 <- melted.9514[melted.9514$variable %in% "corgox",]
 ```
 
 # Objectifs
 
 Dans ce fichier, les analyses cantonales de la BDAT sont analysées afin appréhender la distribution statistique et géographique des teneurs en carbone organique regroupées en 5 périodes : 1990-1994, 1995-1999, 2000-2004, 2005-2009 et 2010-2014. Les résultats présentés font suite à différents scripts de préparations de données dont la chaîne de traitements générale est consultable à cette [adresse](`r github_url`Documentation/Modes_operatoires/Figures/workflow.html)
 
+**Ici, on fera référence au travail en préambule dans (FS_traitements_methodBDAT.Rmd) pour expliquer que l'on se base sur les analyses corgox et sur les 4 périodes**
+
 Globalement, le travail est organisé de la manière suivante :
 
 - **Statistiques descriptives** : Analyse des histogrammes de fréquence et tests statistiques pour chacune des périodes de temps analysées,
 - **Représentation cartographique** : Plusieurs cartes sont proposées pour visualiser la répartition géographiques des données
-- **Analyse des facteurs explicatifs** : Analyse des facteurs explicatifs. 
+- **Analyse des facteurs explicatifs** : Analyse de la répartition des teneurs en lien avec des facteurs explicatifs de types anthropiques et naturels.
 
 # Analyse des teneurs en carbone organique par période
 
@@ -107,19 +107,57 @@ Cette première étape a pour but d'analyser les différences des teneurs en car
 
 ## Analyse à l'échelle de la France
 
-Important, dans l'analyse spatiale des teneurs en carbone organique, rajouter le nombre d'effectif...celà permettra de rajouter 
+### Cartographie des teneurs en carbone organique
+
+Bien que l'hétérogénéité spatiale et temporelle des analyses de la BDAT soient assez importante (certaines zones souffrent d'un manque de données), la cartographie des teneurs en carbone organique (ci-dessous) montre une distribution spatiale organisée et globalement similaire pour les différentes périodes analysées. De façon générale, cette organisation suit la lithologie du pays avec de fortes teneurs en carbone organique présentes dans les zones de socles et de piemonds et des valeurs plus faibles dans les principaux bassins sédimentaires (parisien et aquitain).
+
+D'autre part, ces cartes montrent l'importante hétérogénéité spatio-temporelle des effectifs de la BDAT.
+
+```{r carto_c_fr,highlight=TRUE,eval=FALSE,echo=FALSE}
+# Paramètres #################
+tablecarto <- "dm_vecteurs.canton_9514" #Nom de la table utilisée pour la cartographie (table postgis)
+#period <- c("9094","9599","0004","0509","1014") #
+period <- c("9599","0004","0509","1014") #
+variable <- "corg_medequiv"
+variablecarto <- paste(variable,period,sep="")#variables à cartographier
+nclasse <- 5 
+style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
+couleur <- "YlOrRd" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
+nomfichier <- "corgoxmed_period_fr_9514" #Nom du fichier
+
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=7,ggsavewidth=7)
+
+variable <- "eff_coox"
+period <- c("9094","9599","0004","0509","1014") #
+variablecarto <- paste(variable,period,sep="")#variables à cartographier
+nclasse <- 5 
+style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
+couleur <- "YlOrRd" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+l_variable <- "Nombre d'échantillon par canton" #label de la variable
+nomfichier <- "effectif_bdat_cplt" #Nom du fichier
+
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=7,ggsavewidth=9.2)
+```
+
+```{r map_carbo_fr, echo = F, results = 'asis'}
+# Pour insérer l'image
+nomfichier <- c("corgoxmed_period_fr.png","effectif_bdat.png")
+fichiers <- paste(repsortie,nomfichier,sep="")
+cat(paste("![](",fichiers,")",sep=""))
+```
+
+La section suivante s'attache à...
 
 ### Statistiques descriptives
 
-La figure `r fig$ref("cdf_fr",link=TRUE)` présente les courbes de fréquences cumulées des teneurs en carbone organique distribuées pour les 5 périodes. Les courbes de fréquences des 5 périodes présentent la même forme en "S" et s'individualisent juste avant le plateau, présentant une différence affectant les sols riches en teneurs organiques (entre 17 et 45 g/kg). Sur cette zone (figure à droite), la figure montre un décalage des courbes des périodes 2000-2004, 2005-2009 et 2010-2014 vers des valeurs plus faibles. Parmi ces 3 périodes, la période 2005-2009 est celle qui se décale le plus vers des teneurs plus faible tandis que la période 2010-2014 se rapproche des valeurs de 1990-1994 et 1995-1999, présentant ainsi une inversion de la tendance observée. Ces trois périodes se distinguent clairement des périodes de 1990-1994 et 1995-1999 qui sont rapprochées.
+La figure `r fig$ref("cdf_fr",link=TRUE)` présente les courbes de fréquences cumulées des teneurs en carbone organique distribuées pour les 4 périodes identifiées. Les courbes de fréquences des 4 périodes présentent la même forme en "S" et s'individualisent juste avant le plateau, présentant une différence affectant les sols riches en teneurs organiques (entre 17 et 45 g/kg). Sur cette zone (figure à droite), la figure montre un décalage des courbes des périodes 2000-2004, 2005-2009 et 2010-2014 vers des valeurs plus faibles. Parmi ces 3 périodes, la période 2005-2009 est celle qui se décale le plus vers des teneurs plus faible tandis que la période 2010-2014 se rapproche des valeurs de 1990-1994 et 1995-1999, présentant ainsi une inversion de la tendance observée. Ces trois périodes se distinguent clairement des périodes de 1990-1994 et 1995-1999 qui sont rapprochées.
 
 **Ces observations mettent en évidence une diminution des teneurs en carbone entre les périodes 1990-1999 et 2000-2009 et une légère augmentation pour la période 2010-2014.**
 
 ```{r cdf_fr,highlight=TRUE,echo=FALSE,eval=TRUE,warning=FALSE,error=FALSE,fig.height=5, fig.width=7,fig.cap = fig$cap("cdf_fr","Courbe de fréquences cumulées"),fig.align="center"}
-
 melted.bdat <- melted.9514
 
-#Problème avec l'ouverture de la table
 period <- c("9599","0004","0509","1014")
 xlabel <- "Carbone organique (g/kg)"
 ylabel <- "Fréquence"
@@ -138,9 +176,7 @@ p[[1]] <- ggplot(melted.bdat, aes(x=value))+
              axis.title = element_text(face="bold"),
              axis.text.x=element_text(size = 11))
 
-ggsave(p[[1]],file = paste(repsortie,"cdf_fr1.png",sep=""), width = 9, height = 7)  
-
-
+#ggsave(p[[1]],file = paste(repsortie,"cdf_fr1.png",sep=""), width = 9, height = 7)  
 p[[2]] <- ggplot(melted.bdat[(melted.bdat$value > 17) & (melted.bdat$value < 45) ,], aes(x=value))+
        stat_ecdf(aes(colour=annees))+
        scale_color_manual(values=colors, 
@@ -151,12 +187,10 @@ p[[2]] <- ggplot(melted.bdat[(melted.bdat$value > 17) & (melted.bdat$value < 45)
              axis.title = element_text(face="bold"),
              axis.text.x=element_text(size = 11))
 
-ggsave(p[[2]],file = paste(repsortie,"cdf_fr2.png",sep=""), width = 9, height = 7)  
-
+#ggsave(p[[2]],file = paste(repsortie,"cdf_fr2.png",sep=""), width = 9, height = 7)  
 
 tt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=1,ncol=2,position="bottom")))
-
-ggsave(tt,file = paste(repsortie,"cdf_fr.png",sep=""), width = 10, height = 7)  
+ggsave(tt,file = paste(repsortie,"cdf_fr.pdf",sep=""), width = 10, height = 7)  
 ```
 
 ```{r summarybdatfrance,echo=FALSE,eval=TRUE}
@@ -183,9 +217,8 @@ p <- ggplot(melted.bdat, aes(x=annees,y=value)) +
         text = element_text(size = 12),
         axis.title = element_text(face="bold"),
         axis.text.x=element_text(size = 11))
-
 p
-ggsave(p,file = paste(repsortie,"boxplotbdat.png",sep=""), width = 5, height = 6)  
+#ggsave(p,file = paste(repsortie,"boxplotbdat.png",sep=""), width = 5, height = 6)  
 ```
 
 Les résultats du test de Wilcoxon présentés ci-dessous montrent que **les différences globales entre les périodes sont significatives pour [1990-1994 et 2000-2004], [1995-1999 et 2000-2004], [1995-1999 et 2005-2009] et [2000-2004 et 2010-2014]**. Ces résulats sont à prendre avec mesure, car réalisés sur l'ensemble des cantons. Ils confirment néanmoins les tendances observées sur les courbes de fréquences cumulées (voir figure `r fig$ref("cdf_fr",link=TRUE)`).
@@ -194,45 +227,6 @@ Les résultats du test de Wilcoxon présentés ci-dessous montrent que **les dif
 pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"])
 ```
 
-### Cartographie des teneurs en carbone organique
-
-Bien que l'hétérogénéité spatiale et temporelle des analyses de la BDAT soient assez importante (certaines zones souffrent d'un manque de données), la cartographie des teneurs en carbone organique (ci-dessous) montre une distribution spatiale organisée et globalement similaire pour les différentes périodes analysées. De façon générale, cette organisation suit la lithologie du pays avec de fortes teneurs en carbone organique présentes dans les zones de socles et de piemonds et des valeurs plus faibles dans les principaux bassins sédimentaires (parisien et aquitain).
-
-La section suivante s'attache à analyser la distribution spatiale des teneurs en carbone organique pour comprendre par la suite les leviers agissant sur les évolutions des teneurs.
-
-```{r carto_c_fr,highlight=TRUE,eval=FALSE,echo=FALSE}
-# Paramètres #################
-tablecarto <- "dm_vecteurs.canton_9514" #Nom de la table utilisée pour la cartographie (table postgis)
-#period <- c("9094","9599","0004","0509","1014") #
-period <- c("9599","0004","0509","1014") #
-variable <- "corgox_medequi"
-variablecarto <- paste(variable,period,sep="")#variables à cartographier
-nclasse <- 5 
-style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
-couleur <- "YlOrRd" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
-l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
-nomfichier <- "corgoxmed_period_fr_9514" #Nom du fichier
-
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=7,ggsavewidth=7)
-
-variable <- "eff"
-period <- c("9094","9599","0004","0509","1014") #
-variablecarto <- paste(variable,period,sep="")#variables à cartographier
-nclasse <- 5 
-style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
-couleur <- "YlOrRd" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
-l_variable <- "Nombre d'échantillon par canton" #label de la variable
-nomfichier <- "effectif_bdat_cplt" #Nom du fichier
-
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=7,ggsavewidth=9.2)
-```
-
-```{r map_carbo_fr, echo = F, results = 'asis'}
-# Pour insérer l'image
-nomfichier <- c("corgoxmed_period_fr.png","effectif_bdat.png")
-fichiers <- paste(repsortie,nomfichier,sep="")
-cat(paste("![](",fichiers,")",sep=""))
-```
 
 ## Analyse des facteurs contrôlant la distribution spatiale
 
@@ -240,6 +234,9 @@ Dans cette partie, les facteurs contrôlant la distribution spatiale des teneurs
 
 ### Analyse en composante principale
 
+
+
+#### Test avec les données climatiques
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE}
 # Sélection du jeu de données
 dcast.bdat <- bdat9514
@@ -254,12 +251,12 @@ typetopo <- replicate(length(Rcovartopo), "topographie")
 Rcovarpedo <- "argi_med"
 typetopo <- replicate(length(Rcovartopo), "pedologie")
 
-Rcovaroccup <- c("p_sfp1988","elevage1988","grdcultures1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_c1988","p_c1970","p_c1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbta1988","p_cop1970","p_cop1979","p_cop1988")
-typeoccup <- replicate(length(Rcovaroccup), "occup")
+#Rcovaroccup <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
+#typeoccup <- replicate(length(Rcovaroccup), "occup")
 
-type <- c(typeclimato,typetopo,typeoccup)
-Rcovar <- c(Rcovarclimato,Rcovartopo,Rcovarpedo,Rcovaroccup,"classe_C")
-vNames <- c("corgox_medequi9599",Rcovar)
+type <- c(typeclimato,typetopo)#,typeoccup)
+Rcovar <- c(Rcovarclimato,Rcovartopo,Rcovarpedo,"classe_C")#Rcovaroccup
+vNames <- c("corg_medequiv9599",Rcovar)
 
 # Lecture de la table sans les NA
 lvNames <- length(vNames)
@@ -272,12 +269,58 @@ dcast.bdat_variables[,"classe_C"] <- cut(dcast.bdat_variables[vNames[1]][[1]],br
 res.pca <- PCA(dcast.bdat_variables[,!names(dcast.bdat_variables) %in% "classe_C"], quanti.sup=1,graph = FALSE)# Mettre le carbone en illustratif (quanti.sup=num de colonne)
 #fviz_screeplot(res.pca, ncp=10)
 
-for(i in c(10,25,50)){
-pca <- fviz_pca_var(res.pca, axes = c(1,2),col.var="contrib",select.var = list(contrib = 10)) +
+#for(i in c(10,25,50)){
+ # i=50
+ # pca <- fviz_pca_var(res.pca, axes = c(1,2),col.var="contrib",select.var = list(contrib = i)) +
+#scale_color_gradient2(low="white", mid="blue", 
+ #                 high="red", midpoint=50) + theme_minimal()
+  #ggsave(pca,file = paste(repsortie,"pca_12_",i,".jpg",sep=""), width = 8, height = 8)  
+#}
+
+#
+pca <- fviz_pca_var(res.pca, axes = c(1,3),col.var="contrib") +
 scale_color_gradient2(low="white", mid="blue", 
                   high="red", midpoint=50) + theme_minimal()
-ggsave(pca,file = paste(repsortie,"pca_12_",i,".jpg",sep=""), width = 8, height = 8)  
-}
+pca 
+
+ggsave(pca,file = paste(repsortie,"pca_10.png",sep=""), width = 8, height = 8)  
+
+
+```
+
+#### Test avec les données anthropiques
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE}
+# Sélection du jeu de données
+dcast.bdat <- bdat9514
+
+# Sélection des variables de travail
+#Rcovarclimato <- c("hpluie_an","jchauds_an","jfroids_an","ttemp_an","pluie_ecart_janv","pluie_ecart_juil","ampli_t_juil_janv","jpluie_janv","jpluie_juil")
+#typeclimato <- replicate(length(Rcovarclimato), "climat")
+
+#Rcovartopo <- "altimean"
+#typetopo <- replicate(length(Rcovartopo), "topographie")
+
+#Rcovarpedo <- "argi_med"
+#typetopo <- replicate(length(Rcovartopo), "pedologie")
+
+Rcovaroccup <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
+
+typeoccup <- replicate(length(Rcovaroccup), "occup")
+
+type <- typeoccup#c(typeclimato,typetopo,typeoccup)
+Rcovar <- c(Rcovaroccup,"classe_C")#Rcovarclimato,Rcovartopo,Rcovarpedo,
+vNames <- c("corg_medequiv9599",Rcovar)
+
+# Lecture de la table sans les NA
+lvNames <- length(vNames)
+dcast.bdat_variables <- dcast.bdat[complete.cases(dcast.bdat[,vNames[-lvNames]]),vNames[-lvNames]]
+
+# Création d'une classe de valeur pour le carbone
+classe_valeur <- classIntervals(dcast.bdat_variables[vNames[1]][[1]],n=4,style="quantile",digits=1,na.rm=TRUE)[[2]]
+dcast.bdat_variables[,"classe_C"] <- cut(dcast.bdat_variables[vNames[1]][[1]],breaks = data.frame(classe_valeur)[,1],include.lowest=T) 
+
+res.pca <- PCA(dcast.bdat_variables[,!names(dcast.bdat_variables) %in% "classe_C"], quanti.sup=1,graph = FALSE)
 
 #
 pca <- fviz_pca_var(res.pca, axes = c(1,3),col.var="contrib") +
@@ -343,7 +386,7 @@ typeoccup <- replicate(length(Rcovaroccup), "occup")
 
 type <- c(typetopo,typepedo,typeoccup,typeclimato)
 Rcovar <- c(Rcovartopo,Rcovarpedo,Rcovaroccup,Rcovarclimato)
-vNames <- c("corgox_medequi9599",Rcovar) #9599 car meilleure représentation spatiale, il faudra mieux justifier l'étude de cette variable
+vNames <- c("corg_medequiv9599",Rcovar) #9599 car meilleure représentation spatiale, il faudra mieux justifier l'étude de cette variable
 #####################
 
 # Sélection du jeu de données
@@ -647,7 +690,7 @@ do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=3,position="bottom")))
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=10,fig.cap = fig$cap("correlation","Graphiques de correlation"),fig.align="center"}
 
 Rcovar <- c("pluie_ecart_janv","hpluie_an","altimean","jfroids_an","p_sfp1988","polyelevage1988","ampli_t_juil_janv","p_prairie1988","p_mf1979","p_sfp1970","elevagehorsol1988","p_mf1970","p_mf1988","p_c1979","grdcultures1988")
-vNames <- c("corgox_medequi9599",Rcovar) #9599 car meilleure représentation spatiale, il faudra mieux justifier l'étude de cette variable
+vNames <- c("corg_medequiv9599",Rcovar) #9599 car meilleure représentation spatiale, il faudra mieux justifier l'étude de cette variable
 
 
 xlabel <- "Pluie annuelle (mm)"
@@ -657,7 +700,7 @@ colors <- brewer.pal(5,"Set1")
 
 p <- list()
 for(i in period){
-  c_period <- paste("corgox_medequi",i,sep="")
+  c_period <- paste("corg_medequiv",i,sep="")
   
   dataplot <- dcast.bdat[complete.cases(dcast.bdat$classe_p_sfp1988) & complete.cases(dcast.bdat$hpluie_an) & complete.cases(dcast.bdat[,c_period]),]
 #  dataplot[,c_period] <- log(dataplot[,c_period])
@@ -684,7 +727,7 @@ xlabel <- "Altitude moyenne (m)"
 
 p <- list()
 for(i in period){
-  c_period <- paste("corgox_medequi",i,sep="")
+  c_period <- paste("corg_medequiv",i,sep="")
   
   dataplot <- dcast.bdat[complete.cases(dcast.bdat$classe_p_sfp1988) & complete.cases(dcast.bdat$altimean) & complete.cases(dcast.bdat[,c_period]),]
   
@@ -712,7 +755,7 @@ covariable <- "polyelevage1988"
 
 p <- list()
 for(i in period){
-  c_period <- paste("corgox_medequi",i,sep="")
+  c_period <- paste("corg_medequiv",i,sep="")
   
   dataplot <- dcast.bdat[complete.cases(dcast.bdat$classe_altimean) & complete.cases(dcast.bdat[,covariable]) & complete.cases(dcast.bdat[,c_period]),]
   
@@ -740,7 +783,7 @@ covariable <- "elevagehorsol1988"
 
 p <- list()
 for(i in period){
-  c_period <- paste("corgox_medequi",i,sep="")
+  c_period <- paste("corg_medequiv",i,sep="")
   
   dataplot <- dcast.bdat[complete.cases(dcast.bdat$classe_altimean) & complete.cases(dcast.bdat[,covariable]) & complete.cases(dcast.bdat[,c_period]),]
   
@@ -767,7 +810,7 @@ covariable <- "p_prairie1988"
 
 p <- list()
 for(i in period){
-  c_period <- paste("corgox_medequi",i,sep="")
+  c_period <- paste("corg_medequiv",i,sep="")
   
   dataplot <- dcast.bdat[complete.cases(dcast.bdat$classe_altimean) & complete.cases(dcast.bdat[,covariable]) & complete.cases(dcast.bdat[,c_period]),]
   
@@ -795,7 +838,7 @@ covariable <- "ugbta1988"
 
 p <- list()
 for(i in period){
-  c_period <- paste("corgox_medequi",i,sep="")
+  c_period <- paste("corg_medequiv",i,sep="")
   
   dataplot <- dcast.bdat[complete.cases(dcast.bdat$classe_altimean) & complete.cases(dcast.bdat[,covariable]) & complete.cases(dcast.bdat[,c_period]),]
   
@@ -822,7 +865,7 @@ covariable <- "p_c1988"
 
 p <- list()
 for(i in period){
-  c_period <- paste("corgox_medequi",i,sep="")
+  c_period <- paste("corg_medequiv",i,sep="")
   
   dataplot <- dcast.bdat[complete.cases(dcast.bdat$classe_altimean) & complete.cases(dcast.bdat[,covariable]) & complete.cases(dcast.bdat[,c_period]),]
   

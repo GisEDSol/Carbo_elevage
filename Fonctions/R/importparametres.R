@@ -2,7 +2,7 @@
 #'
 #' @description Fonction pour charger les libraries, et les variables du projet
 #'
-#' @param dsn Paramètre de connexion vers la base de données
+#' @param dsn Paramètres de connexion vers la base de données (ex. "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
 #' @param repmaster Chemin vers la copie du dépôt GitHub en local (XX/XX/)
 #' @param repdata Chemin vers les données à intégrer dans la base (XX/XX/)
 #'
@@ -132,6 +132,7 @@ assign("con",dbConnect(m, dbname="sol_elevage"),.GlobalEnv)
 
 # Chargement des fonctions
 source(paste(repfonctions,"R/F_carto.R",sep=""))
+source(paste(repfonctions,"R/Rpostgis.R",sep=""))
 
 # Fonction très pratique pour remplacer une suite de charact?res par une autre
 gsub2 <- function(pattern, replacement, x, ...) {

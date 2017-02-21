@@ -1,0 +1,193 @@
+---
+title: "Analyse rapide des différences de résultats entre les méthode d'analyses"
+author: "Jean-Baptiste Paroissien"
+date: "27/01/2017"
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
+    fig_width: 10
+    fig_height: 10
+    dev: png
+    md_extensions: +autolink_bare_uris+hard_line_breaks+header_attributes+line_blocks+table_captions
+---
+
+
+```{r setup, include=FALSE,eval=TRUE,echo=FALSE}
+# Importation des paramètres de travail
+source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
+repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
+importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
+repsortie <- paste(repmaster,"/Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
+```
+```{r,eval=TRUE,echo=FALSE}
+## This chunck will read through *this* Rmd file, and attempt to extract all of the 
+## labels (not caption text) used for Figure captions. These labels are used
+## as anchors, so scanning through the document now will allow us to create cross references
+## before the caption actually appears. 
+
+## Get the name of this Rmd file
+rmdFn <- knitr::current_input()  # filename of input document
+
+## Read lines and close connection
+rmdCon <- file(rmdFn, open = "r")
+rmdLines <- readLines(rmdCon)
+close(rmdCon)
+
+## Pull out all occurences of at least one back tick, followed 
+## by any number of characters, followed by fig$cap (all on one line)
+figscap_idx <- grep("`+(.*)fig\\$cap", rmdLines)
+rmdLines <- rmdLines[figscap_idx]
+
+## Get rid of everything up until the start of the caption label
+## This presumes the caption label is the first argument of fig$cap()
+## E.g., fig.cap = fig$cap("my_label", ...)
+rmdLinesSansPre <- sub("(.*)fig\\$cap(.*?)[\"']", "", rmdLines)
+
+## Identify everything up until the first quote
+match_data <- regexpr("(.*?)[\"']", rmdLinesSansPre)
+
+## Reduce the length by one, because we're not interested in the final quote
+attr(match_data, "match.length") <- attr(match_data, "match.length") - 1
+
+## Extract
+fig_labels <- regmatches(rmdLinesSansPre, match_data, invert=FALSE)
+
+if (length(fig_labels) > 0) {
+
+    ## Test for duplicates
+    if (anyDuplicated(fig_labels) > 0) stop("Duplicate caption labels detected")
+    
+    ## Create a named list of Figure numbers
+    ref <- as.list(1:length(fig_labels))
+    names(ref) <- fig_labels
+}    
+```
+
+```{r, tidy=FALSE,eval=FALSE,echo=FALSE}
+Sys.Date()
+sessionInfo()
+```
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE}
+# Lecture des tables de travail
+
+##BDAT
+melted.bdat <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdat",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE))
+period <- c("9094","9599","0004","0509","1014")
+melted.bdat$value <- as.numeric(melted.bdat$value)
+melted.bdat <- melted.bdat[complete.cases(melted.bdat$value),]
+melted.bdat$annees <- factor(melted.bdat$annees,levels=period)
+
+#temp 15/02
+dcast.bdat <- sqlQuery(loc,paste("select * from dm_vecteurs.canton_cplt",sep=""))
+
+```
+
+# Objectifs
+
+## Analyse de l'effet des méthodes
+
+Dans cette partie, on vérifie les différences entre les méthodes de mesure. L'objectif est de savoir si la méthode de mesure influence les résultats d'analyse par période et les évolutions observées entre les périodes.
+
+### Statistiques
+
+Ci-dessous, on regarde rapidement la distribution des analyses pour la Bretagne
+
+```{r cdf_fr,highlight=TRUE,echo=FALSE,eval=TRUE,warning=FALSE,error=FALSE,fig.height=5, fig.width=7,fig.cap = fig$cap("cdf_fr",""),fig.align="center"}
+period <- c("0509","1014")
+xlabel <- "Carbone organique (g/kg)"
+ylabel <- "Fréquence"
+nperiod <- length(period)
+colors <- brewer.pal(nperiod,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
+
+melted.select <- melted.bdat[melted.bdat$code_reg %in% "53" & melted.bdat$variable %in%c("corgox","corgco","corg_medequiv") & melted.bdat$annees %in% period,]
+
+p <- ggplot(melted.select , aes(x=annees,y=value,col=variable)) + 
+     geom_boxplot()+
+     scale_color_manual(values=colors,name="variable")+
+    # geom_smooth(method = "loess", se=FALSE, color="black", aes(group=1))+
+     scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone organique (g/kg)")+
+     theme(plot.title = element_text(size = 14, face = "bold"), 
+          text = element_text(size = 12),
+          axis.title = element_text(face="bold"),
+          axis.text.x=element_text(size = 11))
+p
+
+# Résumé des statistiques 
+bdat_summary <- apply(round(melted.select["value"],2),2, function(x) tapply(x, list(melted.select[,"annees"],melted.select[,"variable"]),summary))
+bdat_summary<- data.frame(bdat_summary[[1]])
+bdat_summary <- lapply(bdat_summary, do.call, what = rbind)
+bdat_summary
+```
+
+La même chose pour le haut de France (données uniquement 9599)
+
+```{r boxplotHF,highlight=TRUE,echo=FALSE,eval=TRUE,warning=FALSE,error=FALSE,fig.height=5, fig.width=7,fig.cap = fig$cap("boxplotHF",""),fig.align="center"}
+period <- "9599"
+nperiod <- length(period)
+colors <- brewer.pal(nperiod,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
+
+melted.select <- melted.bdat[melted.bdat$code_reg %in% c("31","22") & melted.bdat$variable %in%c("corgox","corgco","corg_medequiv") & melted.bdat$annees %in% period,]
+
+p <- ggplot(melted.select , aes(x=annees,y=value,col=variable)) + 
+     geom_boxplot()+
+     scale_color_manual(values=colors,name="variable")+
+    # geom_smooth(method = "loess", se=FALSE, color="black", aes(group=1))+
+     scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone organique (g/kg)")+
+     theme(plot.title = element_text(size = 14, face = "bold"), 
+          text = element_text(size = 12),
+          axis.title = element_text(face="bold"),
+          axis.text.x=element_text(size = 11))
+p
+
+# Résumé des statistiques 
+bdat_summary <- apply(round(melted.select["value"],2),2, function(x) tapply(x, list(melted.select[,"annees"],melted.select[,"variable"]),summary))
+bdat_summary<- data.frame(bdat_summary[[1]])
+bdat_summary <- lapply(bdat_summary, do.call, what = rbind)
+bdat_summary
+```
+
+
+### Cartographie
+
+```{r carto_c_fr,highlight=TRUE,eval=TRUE,echo=TRUE}
+
+tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
+#period <- c("9094","9599","0004","0509","1014") #
+period <- c("9599","0004","0509","1014") #
+nclasse <- 5 
+style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
+couleur <- "YlOrRd" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
+
+variable <- c("corgox","corgco","corg_medequiv","eff_coox","eff_corgox","eff_corgco")
+# Cartographie des teneurs et des effectifs
+for (i in variable){
+  variablecarto <- paste(i,period,sep="")#variables à cartographier
+  nomfichier <- paste(i,"_period_fr",sep="") #Nom du fichier
+
+  carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=7,ggsavewidth=7)
+}
+
+# Cartographie des différences
+l_legend <- "Evolution des teneurs en C"#label de la variable
+nclasse <- 4 #Nombre de classes de valeurs pour la cartographie
+style_classe <- "fixed" #"pretty"#"jenks","fixed"
+couleur <- "Set1"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+
+period <- c("13","24","35","14")
+variable <- c("","corgox")
+
+for (i in variable){
+    if(i==""){
+        variablecarto <- paste("diff",period,sep="")
+        }else{
+        variablecarto <- paste("diff_",i,period,sep="")
+    }
+
+  nomfichier <- paste(i,"median_diff_c",sep="") #Nom du fichier
+
+  carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,dept=FALSE,reg="53",nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=7,ggsavewidth=7)
+}
+```

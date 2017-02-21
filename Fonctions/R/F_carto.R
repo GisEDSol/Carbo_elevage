@@ -132,14 +132,17 @@ readOgrSql = function (dsn, sql, ...) {
 id <- "id_geofla"
 
 if((is.character(dept)==FALSE) & (is.character(reg)==FALSE)){
- # map <- readOGR(dsn = dsn, tablecarto)
-  dep <- readOGR(dsn = dsn, "dm_vecteurs.departement")
+  map <- dbReadSpatial(con, schemaname="dm_vecteurs", tablename="canton", geomcol="geom")
+  #map <- system.time(readOGR(dsn = dsn, tablecarto))
+
+  dep <- dbReadSpatial(con, schemaname="dm_vecteurs", tablename="departement", geomcol="geom")
+  #dep <- readOGR(dsn = dsn, "dm_vecteurs.departement")
 
 #save(map,file=paste(repsortie,tablecarto,".RData",sep=""))
 #save(dep,file=paste(repsortie,"dep.RData",sep=""))
 
-load(paste(repsortie,tablecarto,".RData",sep=""))
-load(paste(repsortie,"dep.RData",sep=""))
+#load(paste(repsortie,tablecarto,".RData",sep=""))
+#load(paste(repsortie,"dep.RData",sep=""))
 
 #  variablecartobis <- paste(variablecarto,collapse=",")
   #strSQL <- paste("SELECT ",id,",",variablecartobis,",ST_AsText(geom) AS geom from ",tablecarto,sep="")

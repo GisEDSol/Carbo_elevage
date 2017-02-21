@@ -259,7 +259,7 @@ typeclimato <- replicate(length(Rcovarclimato), "climat")
 Rcovaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000","var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010","var_cop1988_2010","var_cop1979_2010","eff9094","eff9599","eff0004","eff0509","eff1014")
 
 # Calcul de la différence en relatif
-dcast.bdat$reladiff14 <- ((dcast.bdat[,"corgox_medequi1014"]-dcast.bdat[,"corgox_medequi9094"])/dcast.bdat[,"corgox_medequi9094"])*100
+dcast.bdat$reladiff14 <- ((dcast.bdat[,"corg_medequiv1014"]-dcast.bdat[,"corg_medequiv9094"])/dcast.bdat[,"corg_medequiv9094"])*100
 
 typeoccup <- replicate(length(Rcovaroccup), "occup")
 
@@ -350,7 +350,7 @@ save(importVar,file=paste(repsortie,"importVar_NPC.RData",sep=""))
 
 datapred <- as.data.frame(cbind(indep.pred,indepy))
 
-p_corel_NPC <- ggplot(datapred, aes(indep.pred,indepy)) +
+p_coreldiff <- ggplot(datapred, aes(indep.pred,indepy)) +
             geom_point(alpha = 0.8, size = 2) +
             scale_x_continuous("Evolution des teneurs en carbone prédites (%)")+scale_y_continuous("Evolution des teneurs en carbone observée (%)")+
             theme(plot.title = element_text(size = 14, face = "bold"), 
@@ -360,7 +360,7 @@ p_corel_NPC <- ggplot(datapred, aes(indep.pred,indepy)) +
             annotate("text", x=-20, y=20, label=lm_eqn(lm(datapred[,"indep.pred"]~datapred[,"indepy"], datapred)), parse=TRUE)+
             geom_smooth(method = "lm", se = FALSE,color="black")    
 
-ggsave(p_corel_NPC,file = paste(repsortie,"p_corel_NPC.jpg",sep=""), width = 8, height = 8)  
+ggsave(p_coreldiff,file = paste(repsortie,"p_coreldiff.jpg",sep=""), width = 8, height = 8)  
 
 varimp <- as.data.frame(importVar[,-1])
 
