@@ -19,17 +19,27 @@ ra;UGBHerbi_canton2010;Unité gros bétail tous aliments des herbivores par cant
 ra;UGBTA_canton2000;Unité gros bétail tous aliments par canton pour le ra 2000
 ra;UGBTA_canton2010;Unité gros bétail tous aliments par canton pour le ra 2010
 ra;UGBTA_canton880010;Unité gros bétail tous aliments par canton pour les ra 1988,2000,2010
-clc;changements00_06;
-clc;changements06_12;
-clc;changements90_00;
-clc;clc00_revisee;
-clc;clc06_revisee;
-clc;clc12;
-clc;clc90;
-climat;climatjoly;
-dm_vecteurs;canton;
-dm_vecteurs;commune;
-dm_vecteurs;departement;
-dm_traitements;melted_bdat;
-dm_traitements;melted_bdatdiff;
-dm_traitements;melted_ra;
+clc;changements00_06;Superficies changements Corine Land Cover entre 2000 et 2006 par poste initial (CODE_00) et final (CODE_06) et suivant le découpage géographique
+clc;changements06_12;Superficies changements CORINE Land Cover entre 2006 et 2012 par poste initial (CODE_06) et final (CODE_12) et suivant le découpage géographique
+clc;changements90_00;Superficies changements Corine Land Cover entre 1990 et 2000 par poste initial (CODE_90) et final (CODE_00) et suivant le découpage géographique
+clc;clc00_revisee;Superficies Corine Land Cover 2000 révisé par poste et suivant le découpage géographique
+clc;clc06_revisee;Superficies CORINE Land Cover 2006 révisée par poste et suivant le découpage géographique
+clc;clc12;Superficies CORINE Land Cover 2012 par poste et suivant le découpage géographique
+clc;clc90;Superficies Corine Land Cover 1990 par poste et suivant le découpage géographique
+bdat;bdat_cantonXXXX;Analyses cantonales de la BDAT provenant du datapaper
+bdat;bdat_depart_XXXX;Analyses départementales de la BDAT provenant du datapaper
+bdat;bdat_pra_XXXX;Analyses par petites régions agricoles de la BDAT provenant du datapaper
+bdat;bdat_region_XXXX;Analyses régionales de la BDAT provenant du datapaper
+bdat;bdat_canton_corgco_XXXX;Analyses après ré-échantillonnage des teneurs en carbone organique issues de la méthode combustion sèche (co)
+bdat;bdat_canton_corgco_compXX;Comparaison entre deux périodes de la médiane des teneurs en carbone organique  après ré-échantillonnage pour la méthode combustion sèche (co)
+bdat;bdat_canton_corgequivXXXX;Analyses après ré-échantillonnage des teneurs en carbone organique issues des deux méthodes (ox et co)
+bdat;bdat_canton_corgequiv_comp_XX;Comparaison entre deux périodes de la médiane des teneurs en carbone organique  après ré-échantillonnage pour les deux méthodes (ox et co)
+bdat;bdat_canton_corgox_XXXX;Analyses après ré-échantillonnage des teneurs en carbone organique issues de la méthode oxydation humide (ox)
+bdat;bdat_canton_corgox_comp_XX;Comparaison entre deux périodes de la médiane des teneurs en carbone organique  après ré-échantillonnage pour la méthode oxydation humide (ox)
+climat;climatjoly;Base de données climatiques à l’échelle communale (Joly et al., 2010)
+dm_vecteurs;canton;Vecteur postgis du Geofla à l’échelle du canton (table de travail)
+dm_vecteurs;commune;Vecteur postgis du Geofla à l’échelle de la commune (uniquement données  administratives)
+dm_vecteurs;departement;Vecteur postgis du Geofla à l’échelle du département (uniquement données  administratives)
+dm_traitements;melted_bdat;Table au format long des teneurs en carbone organique  de la BDAT
+dm_traitements;melted_bdatdiff;Table au format long de l’évolution des teneurs en carbone organique de la BDAT
+dm_traitements;melted_ra;Table au format long des statistiques du recencement agricole

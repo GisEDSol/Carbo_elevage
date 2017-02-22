@@ -1,7 +1,7 @@
 Zonage_simple;Zonage_cplt;Label_simple;Label_cplt
 A;A;Zones de grandes cultures ou sans élevage;Zones de grandes cultures ou sans élevage
-B;B2;Cultures +Elevages;Zone de polyculture-élevage du Bassin Aquitain, RhAlpes, Alsace (régression plus rapide de l'élevage)
-B;B1;Cultures +Elevages;Zone de polyculture-élevage du Bassin Parisien
+B;B2;Cultures + Elevages;Zone de polyculture-élevage du Bassin Aquitain, Rhône-Alpes, Alsace (régression plus rapide de l'élevage)
+B;B1;Cultures + Elevages;Zone de polyculture-élevage du Bassin Parisien
 C;C1;Cultures fourragères;Zone intensive du Grand Ouest (zone laitière avec alternatives à l’élevage)
 C;C2;Cultures fourragères;Piémonts intensifs (zone à dominante viande avec peu d’alternatives)
 D;D;Zone herbagère du Nord-Ouest;Zone herbagère du Nord-Ouest

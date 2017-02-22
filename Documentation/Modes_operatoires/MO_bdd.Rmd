@@ -3,6 +3,9 @@ title: "Prise en main pour exploiter la base de données"
 author: "Jean-Baptiste Paroissien"
 date: "20/02/2017"
 output:
+  html_document:
+    toc: yes
+    toc_float: yes
   github_document:
     dev: png
     fig_height: 10
@@ -10,25 +13,31 @@ output:
     md_extensions: +autolink_bare_uris+hard_line_breaks+header_attributes+line_blocks+table_captions
     toc: yes
     toc_depth: 2
-  html_document:
-    toc: yes
-    toc_depth: '2'
+
 ---
 
 ```{r, tidy=FALSE,eval=TRUE,echo=FALSE}
-mo_url <- "https://forge.orleans.inra.fr/projects/infosol/repository/entry/Modes_operatoires/"
-pro_url <- "https://forge.orleans.inra.fr/projects/infosol/repository/entry/Procedure/"
+mo_url <- "https://github.com/Rosalien/GISEDSol/tree/master/Documentation/Modes_operatoires/"
+fs_url <- "https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/"
+```
+
+```{r setup, include=FALSE}
+# Importation des paramètres de travail
+source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
+repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
+repdata <- "/media/sf_GIS_ED/Dev/Data/"
+importparametres(repmaster=repmaster,repdata=repdata,dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
 ```
 
 # Objectif et domaine d'application
 
-L'objectif de ce document est de fournir les informations nécessaires pour pouvoir utiliser la base de données sur les sols et l'élevage. Le document présente l'organisation des données et les explications pour son exploitation.
+L'objectif de ce document est de fournir les informations nécessaires pour pouvoir utiliser la base de données appelée `sol_elevage`. Le document présente l'organisation des données et les explications pour son exploitation.
 
 # L'architecture et l'organisation de la base de données
 
 ## Architecture technique
 
-L'ensemble des données est stocké dans une base de données type postgresql/postgis. Le serveur de la base est en local et des conversions seront réalisées régulièrement vers une base SQLite/Spatialite pour faciliter le partage des données. SQLite diffère de la plupart des systèmes de gestion de base de données par la gestion d'un fichier de base directement sur le disque dur. A la différence de postgresql/postgis, il ne nécessit pas la création d'un serveur, ce qui facilite les échanges. Plus d'infos, [ici](http://www.developpez.com/actu/94614/Un-developpeur-evoque-cinq-raisons-pour-vous-faire-utiliser-SQLite-en-2016-que-pensez-vous-de-ses-arguments/).
+L'ensemble des données est stocké dans une base de données type postgresql/postgis. Le serveur de la base est en local et des conversions seront réalisées régulièrement vers une base SQLite/Spatialite pour faciliter le partage des données. SQLite diffère de la plupart des systèmes de gestion de base de données par la gestion d'un fichier de base directement sur le disque dur. A la différence de postgresql/postgis, il ne nécessite pas la création d'un serveur, ce qui facilite les échanges. Plus d'infos, [ici](http://www.developpez.com/actu/94614/Un-developpeur-evoque-cinq-raisons-pour-vous-faire-utiliser-SQLite-en-2016-que-pensez-vous-de-ses-arguments/).
 
 ## Organisation de la base de données
 
@@ -36,107 +45,123 @@ Deux types de données sont intégrées dans la base : les données brutes et le
 
 ### Les données brutes
 
-Elles proviennent de différentes sources et représentent des données qui ne sont pas directement exploitables pour des traitements statistiques ou de la cartographie. Elles sont stockées dans des schémas portant le nom de leur thématique associées (voir tableau ci-dessous). Ces données sont traitées et stockées dans des data marts.
-
 ```{r,evaL=TRUE,echo=FALSE}
 metatable <- read.csv(paste(repmetadonnees,"Catalogue_schema.csv",sep=""),sep=";")
-pander(metatable[metatable$Type %in% "Brute",][,c("Schéma","Description")],caption = "Liste des schémas de la base de données")
+pander(metatable[metatable$Type %in% "Brute",][,c("Schéma","Description")],caption = "Liste des schémas de la base de données",justify = c('left', 'left'))
 ```
+
 ### Les data marts
 
 Les data marts (magasins de données) sont les données qui sont directement utilisables dans des traitements. Ces data marts se présentent sous la forme d'une ou plusieurs tables classées dans des schémas distincts. Le nom de ces schémas est préfixé par « dm_». Le tableau suivant dresse la liste des data marts disponibles :
 
 ```{r,evaL=TRUE,echo=FALSE}
 metatable <- read.csv(paste(repmetadonnees,"Catalogue_schema.csv",sep=""),sep=";")
-pander(metatable[metatable$Type %in% "Data_mart",][,c("Schéma","Description")],caption = "Liste des schémas de la base de données")
+tt <- metatable[metatable$Type %in% "Data_mart",][,c("Schéma","Description")][,1:2]
+rownames(tt) <- 1:nrow(tt)
+pander(tt,caption = "Liste des schémas de la base de données",justify = c('left', 'left'),include.rownames = FALSE)
 ```
 
-# Connexion à la base de données
+# Les données brutes
 
-Deux formats de bases de données sont proposés:
+Description des principales tables présentent dans les schémas. L'ensemble de la description des tables est également accessible sur cette table.
 
-- SQLite/Spatialite
-- PostgreSQL/PostGIS
+*Pour plus de détails sur la construction de ces tables, le lecteur intéressé peut consulter le [fichier de suivi](`r fs_url`BDD/Suivis/FS_bdd_Brute.Rmd).*
 
-## Format sqlLite/SpatiaLite
+## Les tables de la BDAT
 
-## Format PostgreSQL/PostGIS
+La description des tables brutes de la BDAT est décrit dans le tableau ci-dessous. Les `XXXX` correspondent aux périodes d'analyse suivantes :
 
-Pour vous connecter à Dela, vous avez besoin :
- 
-- Installer un client PostgreSQL à jour ([PgAdminIII](https://www.pgadmin.org/) par exemple)
-- Utiliser les paramètres de connexion suivants :
-	- Hôte : 
-	- Port TCP : 5432
-	- Base : 
-	- Nom d'utilisateur : 
-	- Mot de passe : 
+- 1: 1990-1994
+- 2: 1995-1999
+- 3: 2000-2004
+- 4: 2005-2009
+- 5: 2010-2014
 
-### Connexion ODBC
+Les `XX` correspondent aux numéros des périodes comparées entre elles. Par exemple, **12** correspond à la comparaison des teneurs en carbone organique entre 1990-1994 et 1995-1999.
 
-Dans la suite, le mode opératoire est proposé pour un système linux. Pour un système basé sous windows, le lecteur intéressé peut consulter la page [suivante](http://informatique-mia.inra.fr/r4ciam/ODBC.html).
+**Nota** les données provenant du datapaper sont téléchargeables à cette [adresse](http://www.gissol.fr/wp-content/uploads/2015/04/bdat.zip)
 
-Les connexions odbc sont configurées dans le fichier `odbc.ini` présent dans l'arborescence du système `\etc\odbc.ini`. Pour configurer une connexion, une modification de ce fichier est nécessaire. Tapez dans un terminal `sudo gedit \etc\odbc.ini` puis apporter les modifications nécessaires. 
-
-Voici ci-dessous les différents paramètres de connexions relatifs aux différents alias présentés précédemment. Vous pouvez directement copier ces lignes vers le fichier `\etc\odbc.ini` en remplaçant nomutilisateur_ldap et mdp_ldap par votre nom d'utilisateur et votre mot de passe LDAP.
-
-- Database : Nom de la base de données
-- Servername : Nom du serveur
-- Username : Nom d'utilisateur
-- Password : Mot de passe
-- Port : Port de la base de données
-
-```{r, tidy=FALSE,eval=FALSE}
-[ODBC]
-InstallDir = /usr/lib
-
-[solelevage]
-Driver = /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so
-Database = sol_elevage
-Servername = localhost
-Username = jb	
-Password = ******
-Port=5432
-Protocol = 8.1
-ReadOnly = 0
-```
-Les connexions ODBC dans R sont possibles avec le paquet `RODBC`. Pour l'installer, tapez la commande suivante dans un terminal R : `install.packages("RODBC")`.
-Ensuite, vous pouvez utiliser l'alias des paramètres de connexions du fichier `odbc.ini` dans la fonction décrivant les paramètres de connexion `odbcConnect`. Pour vérifier les modifications apportées au fichier de configuration `odbc.ini`, vous pouvez lancer les lignes de commandes suivantes dans le logiciel R.
-
-```{r, tidy=FALSE,eval=FALSE}
-library(RODBC)
-loc <- odbcConnect("sol_elevage",case="postgresql", believeNRows=FALSE)
+```{r,evaL=TRUE,echo=FALSE}
+metatable <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=";")
+tt <- metatable[metatable[,"Schéma"] %in% "bdat",][,c("Table","Description")][,1:2]
+rownames(tt) <- 1:nrow(tt)
+pander(tt,caption = "Liste des tables brutes de la BDAT",justify = c('left', 'left'),split.cells = c("35%", "65%"),use.hyphening = TRUE)
 ```
 
-# Données disponibles
+## Les tables du recensement agricole
 
-# Documentation de la base de données
-
-La documentation de l'entrepôt de données s'articule autours de différents types de documents. Un document de cadrage général décrit le projet de développement de l'entrepôt dans sa globalité (architecture, modèles de données, métadonnées, documentation disponible, etc.). Pour chaque Data Mart il existe une fiche d'indicateur qui lui est propre. Cette fiche est utilisée pour l'analyse des besoins et sert aussi de document qualité décrivant le data mart une fois que celui-ci est mis en œuvre. La fiche d'indicateur décrit ainsi la raison d'être du data mart et la façon dont il a été construit. Enfin, trois documents d'orientation présentent les procédures adaptées aux différents types d'utilisateurs de l'entrepôt de données :
-- les administrateurs de l'entrepôt,
-- les développeurs des nouveaux jeux de données,
-- les utilisateurs des données de l'entrepôt.
-
-Ces documents sont présents sur la forge logicielle de l'unité InfoSol à l'adresse suivante : forge, projet "Entrepôt de données". Le document de cadrage et les fiches d'indicateur sont accessibles via l'onglet « Documents » tandis que les fichiers de procédure sont accessibles via l'onglet « Wiki ».
-
-# Les métadonnées des tables
-
-
-
-
-# Configuration des connexions
-## Installation des paquets système
-Voici les commandes à reproduire pour installer les paquets relatifs à la gestion du versionnement des fichiers (subversion), aux connexions ODBC et ssh.
-```{r, tidy=FALSE,eval=FALSE}
-sudo su -
-
-# Mise à jour des paquets
-apt-get update
-apt-get upgrade -y
-
-# Installation des paquets 
-apt-get install -y subversion unixODBC odbc-postgresql unixODBC-dev dos2unix
-
+```{r,evaL=TRUE,echo=FALSE}
+metatable <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=";")
+tt <- metatable[metatable[,"Schéma"] %in% "ra",][,c("Table","Description")][,1:2]
+rownames(tt) <- 1:nrow(tt)
+pander(tt,caption = "Liste des tables brutes du recensement agricole",justify = c('left', 'left'),split.cells = c("30%", "70%"),use.hyphening = TRUE)
 ```
 
+## Les tables de Corine Land Cover
 
+```{r,evaL=TRUE,echo=FALSE}
+metatable <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=";")
+tt <- metatable[metatable[,"Schéma"] %in% "clc",][,c("Table","Description")][,1:2]
+rownames(tt) <- 1:nrow(tt)
+pander(tt,caption = "Liste des tables brutes de Corine Land Cover",justify = c('left', 'left'),split.cells = c("30%", "70%"),use.hyphening = TRUE)
+```
+
+# Les data_mart
+
+Les tables de travail utilisées sont stockées dans les `data_mart` et sont décrites dans le détail dans cette section. Pour plus de détails sur ces tables, l'ensemble des fichiers de suivi associés à leurs créations sont consultables dans ce [répertoire](`r fs_url`BDD/Suivis/). Le nom des fichiers ont comme préfixe `FS_bdd_elab`.
+
+## La table dm_vecteurs.canton et de ses filtres
+
+La table `dm_vecteurs.canton` centralise l'ensemble des données de travail à l'échelle du canton. C'est une table au format PostGis, elle contient une colonne géométrique (`geom`) permettant une visualisation dans un Système d'Information Géographique.
+D'autres déclinaisons de cette table ont été créées pour répondre à des besoins d'analyses spécifiques. Il s'agit de filtres créés pour travailler sur des jeux de données homogènes en terme de données sur les sols. La création de ces filtres a été réalisée dans ce [fichier de suivi](`r fs_url`BDD/Suivis/FS_bdd_elab_bdat.Rmd). 
+
+- **dm_vecteurs.canton_9014 :** filtre de la table dm_vecteurs.canton basée sur la disponibilité complète et homogène des teneurs en carbone organique sur la période 1990-2014.
+- **dm_vecteurs.canton_9514 :** filtre de la table dm_vecteurs.canton basée sur la disponibilité homogène des teneurs en carbone organique sur la période 1995-2014 (exclusion de la période 1990-1994),
+
+La description des champs de cette table est présentée ci-dessous. 
+
+```{r,eval=TRUE,echo=FALSE}
+tt <- sqlQuery(loc,"select column_name,comment from public.metadata where table_name like 'canton' and comment is not null")
+colnames(tt) <- c("Colonne","Description")
+pander(tt,caption = "Description des champs de la table dm_vecteurs.canton",justify = c('left', 'left'),split.cells = c("35%", "65%"),use.hyphening = TRUE)
+```
+
+## Les tables au format long (dm_traitements.melted et autres)
+
+Ces tables sont au format long et servent aux différents traitements statistiques et aux scripts de création de cartes.
+
+- `dm_traitements.melted.bdat` : table de la médiane des teneurs en carbone organique et des effectifs pour différentes paramètres au format long.
+
+De la même façon que `dm_vecteurs.canton`, la création de la table `dm_traitements.melted.bdat` est déclinée également pour les filtres  `dm_vecteurs.canton_9514` et `dm_vecteurs.canton_9014`. Les tables portent des noms similaires :
+
+- **dm_traitements.melted.bdat_9014 :** table de la médiane des teneurs en carbone organique et des effectifs pour différentes paramètres au format long. Cette table est construite avec `dm_vecteurs.canton_9014`.
+- **dm_traitements.melted.bdat_9514 :** table de la médiane des teneurs en carbone organique et des effectifs pour différentes paramètres au format long. Cette table est construite avec `dm_vecteurs.canton_9514`.
+
+```{r,eval=TRUE,echo=FALSE}
+#colmelted <- sqlQuery(loc, "select * from dm_traitements.melted_bdat limit 1")
+#colmelted <- paste(names(colmelted),collapse="|")
+#tt <- sqlQuery(loc,paste("select column_name,comment from public.metadata where table_name like 'melted_bdat' and column_name similar to '",colmelted,"'",sep=""))
+tt <- sqlQuery(loc,paste("select column_name,comment from public.metadata where table_name like 'melted_bdat' and comment is not null",sep=""))
+colnames(tt) <- c("Colonne","Description")
+pander(tt,caption = "Description des champs de la table dm_traitements.melted_bdat",justify = c('left', 'left'),split.cells = c("15%", "85%"),use.hyphening = TRUE)
+```
+
+```{r,evaL=TRUE,echo=FALSE}
+metatable <- read.csv(paste(repmetadonnees,"Nomenclature_regionelevage.csv",sep=""),sep=";")
+colnames(metatable) <- c("Code simple","Code cplt","Description simple","Description cplt")
+pander(metatable,caption = "Description des régions d'élevage",justify = c('left','left','left','left'),split.cells = c("0.05%","0.05%","4.9%","95%"),use.hyphening = TRUE,split.table = Inf)
+```
+
+```{r,evaL=TRUE,echo=FALSE}
+metatable <- read.csv(paste(repmetadonnees,"Nomenclature_typeclimat.csv",sep=""),sep=";")
+pander(metatable,caption = "Description des types de climats",justify = c('left','left'),split.cells = c("40%","60%"),use.hyphening = TRUE)
+```
+
+La création des tables au format long a été également réalisée pour les données liées aux évolutions des teneurs en carbone organique. Une seule table a été générée : `dm_traitements.melted_bdatdiff`.
+Le tableau ci-dessous décrit les champs de cette table.
+
+```{r,evaL=TRUE,echo=FALSE}
+tt <- sqlQuery(loc,paste("select column_name,comment from public.metadata where table_name like 'melted_bdatdiff' and comment is not null",sep=""))
+colnames(tt) <- c("Colonne","Description")
+pander(tt,caption = "Description des champs de la table dm_traitements.melted_bdatdiff",justify = c('left', 'left'),split.cells = c("20%", "80%"),use.hyphening = TRUE)
+```

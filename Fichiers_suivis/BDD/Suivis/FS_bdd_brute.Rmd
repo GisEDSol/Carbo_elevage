@@ -97,7 +97,6 @@ sqlQuery(loc,paste("alter table ",schema,".canton
               add column code_canton varchar(5);
               UPDATE ",schema,".canton
               SET code_canton = code_dept || code_cant",sep=""))
-
 ```
 
 ```{r,highlight=TRUE,eval=FALSE}
@@ -129,16 +128,6 @@ sqlQuery(loc,"update commune
 ```
 
 # Les données sols
-
-Présenter rapidement données sols inclusent dans la base
- 
-| Catégorie                             | Type de données                     | Source                         | Contacts                                     |
-|---------------------------------------|-------------------------------------|--------------------------------|----------------------------------------------|
-| BDAT                                  | ShapeFiles (L93)                    | InfoSol                        | infosol@inra.fr                              |
-| LUCAS                                 | ShapeFiles (L93)                    | JRC                            |                                              |
-| BDGSF                                 | ShapeFiles (L93)                    | JRC                            |                                              |
-| Stock de carbone                      | Raster (L93)                        | Interne IDELE                  | infosol@inra.fr                              |
-| Biomasse microbienne                  | Raster (L93)                        | IGN + Agreste                  | infosol@inra.fr                              |
 
 ## La BDAT
 
@@ -699,11 +688,8 @@ Rajouter lien vers des modes opératoires pour lire les données vers qgis.
 # Vérification (selon http://gis.stackexchange.com/questions/168819/fixing-ogr2ogr-without-spatialite-support)
 ogrinfo --formats sqlite | grep 'spatialite' -i
 ogrinfo --format sqlite | grep 'spatialite' -i
-databasename <- "sol_elevage"
 
-system(paste("ogr2ogr --config PG_LIST_ALL_TABLES YES --config PG_SKIP_VIEWS YES -f \"SQLite\" ",databasename,".sqlite -progress PG:\"dbname='",databasename,"' \
-host='localhost' port='5432' user='jb' password='170284'\" -lco LAUNDER=yes \
-  -dsco SPATIALITE=yes -lco SPATIAL_INDEX=yes -gt 65536",sep=""))
+system("ogr2ogr --config PG_LIST_ALL_TABLES YES --config PG_SKIP_VIEWS YES -f "SQLite" sol_elevage.sqlite -progress PG:"dbname='sol_elevage' host='localhost' port='5432' user='jb' password='170284'" -lco LAUNDER=yes -dsco SPATIALITE=yes -lco SPATIAL_INDEX=yes -gt 65536")
 ```
 
 ## Export de la base en PostgreSQL/PostGIS
@@ -712,7 +698,8 @@ La base de données est sauvegardée au format PostgreSQL/PostGIS avec la comman
 Les commandes suivantes présentent les instructions données pour sauvegarder la base de données.
 
 ```{r,eval=FALSE}
-#pd_dump sol_elevage > test
+# Export avec pg_dump
+pg_dump sol_elevage > sol_elevage.sql
 
 pg_dump -Ft -b mabase > base.tar
 pg_restore -d nouvellebase base.tar

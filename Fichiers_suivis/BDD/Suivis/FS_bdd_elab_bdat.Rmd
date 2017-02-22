@@ -1,5 +1,5 @@
 ---
-title: "Traitement des données de la BDAT"
+title: "Création des données élaborées de la BDAT"
 author: "Jean-Baptiste Paroissien"
 output:
   github_document:
@@ -57,7 +57,7 @@ for(i in period){
                       from ",schema,".",tableBDAT,") as s1
                       where ",table_dm,".code_canton=s1.canton::text",sep=""))
   
-  # Ajout d'un commentaire sur la nouvelle colonne crée
+  # Ajout d'un commentaire sur la nouvelle colonne créée
   print(sqlQuery(loc,paste("
   COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Médiane des teneurs en carbone organique après ré-échantillonnage pour la période (toutes méthodes confondues)",i,".\';",sep="")))
 }
@@ -86,7 +86,7 @@ for(i in period){
                       from ",schema,".",tableBDAT,") as s1
                       where ",table_dm,".code_canton=s1.canton::text",sep=""))
   
-  # Ajout d'un commentaire sur la nouvelle colonne crée
+  # Ajout d'un commentaire sur la nouvelle colonne créée
   print(sqlQuery(loc,paste("
   COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Nombre d\''effectif par canton (toutes méthodes confondues)",i,".\';",sep="")))
 }
@@ -118,7 +118,7 @@ for(i in period){
                       from ",schema,".",tableBDAT,") as s1
                       where ",table_dm,".code_canton=s1.canton::text",sep=""))
     
-      # Ajout d'un commentaire sur la nouvelle colonne crée
+      # Ajout d'un commentaire sur la nouvelle colonne créée
       print(sqlQuery(loc,paste("
       COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Résultat du test de significacité de la différence de la médiane des teneurs en carbone organique au niveau du canton.\';",sep="")))
     
@@ -131,7 +131,7 @@ for(i in period){
                       from ",schema,".",tableBDAT,") as s1
                       where ",table_dm,".code_canton=s1.canton::text",sep=""))
     
-      # Ajout d'un commentaire sur la nouvelle colonne crée
+      # Ajout d'un commentaire sur la nouvelle colonne créée
       print(sqlQuery(loc,paste("
       COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Pourcentage d évolution de la médiane des teneurs en carbone organique par canton ((medA-medB)/medB))*100 avec B une période antérieure à A.\';",sep="")))
     }
@@ -170,7 +170,7 @@ for(m in methodo){
                         from ",schema,".",tableBDAT,") as s1
                         where ",table_dm,".code_canton=s1.canton::text",sep=""))
   
-    # Ajout d'un commentaire sur la nouvelle colonne crée
+    # Ajout d'un commentaire sur la nouvelle colonne créée
     print(sqlQuery(loc,paste("
     COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Médiane des teneurs en carbone organique après ré-échantillonnage pour la période",i," et pour la méthode ",m_sign[cpt],".\';",sep="")))
   }
@@ -204,7 +204,7 @@ for(m in methodo){
                         from ",schema,".",tableBDAT,") as s1
                         where ",table_dm,".code_canton=s1.canton::text",sep=""))
   
-    # Ajout d'un commentaire sur la nouvelle colonne crée
+    # Ajout d'un commentaire sur la nouvelle colonne créée
     print(sqlQuery(loc,paste("
     COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Nombre d\''effectif par canton pour la période",i," et pour la méthode ",m_sign[cpt],".\';",sep="")))
   }
@@ -245,7 +245,7 @@ for(m in methodo){
                         from ",schema,".",tableBDAT,") as s1
                         where ",table_dm,".code_canton=s1.canton::text",sep=""))
     
-      # Ajout d'un commentaire sur la nouvelle colonne crée
+      # Ajout d'un commentaire sur la nouvelle colonne créée
       print(sqlQuery(loc,paste("
         COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Résultat du test de significacité de la différence de la médiane des teneurs en carbone organique au niveau du canton pour la méthode ",m_sign[cpt],"\';",sep="")))
     
@@ -258,7 +258,7 @@ for(m in methodo){
                         from ",schema,".",tableBDAT,") as s1
                         where ",table_dm,".code_canton=s1.canton::text",sep=""))
     
-        # Ajout d'un commentaire sur la nouvelle colonne crée
+        # Ajout d'un commentaire sur la nouvelle colonne créée
         print(sqlQuery(loc,paste("
         COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Différence entre la période A et la période B (g/kg) pour la méthode de mesure ",m_sign[cpt],".\';",sep="")))
       }
@@ -290,7 +290,7 @@ for(i in vpedo){
                       from ",schema,".",tableBDAT,") as s1
                       where ",table_dm,".code_canton=s1.code_canton::text",sep=""))
 
-  # Ajout d'un commentaire sur la nouvelle colonne crée
+  # Ajout d'un commentaire sur la nouvelle colonne créée
   print(sqlQuery(loc,paste("
   COMMENT ON COLUMN ",table_dm,".",i," IS \'Médiane du taux d\''argile (g/kg) calculée sur 1990-2009.\';",sep="")))
 }
@@ -358,6 +358,16 @@ melted.bdat$typo_clim <- as.factor(melted.bdat$typo_clim)
 tablename <- paste("dm_traitements.","melted_bdat",sep="")
 sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
 sqlSave(loc,melted.bdat,tablename=tablename)
+
+# Ajout de quelques commentaires
+print(sqlQuery(loc,paste("
+COMMENT ON COLUMN ",tablename,".value IS \'Médiane des teneurs en carbone organique et les effectifs après ré-échantillonnage sur l\''ensemble des périodes et les différentes méthodes de mesure.\';",sep="")))
+
+print(sqlQuery(loc,paste("
+COMMENT ON COLUMN ",tablename,".annees IS \'Périodes d\''analyse des teneurs en carbone organique.\';",sep="")))
+
+print(sqlQuery(loc,paste("
+COMMENT ON COLUMN ",tablename,".variable IS \'Type de méthode de mesure des teneurs en carbone organique et les effectifs (corgox:oxydation humide; corgco:combustion sèche; corg_medequiv:corgox+corgco; eff_corgox:effectif pour la méthode corgox; eff_corgco:effectif pour la méthode corgco; eff_coox:effectif pour les méthodes méthodes corgox+corgco.\';",sep="")))
 
 ```
 
@@ -439,22 +449,35 @@ tablename <- paste("dm_traitements.","melted_bdatdiff",sep="")
 sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
 sqlSave(loc,melted.bdatdiff,tablename=tablename)
 
+print(sqlQuery(loc,paste("
+COMMENT ON COLUMN ",tablename,".period IS \'Périodes comparées des teneurs en carbone organique.\';",sep="")))
+
+print(sqlQuery(loc,paste("
+COMMENT ON COLUMN ",tablename,".diffmedian IS \'Différences des teneurs en carbone organique entre deux périodes. Toutes méthodes de mesure confondues (corgox+corgco).\';",sep="")))
+
+print(sqlQuery(loc,paste("
+COMMENT ON COLUMN ",tablename,".diffmedian_corgox IS \'Différences des teneurs en carbone organique entre deux périodes. Méthode de mesure oxydation humide (corgox).\';",sep="")))
+
+print(sqlQuery(loc,paste("
+COMMENT ON COLUMN ",tablename,".diff IS \'Résultat du test statistique de différence des teneurs en carbone organique entre deux périodes (test de Wilcoxon). Toutes méthodes de mesure confondues (corgox+corgco).\';",sep="")))
+
+print(sqlQuery(loc,paste("
+COMMENT ON COLUMN ",tablename,".diff_corgox IS \'Résultat du test statistique de différence des teneurs en carbone organique entre deux périodes (test de Wilcoxon). Méthode de mesure oxydation humide (corgox).\';",sep="")))
 ```
 
 # Création d'une table de travail de données complète
 
-Ici, la table `dm_vecteurs.canton` est dupliquer et filtrer pour un travail basé uniquement sur un nombre de canton ayant des analyses sur l'ensemble de période étudiée. Cette table d'exploitation est nommée `dm_vecteurs.canton_cplt`. Elle servira de base pour la création de la table au format long complète également.
-**Nota. Changement de stratégie. On utilisera deux types de masques :**
+Ici, la table `dm_vecteurs.canton` est dupliquée et filtrée pour un travail basé uniquement sur un nombre de canton ayant des analyses sur l'ensemble de période étudiée. Deux tables tables sont crées. Elles serviront de base pour la création de tables au format long.
 
-- canton_cplt pour toutes les périodes
-- canton_9504 pour l'exclusion de la première période
+- **canton_9014** pour toutes les périodes
+- **canton_9514** pour l'exclusion de la première période
 
 ## Format large
 
 ```{r,highlight=TRUE,eval=FALSE}
 
-sqlQuery(loc,"DROP TABLE IF EXISTS dm_vecteurs.canton_cplt")
-sqlQuery(loc,"CREATE TABLE dm_vecteurs.canton_cplt as
+sqlQuery(loc,"DROP TABLE IF EXISTS dm_vecteurs.canton_9014")
+sqlQuery(loc,"CREATE TABLE dm_vecteurs.canton_9014 as
 SELECT *
 FROM dm_vecteurs.canton
 where corgox9094 is not null and corgox9599 is not null and corgox0004 is not null
@@ -473,11 +496,11 @@ and corgox0509 is not null and corgox1014 is not null
 
 ## Format long
 
-Pour le canton_cplt
+Pour le canton_9014
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
-table_dm <- "dm_vecteurs.canton_cplt" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+table_dm <- "dm_vecteurs.canton_9014" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
 varia <- "corgox" # Variable à analyser 
 period <- c("9094","9599","0004","0509","1014")
 variaoccup <- c("p_sth","p_sfp","p_prairie","p_cop","p_c")
@@ -519,7 +542,7 @@ melted.bdat$annees <- as.character(melted.bdat$annees)
 melted.bdat$typo_clim <- as.factor(melted.bdat$typo_clim)
 
 # Enregistrement dans le schema dm_traitements  
-tablename <- paste("dm_traitements.","melted_bdat_cplt",sep="")
+tablename <- paste("dm_traitements.","melted_bdat_9014",sep="")
 sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
 sqlSave(loc,melted.bdat,tablename=tablename)
 ```

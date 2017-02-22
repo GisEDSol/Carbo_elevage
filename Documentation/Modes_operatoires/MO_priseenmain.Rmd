@@ -1,6 +1,6 @@
 ---
-title: "Mode opératoire pour reprendre en main le projet"
-author: "Jean-Baptiste Paroissien"
+title: "Mode opératoire pour reprendre en main le projet Carbo_elevage"
+author: "Jean-Baptiste Paroissien" 
 output:
   github_document:
     toc: true
@@ -13,77 +13,228 @@ output:
 
 ```{r, tidy=FALSE,eval=TRUE,echo=FALSE}
 mo_url <- "https://github.com/Rosalien/GISEDSol/tree/master/Documentation/Modes_operatoires/"
-#pro_url <- "https://forge.orleans.inra.fr/projects/infosol/repository/entry/Procedure/"
-#tmp_url <- "https://forge.orleans.inra.fr/projects/infosol/repository/entry/Template/"
 ```
 
 # Objectif et domaine d'application
-Ce mode opératoire décrit le projet dans sa globalité pour faciliter la reprise en main du travail.
 
-# Vue globale du projet
+Ce mode opératoire décrit le projet appelé `Carbo_elevage` dans sa globalité. Le projet `Carbo_elevage` à pour objectif d'étudier l'évolution des teneurs en carbone organique en France sous le regard de l'évolution de l'occupation du sol en lien avec l'élevage. Le travail est basé sur les analyses de la [BDAT]() et il se divise en deux grandes phases :
+
+- La construction d'une base de données regroupant des données sols (essentiellement la BDAT) et les facteurs potentiellement explicatifs des teneurs en carbone organique et des évolutions associées,
+- L'analyse statistique de la distribution des teneurs en carbone organique et de ces évolutions.
+ 
+L'objectif du document est de fournir l'ensemble des éléments pratiques pour reprendre le projet en 3 étapes :
+
+- **Etape 1** Accès aux scripts de travail
+- **Etape 2** Accès à la base de données
+- **Etape 3** Mise en place des connexions entre les scripts et la base de données
+
+# Démarche de travail
+
+L'organisation des fichiers suit la chaine de traitement générale présentée dans la figure ci-dessous (ou en dynamique à cette [adresse](https://rawgit.com/Rosalien/GISEDSol/master/Documentation/Modes_operatoires/Figures/workflow.html)).
+
+![Chaine de traitement générale](Figures/workflow1_1.png)
+
+Ce schéma décrit l'organisation générale des scripts et leur impact sur la base de données. Il suit la démarche suivante : 
+
+- les données brutes (données sur les sol + autres données) sont intégrées dans la base de données à travers plusieurs commandes centralisées dans le fichier `FS_bdd_brute`. Ces données sont organisées dans la base à travers plusieurs schémas portant le nom des données intégrées (par ex. `bdat`) ou la thématique (par ex. `climat`),
+- Plusieurs scripts exploitent ces tables brutes pour générer des indicateurs à l'échelle du canton. Ils portent le nom de la données manipulées. L'ensemble de ces scripts permet d'alimenter les tables de travail appelé data_mart (préfixe `dm`),
+- Ces tables de travail sont exploitées pour analyser les teneurs et les évolutions des teneurs en carbone organique. L'analyse de ces données a lieu dans scripts portant le nom du traitement réalisé.
+
+Pour faciliter la navigation dans l'arborescence et le contenu des fichiers, le nom des scripts (type .Rmd) est nommé selon la règle suivante :
+
+- Répertoire Mode_opératoire : préfixe `MO_`
+- Répertoire Fonctions : préfixe `F_`
+- Tous les fichiers de suivi : préfixe `FS_`
+- Les fichiers de suivi relatifs à la création de la base de données `FS_bdd`
+- Les fichiers de suivi relatifs à la création des données élaborées la base de données `FS_elab`
 
 
-## La méthode de travail
 
-Ici, on parle de la méthode de travail
+# Etape 1 : Accès aux scripts de travail
 
-Important de bien décrire la fonction `importparametres.R` pour faciliter la configuration des scripts R vers la base de données et l'arborescence du projet
+L'ensemble du travail (création de la BDD et les analyses statistiques) est développé sous forme de scripts utilisant principalement le langage R, SQL et bash. Tous les rapports du projet sont écrits en `R+markdown` ce qui permet d'inclure dans le corps du texte du code `R` (les chunks). C'est un langage en balisage léger qui offre une syntaxe facile à lire et à écrire (comme le langage wiki).
+
+Tous les scripts sont centralisés et organisés dans un dépôt [GitHub](). Il s'agit d'un service web d'hébergement et de gestion de développement de scripts utilisant le logiciel de gestion de versions [Git](). Dans ce type de logiciel, le dépôt représente une copie du projet. Chaque ordinateur d’un développeur qui travaille sur le projet possède donc une copie du dépôt. Dans chaque dépôt, on trouve les fichiers du projet ainsi que leur historique.
+
+**Dans la suite**, le mode opératoire est principalement dédié à un système basé sous linux. Des liens vers des modes opératoires spécifiques à Windows seront proposés.
 
 ## Le dépôt GitHub
 
-Description de l'arborescence des fichiers et le fonctinnement avec GitHub et 
+### Caractéristiques
 
+Le dépôt GitHub du projet `Carbo_elevage` est hébergé à cette adresse [https://github.com/GisEDSol/Carbo_elevage](https://github.com/GisEDSol/Carbo_elevage). Les paramètres de connexion sont les suivants: 
 
-## La base de données
+- **Nom d'utilisateur** : GisEDSol ou giselevagesdemain.groupesol@gmail.com
+- **Mot de passe** : Adressez une demande à stephanie.potok@inra.fr
+
+### Importation du dépôt en local
+
+L'importation et la connexion au dépôt du projet est réalisé de la manière suivante sous linux. Les commandes suivantes permettent :
+
+- d'installer le logiciel git,
+- de configurer git,
+- de cloner le projet (consiste à récupérer tout l’historique et tous les codes source du projet).
+
+De nombreuses documentations existent sur internet pour faciliter l'utilisation de git. Parmi celles-ci, ce [tutoriel](https://openclassrooms.com/courses/gerez-vos-codes-source-avec-git) présente bien les concepts associés à Git et guide l'utilisateur à son utilisation sur windows et linux. Une partie des commandes ci-dessous provient de ce tutoriel.
+
+```{r,echo=TRUE,eval=FALSE}
+# Installation du paquet git 
+sudo apt-get install git
+
+# Configuration pour la couleur dans Git
+git config --global color.diff auto
+git config --global color.status auto
+git config --global color.branch auto
+
+# Configuration du pseudo et de l'email (Si vous avez déjà un compte GitHub, rajouter vos propres identifiants)
+git config --global user.name "GisEDSol"
+git config --global user.email giselevagesdemain.groupesol@gmail.com
+
+# Clonage du projet (se placer dans l'arborescence voulu)
+git clone https://github.com/GisEDSol/Carbo_elevage.git
+```
+
+### Organisation du dépôt
+
+L'organisation du dépôt est décrit dans le fichier [Readme.md](https://github.com/GisEDSol/Carbo_elevage/blob/master/Readme.md). 
+
+**Important :** pour faciliter la navigation dans l'arborescence du projet, plusieurs fichier `Readme.md` sont présents, il est important de les maintenir à jour.
+
+```{r,eval=FALSE,echo=TRUE}
+├── Documentation
+│   ├── Metadonnees
+│   └── Modes_operatoires
+├── Fichiers_suivis
+│   ├── BDD
+│   ├── Readme.md
+│   ├── Shiny
+│   └── Traitements
+├── Fonctions
+│   ├── bash
+│   ├── python
+│   ├── R
+│   └── Readme.md
+```
+# Etape 2 : Importation de la base de données
 
 Description de la base de données. Ici, renvoyer vers un mode opératoire basé un fichier sqlite/spatialite.
+Rapidement présenter le deux types de base de données
+
+**Important** Pour une description de la base de données, voir ce [mode opératoire](`r mo_url`MO_bdd.Rmd).
+
+## Chargement de la base sous SQLite/SpatiaLite
 
 
-# Etapes pour la prise en main du projet
 
-Pour prendre en main cette méthode de travail, voici un exemple d'application.
+## Importation de la base de données en PostgreSQL/PostGIS
 
-## Importation du projet sur GitHub
+### Création d'un serveur PostgreSQL/PostGIS
 
-Ici, décrire la procédure pour importer le projet dans un dépôt personnel
-Adresse:
+*Pour une création de base de données sous windows, vous pouvez consulter ce [mode opératoire](http://www.supinfo.com/articles/single/977-creer-une-base-donnees-avec-postgresql-windows)*
 
-```{r}
-# Création du dépot git en local (ajout des fichiers)
-cd /media/sf_GIS_ED/Dev/Scripts/
-git init
-git add trunk/*
-git commit -m "Ajout des fichiers et des réperoires de travail"
+L'imporation de la base de données sous le format PostgreSQL/PostGIS nécessite la création d'un serveur PostgreSQL/PostGIS.
+Les commandes suivantes permettent d'installer un serveur et de le configurer pour importer la base de données :
 
-# Connexion vers le dépôt local
-git remote add origin https://github.com/Rosalien/GISEDSol.git
-git remote -v
+- Installation des paquets postgreSQL/postGIS et du logiciel pgadmin pour visualiser les tables
+
+```{r, engine='bash',highlight=TRUE,eval=FALSE}
+sudo su -
+apt-add-repository ppa:flexiondotorg/postgres
+apt-get update
+apt-get install -y pgadmin3 pgadmin3-data postgresql-contrib postgresql-9.5-plr pgadmin3 unixodbc odbc-postgresql unixodbc-dev postgis
+```
+
+- Ci-dessous, les commandes permettent de créer un utilisateur et d'installer les extensions postgis. L'utilisateur devra définir son nom d'utilisateur ainsi que le mot de passe. Ces paramètres de connexion seront par la suite utilisés pour la connexion entre R et la base de données (avec ODBC)
+
+```{r, engine='bash',highlight=TRUE,eval=FALSE}
+sudo -i -u postgres
+CREATE USER nomutilisateur;
+ALTER ROLE nomutilisateur WITH CREATEDB;
+CREATE DATABASE sol_elevage OWNER nomutilisateur;
+ALTER USER nomutilisateur WITH ENCRYPTED PASSWORD '******';
+CREATE DATABASE sol_elevage OWNER nomutilisateur;
+CREATE EXTENSION postgis;
+CREATE EXTENSION postgis_topology;
+```    
+
+### Importation de la base de données 
+
+*Pour plus d'informations sur la sauvegarde et la restauration d'une base de données postgresql, voir la [documentation officielle](http://doc.postgresql.fr/9.5/backup.html)*
+
+L'importation de la base est réalisée de la manière suivante :
+
+```{r, engine='bash',highlight=TRUE,eval=FALSE}
+psql -U nomutilisateur sol_elevage < sol_elevage.sql
 ```
 
 
-## Importation de la base de données
+# Etape 3 : Définition des paramètres de connexion entre les scripts et la base de données
 
+## Connexion à la base de données
 
+La connexion à la base de données peut être réalisé avec :
 
-## Configuration des paramètres de connexion
+- Un client PostgreSQL à jour ([PgAdminIII](https://www.pgadmin.org/) par exemple)
+- Le logiciel R avec une connexion ODBC.
 
+Quoi qu'il en soit, les paramètres de connexion à retenir pour se connecter à la base sont les suivants :
+ 
+- Hôte : localhost
+- Port TCP : 5432
+- Base : sol_elevage
+- Nom d'utilisateur : Défini par l'utilisateur
+- Mot de passe : Défini par l'utilisateur
 
+### Connexion ODBC
 
+*Dans la suite, le mode opératoire est proposé pour un système linux. Pour un système basé sous windows, le lecteur intéressé peut consulter la page [suivante](http://informatique-mia.inra.fr/r4ciam/ODBC.html).*
+
+Les connexions odbc servent de lien entre le logiciel R et la base de données sous postgreSQL/postGIS. Dans linux, les paramètres de connexion sont configurées dans le fichier `\etc\odbc.ini`. Pour configurer une connexion, une modification de ce fichier est nécessaire. Tapez dans un terminal `sudo gedit \etc\odbc.ini` puis apporter les modifications nécessaires. 
+
+Voici ci-dessous les différents paramètres de connexions relatifs aux différents alias présentés précédemment. Vous pouvez directement copier ces lignes vers le fichier `\etc\odbc.ini` en remplaçant nomutilisateur_ldap et mdp_ldap par votre nom d'utilisateur et votre mot de passe LDAP.
+
+- Database : Nom de la base de données
+- Servername : Nom du serveur
+- Username : Nom d'utilisateur
+- Password : Mot de passe
+- Port : Port de la base de données
+
+```{r, tidy=FALSE,eval=FALSE}
+[ODBC]
+InstallDir = /usr/lib
+
+[solelevage] # A garder
+Driver = /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so # A garder
+Database = sol_elevage # A garder
+Servername = localhost # A garder
+Username = ****** # Changer en fonction du nom d'utilisateur
+Password = ****** # Changer en fonction du mdp défini par l'utilisateur
+Port=5432 # A garder
+Protocol = 8.1 # A garder
+ReadOnly = 0 # A garder
+```
+Les connexions ODBC dans R sont possibles avec le paquet `RODBC`. Pour l'installer, tapez la commande suivante dans un terminal R : `install.packages("RODBC")`.
+Ensuite, vous pouvez utiliser l'alias des paramètres de connexions du fichier `odbc.ini` dans la fonction décrivant les paramètres de connexion `odbcConnect`. Pour vérifier les modifications apportées au fichier de configuration `odbc.ini`, vous pouvez lancer les lignes de commandes suivantes dans le logiciel R. La liste des paramètres de connexion doit alors s'afficher comme ci-dessous:
+
+```{r, tidy=FALSE,eval=TRUE}
+library(RODBC)
+print(odbcConnect("solelevage",case="postgresql", believeNRows=FALSE))
+```
+
+## Import des paquets et des variables locales
+
+La gestion des fonctions, des paquets et des variables locales utilisées dans le projet est centralisée au sein d'une seule fonction, appelée `importparametres.R`. En important cette fonction dans R, les paquets utiles au projet seront installés, les fonctions et les variables locales seront chargées.
+Voici les commandes utiles pour charger les paramètres :
+
+```{r chargement, echo=TRUE,eval=FALSE}
+repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/" #Chemin du dépôt GitHub en local
+source(paste(repmaster,"Fonctions/R/importparametres.R",sep=""))
+importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/Data/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='nomutilisateur'")
+```
 
 # Les logiciels utilisés
 
 ## R
-
-La gestion des fonctions, des paquets et des variables locales utilisées dans le projet est centralisée au sein d'une seule fonction, appelée `importparametres.R`. En important cette fonction dans R, les paquets utiles au projet seront installés, les fonctions et les variables locales seront chargées.
-Voici les commandes utiles pour charger les paramètres
-
-```{r chargement, echo=TRUE,eval=FALSE}
-repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/" #Chemin du dépôt GitHub en local
-source(paste(repmaster,"Fonctions/R/importparametres.R",sep="")
-
-importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/Data/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
-```
-
 
 ## Préparation/installation des paquets
 
@@ -98,7 +249,6 @@ importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/Data/",dsn="P
 - Dans une console `R`, installer les paquets suivants avec la commande : `install.packages(c("knitr","htmltools","caTools","bitops","rmarkdown"))`
 
 3. Télécharger le modèle de fichier de suivi de la forge
-- Télécharger ce [document](`r tmp_url`Modele_FichierSuivi.Rmd) et copier dans un répertoire de travail.
 
 ## Création d'un fichier dans Rstudio
 Une fois le modèle de fichier de suivi importé dans votre espace de travail (plus d'infos sur l'organisation d'un projet [ici](`r mo_url`MO_accesdepot.html)) :
@@ -117,7 +267,7 @@ Si vous souhaitez utiliser ces fonctionnalités en dehors de Rstudio (le logicie
 
 - Vous pouvez également utiliser cette ligne dans une boucle afin de créer à la volée les fichiers de suivi présent dans un répertoire : 
 
-```{r, tidy=FALSE,eval=TRUE,echo=FALSE}
+```{r, tidy=FALSE,eval=FALSE,echo=TRUE}
 for i in *.Rmd; do
 	echo "Sys.setenv(RSTUDIO_PANDOC=\"/usr/lib/rstudio/bin/pandoc/\") & rmarkdown::render('$i')" | R --vanilla
 done
