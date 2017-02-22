@@ -132,7 +132,7 @@ Ces tables sont au format long et servent aux différents traitements statistiqu
 
 - `dm_traitements.melted.bdat` : table de la médiane des teneurs en carbone organique et des effectifs pour différentes paramètres au format long.
 
-De la même façon que `dm_vecteurs.canton`, la création de la table `dm_traitements.melted.bdat` est déclinée également pour les filtres  `dm_vecteurs.canton_9514` et `dm_vecteurs.canton_9014`. Les tables portent des noms similaires :
+De la même façon que `dm_vecteurs.canton`, la création de la table `dm_traitements.melted.bdat` est également déclinée pour les filtres  `dm_vecteurs.canton_9514` et `dm_vecteurs.canton_9014`. Les tables portent des noms similaires :
 
 - **dm_traitements.melted.bdat_9014 :** table de la médiane des teneurs en carbone organique et des effectifs pour différentes paramètres au format long. Cette table est construite avec `dm_vecteurs.canton_9014`.
 - **dm_traitements.melted.bdat_9514 :** table de la médiane des teneurs en carbone organique et des effectifs pour différentes paramètres au format long. Cette table est construite avec `dm_vecteurs.canton_9514`.
