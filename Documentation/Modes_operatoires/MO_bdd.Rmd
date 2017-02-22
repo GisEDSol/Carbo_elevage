@@ -6,19 +6,16 @@ output:
   html_document:
     toc: yes
     toc_float: yes
-  github_document:
-    dev: png
-    fig_height: 10
-    fig_width: 10
-    md_extensions: +autolink_bare_uris+hard_line_breaks+header_attributes+line_blocks+table_captions
-    toc: yes
-    toc_depth: 2
+    fig_caption: yes
+    highlight: zenburn
+    number_sections: yes
+    theme: spacelab   
 
 ---
 
 ```{r, tidy=FALSE,eval=TRUE,echo=FALSE}
-mo_url <- "https://github.com/Rosalien/GISEDSol/tree/master/Documentation/Modes_operatoires/"
-fs_url <- "https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/"
+mo_url <- "https://github.com/GisEDSol/Carbo_elevage/tree/master/Documentation/Modes_operatoires/"
+fs_url <- "https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/"
 ```
 
 ```{r setup, include=FALSE}
@@ -46,7 +43,7 @@ Deux types de données sont intégrées dans la base : les données brutes et le
 ### Les données brutes
 
 ```{r,evaL=TRUE,echo=FALSE}
-metatable <- read.csv(paste(repmetadonnees,"Catalogue_schema.csv",sep=""),sep=";")
+metatable <- read.csv(paste(repmetadonnees,"Catalogue_schema.csv",sep=""),sep=",")
 pander(metatable[metatable$Type %in% "Brute",][,c("Schéma","Description")],caption = "Liste des schémas de la base de données",justify = c('left', 'left'))
 ```
 
@@ -55,7 +52,7 @@ pander(metatable[metatable$Type %in% "Brute",][,c("Schéma","Description")],capt
 Les data marts (magasins de données) sont les données qui sont directement utilisables dans des traitements. Ces data marts se présentent sous la forme d'une ou plusieurs tables classées dans des schémas distincts. Le nom de ces schémas est préfixé par « dm_». Le tableau suivant dresse la liste des data marts disponibles :
 
 ```{r,evaL=TRUE,echo=FALSE}
-metatable <- read.csv(paste(repmetadonnees,"Catalogue_schema.csv",sep=""),sep=";")
+metatable <- read.csv(paste(repmetadonnees,"Catalogue_schema.csv",sep=""),sep=",")
 tt <- metatable[metatable$Type %in% "Data_mart",][,c("Schéma","Description")][,1:2]
 rownames(tt) <- 1:nrow(tt)
 pander(tt,caption = "Liste des schémas de la base de données",justify = c('left', 'left'),include.rownames = FALSE)
@@ -82,7 +79,7 @@ Les `XX` correspondent aux numéros des périodes comparées entre elles. Par ex
 **Nota** les données provenant du datapaper sont téléchargeables à cette [adresse](http://www.gissol.fr/wp-content/uploads/2015/04/bdat.zip)
 
 ```{r,evaL=TRUE,echo=FALSE}
-metatable <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=";")
+metatable <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=",")
 tt <- metatable[metatable[,"Schéma"] %in% "bdat",][,c("Table","Description")][,1:2]
 rownames(tt) <- 1:nrow(tt)
 pander(tt,caption = "Liste des tables brutes de la BDAT",justify = c('left', 'left'),split.cells = c("35%", "65%"),use.hyphening = TRUE)
@@ -91,7 +88,7 @@ pander(tt,caption = "Liste des tables brutes de la BDAT",justify = c('left', 'le
 ## Les tables du recensement agricole
 
 ```{r,evaL=TRUE,echo=FALSE}
-metatable <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=";")
+metatable <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=",")
 tt <- metatable[metatable[,"Schéma"] %in% "ra",][,c("Table","Description")][,1:2]
 rownames(tt) <- 1:nrow(tt)
 pander(tt,caption = "Liste des tables brutes du recensement agricole",justify = c('left', 'left'),split.cells = c("30%", "70%"),use.hyphening = TRUE)
@@ -100,7 +97,7 @@ pander(tt,caption = "Liste des tables brutes du recensement agricole",justify = 
 ## Les tables de Corine Land Cover
 
 ```{r,evaL=TRUE,echo=FALSE}
-metatable <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=";")
+metatable <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=",")
 tt <- metatable[metatable[,"Schéma"] %in% "clc",][,c("Table","Description")][,1:2]
 rownames(tt) <- 1:nrow(tt)
 pander(tt,caption = "Liste des tables brutes de Corine Land Cover",justify = c('left', 'left'),split.cells = c("30%", "70%"),use.hyphening = TRUE)
@@ -147,13 +144,13 @@ pander(tt,caption = "Description des champs de la table dm_traitements.melted_bd
 ```
 
 ```{r,evaL=TRUE,echo=FALSE}
-metatable <- read.csv(paste(repmetadonnees,"Nomenclature_regionelevage.csv",sep=""),sep=";")
+metatable <- read.csv(paste(repmetadonnees,"Nomenclature_regionelevage.csv",sep=""),sep=",")
 colnames(metatable) <- c("Code simple","Code cplt","Description simple","Description cplt")
 pander(metatable,caption = "Description des régions d'élevage",justify = c('left','left','left','left'),split.cells = c("0.05%","0.05%","4.9%","95%"),use.hyphening = TRUE,split.table = Inf)
 ```
 
 ```{r,evaL=TRUE,echo=FALSE}
-metatable <- read.csv(paste(repmetadonnees,"Nomenclature_typeclimat.csv",sep=""),sep=";")
+metatable <- read.csv(paste(repmetadonnees,"Nomenclature_typeclimat.csv",sep=""),sep=",")
 pander(metatable,caption = "Description des types de climats",justify = c('left','left'),split.cells = c("40%","60%"),use.hyphening = TRUE)
 ```
 

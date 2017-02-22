@@ -1,18 +1,15 @@
 ---
-title: "Création de la base de données"
+title: "Fichier de suivi de la création de la base de données"
 author: "Jean-Baptiste Paroissien"
-date: "26/01/2017"
+date: "22/02/2017"
 output:
-  github_document:
-    dev: png
-    fig_height: 10
-    fig_width: 10
-    md_extensions: +autolink_bare_uris+hard_line_breaks+header_attributes+line_blocks+table_captions
-    toc: yes
-    toc_depth: 2
   html_document:
     toc: yes
-    toc_depth: '2'
+    toc_float: yes
+    fig_caption: yes
+    highlight: zenburn
+    number_sections: yes
+    theme: spacelab   
 ---
 
 ```{r setup, include=FALSE}
@@ -29,7 +26,7 @@ L'objectif de ce document est de centraliser dans un même fichier la création 
 
 # Documentation
 
-La documentation de cette base de données s'articule autours d'un document général et de plusieurs modes opératoires destinés aux différents types d'utilisateurs (administrateur, développeur et utilisateur). Ces documents sont présents sur la forge du projet à cette [adresse](https://github.com/Rosalien/GISEDSol/tree/master/Documentation).
+La documentation de cette base de données s'articule autour d'un document général consultable à cette [adresse](https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Modes_operatoires/MO_bdd.html).
 
 # Création de la base
 
@@ -45,24 +42,6 @@ postgres=# CREATE DATABASE sol_elevage OWNER jb;
 CREATE EXTENSION postgis;
 CREATE EXTENSION postgis_topology;
 ```    
-
-Configuration du fichier `\etc\odbc.ini` pour se connecter à la base avec R grâce au paquet RODBC.
-
-```{r, engine='bash',highlight=TRUE,eval=FALSE}
-[ODBC]
-InstallDir = /usr/lib
-
-[solelevage]
-Driver = /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so
-Database = sol_elevage
-Servername = localhost
-Username = jb	
-Password = *******
-Port=5432
-Protocol = 8.1
-ReadOnly = 0
-```
-
 # Les données de bases
 
 Les données dites de "bases" concernent les données administratives utilisées pour agréger certaines variables environnementales. Dans ce travail, les contours des communes, des cantons et des petites régions agricoles sont les principales échelles de travail utilisées. Elles ont été récupérées de la manière suivante :
@@ -173,7 +152,7 @@ for(i in ListBDAT){
 ```
 ### Importation des données de la BDAT harmonisées
 
-la liste d'instructions suivante intègre les analyses des teneurs de la BDAT ré-échantillonnées dans la base de données. Ci-dessous, ce sont les analyses provenant des deux méthodes de mesures du carbone qui sont intégrées (oxydation humide+combustion sèche)
+La liste d'instructions suivante intègre les analyses des teneurs de la BDAT ré-échantillonnées dans la base de données. Ci-dessous, ce sont les analyses provenant des deux méthodes de mesures du carbone qui sont intégrées (oxydation humide - corgox +combustion sèche - corgco).
 
 ```{r importBDAT_harmo, eval=FALSE}
 # Selection des fichiers à importer
@@ -190,9 +169,9 @@ for(i in ListBDAT){
 }
 ```
 
-Ci-dessous, les analyses des teneurs en C classées par méthode de mesure sont intégrées dans la base de données. Les analyses réalisées avec la méthode oxydation humide sont nommée `corgox` et les analyses mesurées avec la méthode combustion sèche `corgco`
+Ci-dessous, les analyses des teneurs en C classées par méthode de mesure sont intégrées dans la base de données. Les analyses réalisées avec la méthode oxydation humide sont nommée `corgox` et les analyses mesurées avec la méthode combustion sèche `corgco`.
 
-```{r importBDAT_harmo, eval=FALSE}
+```{r importBDAT_harmomethodes, eval=FALSE}
 # Selection des fichiers à importer
 repmethodo <- c("Oxydationhumide","Combustionseche")
 for(r in repmethodo){
@@ -210,10 +189,13 @@ for(r in repmethodo){
 ```
 ## La BDGSF (en cours)
 
-La base de données européenne des sols a été téléchargée sur ce [cite](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDB_data_1k_raster_intro/ESDB_1k_raster_data_intro.html). 
-Le shapefiles semble avoir des soucis de topologie et son découpage pose qq problèmes avec gdal (ERROR 1: TopologyException: Input geom 1 is invalid: Self-intersection at or near point 199362.60000010004 6798705.2000011709 at 199362.60000010004 6798705.2000011709). Une solution serai d'importer la base européenne vers la base postgis, controler la topo et faire le découpage ensuite.
+La base de données européenne des sols a été téléchargée sur ce [site](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDB_data_1k_raster_intro/ESDB_1k_raster_data_intro.html). 
+Les instructions ci-dessous permettent de :
 
-Contrôle de la topologie avec QGis ([vérificateur de la topologie](http://smsgis.co.za/using-qgis-fix-geometry-errors/))
+- changer la projection du shapefiles vers le Lambert93 (avec ogr2ogr),
+- intégrer le shapefiles dans la base de données,
+- découper le shapefiles au contour de la France.
+
 
 ```{r importBDGSF, eval=FALSE}
 repbdgsf <- "/media/sf_GIS_ED/Dev/Data/Sol/bdgsf/ESDB/"
@@ -229,7 +211,7 @@ system(paste("ogr2ogr -t_srs EPSG:2154 ",file2," ",file1," -overwrite",sep=""))
 # Intégration dans la base sous forme de postGIS
 system(paste("shp2pgsql -s 2154 -c -D -W \"latin1\" -I ",file2," ",schema,".",sortie,"| psql -d sol_elevage -h localhost -U jb",sep=""))
 
-bdgsf <- sqlQuery(loc,"select * from bdgsf.sgdb")
+bdgsf <- sqlQuery(loc,"select * from bdgsf.sgdb limit 1")
 n_bdgsf <- names(bdgsf)[-length(bdgsf)]
 n_bdgsf <- paste(n_bdgsf,collapse=",")
 
@@ -238,10 +220,6 @@ sqlQuery(loc,paste("CREATE TABLE ",schema,".",sortie,"_fr AS
             select a.",n_bdgsf,",st_intersection(a.geom, b.geom) as geom
             from bdgsf.sgdb as a, dm_vecteurs.departement as b
             where st_intersects(a.geom, b.geom);",sep=""))
-
-# Intégration des tables attributaires
-
-
 
 # Suppression des fichiers temporaires
 system(paste("rm ",file1," ",file2,sep=""))
@@ -303,8 +281,6 @@ public."KDhh_survey",
 public."ur_pilot_survey"
 WHERE
 ST_contains(public."ur_pilot_survey".the_geom, public."KDhh_survey".the_geom);
-
-
 
 system("v.select --overwrite ainput=lucasref_L93 atype=point binput=franceL93 output=lucasref_L93_fr")
 
@@ -381,19 +357,13 @@ for(i in feuilles ){
 
 ## Les données du recensement agricole (RA)
 
-Les données du recensement agricole ont été extraites de requêtes lancées sur [Disard](http://cybergeo.revues.org/23155). L'ensemble des tables intégré dans la base de données est présenté dans le tableau ci-dessous.
+Les données du recensement agricole ont été extraites de requêtes lancées sur [Disard](https://stats.agriculture.gouv.fr/disar/). 
+Dans les tables de sorties de Disard, le numéro de canton et le nom du chef lieu sont enregistrés dans le même champ. Dans les commandes suivantes, le numéro de canton et le nom du chef lieu sont dissociés dans un champ qui leur est propre pour faciliter les jointures futures.  
 
-```{r,eval=TRUE,warning=FALSE}
-# Description des tables (voir pour rajouter les métadonnées dans les commentaires de table)
-metatable <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=";")
-pander(metatable)
-```
-Dans les tables de sorties de Disard, le numéro de canton et le nom du chef lieu sont enregistrés dans le même champs. Dans les commandes suivantes, le numéro de canton et le nom du chef lieu sont dissociés dans un champs qui leur est propre pour faciliter les jointures futures.  
-
-```{r importagreste,eval=TRUE,warning=FALSE,}
+```{r importagreste,eval=FALSE}
 installXLSXsupport()
 schema <- "ra" #Nom du schema de stockage des données
-catalogue <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=";")
+catalogue <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=",")
 Liste_fichiers <- catalogue[(catalogue[,1] %in% schema),2]
 Commentaires <- catalogue[(catalogue[,1] %in% schema),3]
 #Liste_fichiers <- gsub("\\.xls$","",list.files(repagreste,pattern="\\.xls$"))# Liste des xls présent dans le répertoire de travail (repagreste)
@@ -455,8 +425,8 @@ for(i in Liste_fichiers){
 
 Les grandes régions d'élevage représentent un zonage basé sur l'utilisation du sol (part de la SFP/des cultures et dans la SFP part de la STH, des PT et du maïs, et recroisement avec les zones à contraintes naturelles (montagne et zones sèches)). Le zonage a évolué depuis 1995, avec des correctifs dans certaines zones (Limousin notamment) et surtout un redécoupage en fonction de l’orientation des productions d’élevage, notamment bovin (lait ou viande) et du contexte pédoclimatique (séparer la Bretagne et les piémonts, les Bassin parisien et aquitain par exemple).
 
-Le zonage intégré dans la base a été fourni par Christophe Perrot. Pour plus d'information sur la construction, contacter l'auteur (rajouter adresse)
-Pour faciliter la distinction des différents niveaux de régions, une nomenclature a été créée. Elle est consultable [ici](https://github.com/Rosalien/GISEDSol/tree/master/Documentation/Metadonnees/Nomenclature_regionelevage.csv)
+Le zonage intégré dans la base a été fourni par [Christophe Perrot](christophe.perrot@idele.fr). Pour plus d'information sur la construction, contacter l'auteur.
+Pour faciliter la distinction des différents niveaux de régions, une nomenclature a été créée. Elle est consultable [ici](https://github.com/GisEDSol/Carbo_elevage/tree/master/Documentation/Metadonnees/Nomenclature_regionelevage.csv)
 
 ```{r importRegionElevage,eval=FALSE}
 repRegionElevage <- "/media/sf_GIS_ED/Dev/Data/Regions_elevages/"
@@ -518,11 +488,11 @@ for(i in c("zonage_simple","zonage_cplt")){
 
 # Les données climatiques
 
-Plusieurs sources de données climatiques sont disponibles. Pour le moment, seul le travail de [Joly et al., 2010](http://cybergeo.revues.org/23155) est exploité. Les autres sources de données pourront être intégrées ultérieurement dans la base de données, dans le schéma `climato`.
+Plusieurs sources de données climatiques sont disponibles. Pour le moment, seul le travail de [Joly et al., 2010](http://cybergeo.revues.org/23155) est exploité. Les autres sources de données pourront être intégrées ultérieurement dans la base de données, dans le schéma `climat`.
 
 ## Topologie du climat en France
 
-Les données climatiques utilisées proviennnent du travail de [Joly et al., 2010](http://cybergeo.revues.org/23155) sur la typologie du climat en France. Les commandes suivantes importent la table `table_commun.txt` disponible à cette [adresse](Rajouter adresse). Les données climatiques sont ensuite aggrégées par canton dans le fichier de suivie [Traitement_climato.Rmd](https://github.com/Rosalien/GISEDSol/blob/master/Fichiers_suivis/Traitements/Suivis/Traitements_climato.Rmd). 
+Les données climatiques utilisées proviennnent du travail de [Joly et al., 2010](http://cybergeo.revues.org/23155) sur la typologie du climat en France. Les commandes suivantes importent la table `table_commun.txt` disponible à cette [adresse](http://cybergeo.revues.org/26894?file=1). Les données climatiques sont ensuite aggrégées par canton dans le fichier de suivie [Traitement_climato.Rmd](https://github.com/GisEDSol/Carbo_elevage/blob/master/Fichiers_suivis/BDD/Suivis/FS_bdd_elab_climat.Rmd). 
 
 ```{r importClimatL,eval=FALSE}
 ##Paramètres
@@ -535,7 +505,7 @@ jolytable$HPLUIE_AN <- as.numeric(as.character(jolytable$HPLUIE_AN))
 # Les valeurs 9 et 0 pour la colonne typo_clim sont considérées comme NA
 jolytable$TYPO_CLIM[jolytable$TYPO_CLIM==9 | jolytable$TYPO_CLIM==0] <- NA
 
-# Correction de la valeur abérante en hauteur de pluie annuelle sur le canton 5814. Le problème vient d'une valeur extrème sur la commune 58125. La valeur est remplacée par la valeur de la commune voisine
+# Correction de la valeur abérante en hauteur de pluie annuelle sur le canton 5814. Le problème vient d'une valeur extrême sur la commune 58125. La valeur est remplacée par la valeur de la commune voisine
 jolytable[jolytable$DC %in% "58125","HPLUIE_AN"] <- jolytable[jolytable$DC %in% "58185","HPLUIE_AN"]
 
 #Enregistrement vers la base, schéma climatot
@@ -558,7 +528,9 @@ Le téléchargement des données du SRTM a été réalisé sur [earthexplorer](h
 - Sélection la zone géographique (search criteria >> Use Map). **Attention,** le nombre de tuile est limité à 100. Bien sélectionner la zone désirée ou le faire en deux fois.
 - Sélection du type de données souhaité (Data Sets >> Digital Elevation >> SRTM >> SRTM 1 Arc-Second Global),
 - Cliquer sur 'Results' et sélectionner l'ensemble des tuiles à télécharger (add to bulk download >> submit standing request),
-- Utilisation du logiciel [BDT](https://earthexplorer.usgs.gov/bulk) pour télécharger les tuiles commandées. **Attention**, il est nécessaire d'ouvrir les ports 4448 pour utiliser le logiciel.
+- Utilisation du logiciel [BDT](https://earthexplorer.usgs.gov/bulk) pour télécharger les tuiles commandées. 
+
+**Attention**, il est nécessaire d'ouvrir les ports 4448 pour utiliser le logiciel.
 
 
 ```{r,eval=FALSE}
@@ -594,16 +566,13 @@ systemp(paste("gdaladdo -r average ",srtmName," 2 4 8 16",sep=""))
 system(paste("rm ",file1tmp," ",file2tmp,sep=""))
 ```
 
-Voir la pertinence de mettre le raster sur PostGIs (et penser aussi à la conversion vers spatialite)
-
 ## Données européennes
 
 Le modèle numérique de terrain provient du programme Européen Copernic. Les données ont été téléchargées à cette [adresse](http://www.eea.europa.eu/data-and-maps/data/eu-dem). Pour l'exploitation des données, le fichier au format GeoTIFF est découpé aux contours de la France et projeté en Lambert 93 (EPSG 2154). Le raster est ensuite intégré dans le serveur postgis. Ces procédures sont réalisées avec la fonction `gdalwarp` et XXX dans les listes d'instructions ci-dessous. Les statistiques calculées avec ces données sont réalisées dans le fichier de suivi 
-[FS_bdd_elab_topo.Rmd](https://github.com/Rosalien/GISEDSol/blob/master/Fichiers_suivis/BDD/Suivis/FS_bdd_elab_topo.Rmd).
+[FS_bdd_elab_topo.Rmd](https://github.com/GisEDSol/Carbo_elevage/blob/master/Fichiers_suivis/BDD/Suivis/FS_bdd_elab_topo.Rmd).
 
 Les tuiles téléchargées sont les suivantes : E30N20; E40N20;E30N30 (Pour connaître les tuiles, voir les webservices à cette adresse :http://image.discomap.eea.europa.eu/arcgis/services/Elevation/DEM_v_1_1/MapServer/WMSServer?version=1.3.0 ).
-Les instructions suivantes permettent d'assembler les 3 rasters, de les découper aux contours de la France et de projeter le dernier fichier en Lambert 93 (epsg:2154).
-
+Les instructions suivantes permettent d'assembler les 3 rasters, de les découper aux contours de la France et de projeter le dernier fichier en Lambert 93 (EPSG 2154).
 
 ```{r,eval=FALSE}
 reptopo <- "/media/sf_GIS_ED/Dev/Data/Topographie/dem_copernicus/" #répertoire contenant les rasters à assembler
@@ -652,10 +621,10 @@ psql -h localhost -U jb -d sol_elevage -f raster.sql",sep=""))
 
 ## Création de métadonnées pour les schémas
 
-La description des schémas de la base de données est stockés dans le fichier [Catalogue_schema.csv](https://github.com/Rosalien/GISEDSol/tree/master/Documentation/Metadonnees/Catalogue_schema.csv) et ces commentaires sont intégrés dans la base de données avec la commande suivante :
+La description des schémas de la base de données est stockée dans le fichier [Catalogue_schema.csv](https://github.com/GisEDSol/Carbo_elevage/tree/master/Documentation/Metadonnees/Catalogue_schema.csv) et ces commentaires sont intégrés dans la base de données avec la commande suivante :
 
 ```{r,eval=FALSE}
-meta_schema <- read.csv(paste(masterrep,"Scripts/master/Documentation/Metadonnees/Catalogue_schema.csv",sep=""),sep=";",header=TRUE)
+meta_schema <- read.csv(paste(masterrep,"Scripts/master/Documentation/Metadonnees/Catalogue_schema.csv",sep=""),sep=",",header=TRUE)
 for(i in 1:nrow(meta_schema)){
   sqlQuery(loc,paste("COMMENT ON SCHEMA ",meta_schema[i,1]," IS '",meta_schema[i,2],"'",sep=""))
 }
@@ -669,8 +638,6 @@ Pour faciliter la compréhension des données stockées dans la base de données
 # Lancement du script sql pour créer une vue sur les métadonnées (accessible sur public.metadata)
 system(paste("sh ",repfonctions,"bash/create_view_metada.sh",sep=""))
 ```
-
-
 # Export de la base
 
 Deux formats sont proposés pour exploiter la base de données :

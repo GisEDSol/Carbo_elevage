@@ -10,16 +10,12 @@
 * **[Fonctions](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fonctions)** Regroupe des fonctions communes, utilisées dans plusieurs traitements. 
 
 * **[Documentation](https://github.com/GisEDSol/Carbo_elevage/tree/master/Documentation)** Regroupe l'ensemble de la documentation associée au projet (description du workflow général, de la base de données et des principaux traitements). Ce répertoire est constitué de métadonnées présentant :
-	* une description des schéma de la base de données,
-	* une description des tables et des champs présents dans les tables,
-	* une présentation de la nomenclature de certaines variables.
-Il est également composé de plusieurs modes opératoires, dont notamment :
-
-* un [mode opératoire](https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Modes_operatoires/MO_priseenmain.html) pour prendre en main le projet (importation du projet, importation de la base de données et paramètres de connexion),
-* un [mode opératoire](https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Modes_operatoires/MO_bdd.html) sur la base de données (organisation des données et métadonnées),
-* un mode opératoire pour la rédaction des fichiers de suivis et des fonctions R,
-* un mode opératoire présentant les logiciels utilisés et la configuration nécessaire pour reprendre le projet.
-
+	* De plusieurs [métadonnées](https://github.com/GisEDSol/Carbo_elevage/tree/master/Documentation/Metadonnees) présentées sous forme de tableaux,
+	* De différents modes opératoires, dont notamment :
+		* un [mode opératoire](https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Modes_operatoires/MO_priseenmain.html) pour prendre en main le projet (importation du projet, importation de la base de données et paramètres de connexion),
+		* un [mode opératoire](https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Modes_operatoires/MO_bdd.html) sur la base de données (organisation des données et métadonnées),
+		* un mode opératoire pour la rédaction des fichiers de suivis et des fonctions R,
+		* un mode opératoire présentant les logiciels utilisés et la configuration nécessaire pour reprendre le projet.
 
 ----
 

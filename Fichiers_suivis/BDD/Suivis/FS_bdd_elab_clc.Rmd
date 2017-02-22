@@ -2,16 +2,16 @@
 title: "Préparation des données Corine Land Cover"
 author: "Jean-Baptiste Paroissien"
 output:
-  github_document:
-    toc: true
-    toc_depth: 2
-    fig_width: 10
-    fig_height: 10
-    dev: png
-    md_extensions: +autolink_bare_uris+hard_line_breaks+header_attributes+line_blocks+table_captions
+  html_document:
+    toc: yes
+    toc_float: yes
+    fig_caption: yes
+    highlight: zenburn
+    number_sections: yes
+    theme: spacelab  
 ---
 
-```{r setup, include=FALSE,eval=TRUE}
+```{r setup, include=FALSE,eval=FALSE}
 # Importation des paramètres de travail
 source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
 repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
@@ -20,9 +20,9 @@ importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbn
 
 # Objectifs
 
-Dans ce document, les tables brutes de Corine Land Cover importées dans le schéma `clc` (voir [fichier](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/BDD/Suivis/FS_bdd_brute.Rmd)) sont aggrégées à l'échelle du canton pour faciliter les traitements statistiques et la cartographie.
+Dans ce document, les tables brutes de Corine Land Cover importées dans le schéma `clc` (voir [fichier](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/BDD/Suivis/FS_bdd_brute.Rmd)) sont aggrégées à l'échelle du canton pour faciliter les traitements statistiques et la cartographie.
 
-**En sortie** de ce script, plusieurs champs (statistiques élaborés du RA) sont ajoutés dans la table `dm_vecteurs.canton` et la table `dm_traitements.melted_RA` est créée. Le traitement et l'analyse des champs créés dans les commandes qui suivent sont consultables dans le fichier [FS_traitements_ra.Rmd](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_ra.Rmd).
+**En sortie** de ce script, plusieurs champs (statistiques élaborés du RA) sont ajoutés dans la table `dm_vecteurs.canton` et la table `dm_traitements.melted_RA` est créée. Le traitement et l'analyse des champs créés dans les commandes qui suivent sont consultables dans le fichier [FS_traitements_ra.Rmd](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_ra.Rmd).
 Pour une description des champs créés, consultez les métadonnées de la table `dm_vecteurs.canton` (voir à la fin du document).
 
 # Calcul de différentes statistiques et jointures vers la table `dm_vecteurs.canton`

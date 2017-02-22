@@ -2,25 +2,20 @@
 title: "Création des données élaborées de la BDAT"
 author: "Jean-Baptiste Paroissien"
 output:
-  github_document:
-    toc: true
-    toc_depth: 2
-    fig_width: 10
-    fig_height: 10
-    dev: png
-    md_extensions: +autolink_bare_uris+hard_line_breaks+header_attributes+line_blocks+table_captions
+  html_document:
+    toc: yes
+    toc_float: yes
+    fig_caption: yes
+    highlight: zenburn
+    number_sections: yes
+    theme: spacelab  
 ---
 
-```{r setup, include=FALSE,eval=TRUE}
+```{r setup, include=FALSE,eval=FALSE}
 # Importation des paramètres de travail
 source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
 repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
 importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/Data/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
-```
-
-```{r, tidy=FALSE,eval=TRUE}
-Sys.Date()
-sessionInfo()
 ```
 
 # Objectifs

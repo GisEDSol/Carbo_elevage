@@ -59,126 +59,13 @@ carto <- function(
 library(rgdal);library(ggplot2);library(maptools);library(reshape2);library(classInt);
 library(gridExtra);library(RPostgreSQL);library(stringr);library(rgeos)
 
-# Fonction pour partager une même légende pour plusieurs plots (https://github.com/tidyverse/ggplot2/wiki/Share-a-legend-between-two-ggplot2-graphs)
-# http://stackoverflow.com/questions/13649473/add-a-common-legend-for-combined-ggplots
-grid_arrange_shared_legend <- function(..., nrow = 1, ncol = length(list(...)), position = c("bottom", "right")) {
-
-  plots <- list(...)
-  position <- match.arg(position)
-  g <- ggplotGrob(plots[[1]] + theme(legend.position = position))$grobs
-  legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
-  lheight <- sum(legend$height)
-  lwidth <- sum(legend$width)
-  gl <- lapply(plots, function(x) x + theme(legend.position = "none"))
-  gl <- c(gl, nrow = nrow, ncol = ncol)
-
-  combined <- switch(position,
-                     "bottom" = arrangeGrob(do.call(arrangeGrob, gl),
-                                            legend,
-                                            ncol = 1,
-                                            heights = unit.c(unit(1, "npc") - lheight, lheight)),
-                     "right" = arrangeGrob(do.call(arrangeGrob, gl),
-                                           legend,
-                                           ncol = 2,
-                                           widths = unit.c(unit(1, "npc") - lwidth, lwidth)))
-  grid.newpage()
-  grid.draw(combined)
-  return(combined)
-}
-
-# Fonction pour effectuer une requête sql avant d'importer un postgis (selon https://geospatial.commons.gc.cuny.edu/2013/12/31/subsetting-in-readogr/)
-readOgrSql = function (dsn, sql, ...) {
-   # check dsn starts "PG:" and strip
-  if (str_sub(dsn, 1, 3) != "PG:") {
-    stop("readOgrSql only works with PostgreSQL DSNs")
-  }
-  dsnParamList = str_trim(str_split(dsn, ":")[[1]][2])
-
-  # Build dbConnect expression, quote DSN parameter values 
-  # if not already quoted
-  if (str_count(dsnParamList, "=") 
-      == str_count(dsnParamList, "='[[:alnum:]]+'")) {
-    strExpression = str_c(
-      "dbConnect(dbDriver('PostgreSQL'), ", 
-      str_replace_all(dsnParamList, " ", ", "), 
-      ")"
-      )
-  }
-  else {
-    dsnArgs = word(str_split(dsnParamList, " ")[[1]], 1, sep="=")
-    dsnVals = sapply(
-      word(str_split(dsnParamList, " ")[[1]], 2, sep="="), 
-      function(x) str_c("'", str_replace_all(x, "'", ""), "'")
-      )
-    strExpression = str_c(
-      "dbConnect(dbDriver('PostgreSQL'), ", 
-      str_c(dsnArgs, "=", dsnVals, collapse=", "), 
-      ")"
-      )
-  }
-
-  # Connect, create spatial view, read spatial view, drop spatial view
-  conn = eval(parse(text=strExpression))
-  print(dbSendQuery(conn, "DROP VIEW if exists vw_tmp_read_ogr;"))
-  strCreateView = paste("CREATE VIEW vw_tmp_read_ogr AS", sql)
-  dbSendQuery(conn, strCreateView)
-  temp = readOGR(dsn = dsn, layer = "vw_tmp_read_ogr", ...)
-  print(dbDisconnect(conn))
-  return(temp)
-}
-
 ##############################
 # Lecture du postgis selon plusieurs conditions
 id <- "id_geofla"
 
 if((is.character(dept)==FALSE) & (is.character(reg)==FALSE)){
   map <- dbReadSpatial(con, schemaname="dm_vecteurs", tablename="canton", geomcol="geom")
-  #map <- system.time(readOGR(dsn = dsn, tablecarto))
-
   dep <- dbReadSpatial(con, schemaname="dm_vecteurs", tablename="departement", geomcol="geom")
-  #dep <- readOGR(dsn = dsn, "dm_vecteurs.departement")
-
-#save(map,file=paste(repsortie,tablecarto,".RData",sep=""))
-#save(dep,file=paste(repsortie,"dep.RData",sep=""))
-
-#load(paste(repsortie,tablecarto,".RData",sep=""))
-#load(paste(repsortie,"dep.RData",sep=""))
-
-#  variablecartobis <- paste(variablecarto,collapse=",")
-  #strSQL <- paste("SELECT ",id,",",variablecartobis,",ST_AsText(geom) AS geom from ",tablecarto,sep="")
-  #rs = dbSendQuery(con,strSQL)
-  #df = fetch(rs,n=-1)
-  #dfTemp = dbGetQuery(con,strSQL)
-  #row.names(dfTemp) = dfTemp[,id]
-
-#for(i in seq(nrow(dfTemp))){
-  #print(i)
-  #if(i == 1){
-  #  spTemp <- readWKT(dfTemp$geom[i], dfTemp$id_geofla[i])
-  #}else{
-    #spTemp <- rbind(spTemp, readWKT(dfTemp$geom[i], dfTemp$id_geofla[i]))
-    #}
-  #}
-
-  #map <- SpatialPolygonsDataFrame(spTemp, dfTemp[-(length(variablecarto)+2)])
-
-#  variablecartobis <- paste(variablecarto,collapse=",")
- # strSQL <- paste("SELECT ",id,",ST_AsText(geom) AS geom",sep="")
-#  rs = dbSendQuery(con,strSQL)
-#  df = fetch(rs,n=-1)
-  #dfTemp = dbGetQuery(con,strSQL)
-  #row.names(dfTemp) = dfTemp[,id]
-
-#  for(i in seq(nrow(dfTemp))){
-    #if(i == 1){
-    #  spTemp <- readWKT(dfTemp$geom[i], dfTemp$id_geofla[i])
-    #}
-  #else{
-    #spTemp <- rbind(spTemp, readWKT(dfTemp$geom[i], dfTemp$id_geofla[i]))
-    #}
-  #}
-  
-  #dep <- SpatialPolygonsDataFrame(spTemp, dfTemp[-2])
   }else{}
 
 if(is.character(dept)==TRUE){
@@ -199,9 +86,6 @@ for(i in seq(nrow(dfTemp))){
   }
 
   map <- SpatialPolygonsDataFrame(spTemp, dfTemp[-(length(variablecarto)+2)])
-  #map <- readOgrSql(dsn, strSQL, stringsAsFactors=FALSE)
-  #map <- map[complete.cases(map@data[variablecarto]),]
-
   variablecartobis <- paste(variablecarto,collapse=",")
   strSQL <- paste("SELECT ",id,",ST_AsText(geom) AS geom
                    from dm_vecteurs.departement where code_reg similar to '",reg,"'",sep="")
@@ -220,11 +104,6 @@ for(i in seq(nrow(dfTemp))){
   }
   
   dep <- SpatialPolygonsDataFrame(spTemp, dfTemp[-2])
-
-  #depSQL <- paste("select * 
-                   #from dm_vecteurs.departement
-                   #where code_dept similar to '",dept,"'",sep="")
-  #dep <- readOgrSql(dsn, depSQL, stringsAsFactors=FALSE)
   }else{}
   
 if(reg!=FALSE){# Sélection de la zone d'étude
@@ -247,13 +126,6 @@ if(reg!=FALSE){# Sélection de la zone d'étude
   }
   
   map <- SpatialPolygonsDataFrame(spTemp, dfTemp[-(length(variablecarto)+2)])
-# strSQL <- paste("select * 
- #                  from ",tablecarto,"
-  #                 where code_reg similar to '",reg,"'",sep="")
-
-  #map <- readOgrSql(dsn, strSQL, stringsAsFactors=FALSE)
-  #map <- map[complete.cases(map@data[variablecarto]),]
-
   strSQL <- paste("SELECT ",id,",ST_AsText(geom) AS geom
                    from dm_vecteurs.departement where code_reg similar to '",reg,"'",sep="")
   rs = dbSendQuery(con,strSQL)
@@ -271,10 +143,6 @@ if(reg!=FALSE){# Sélection de la zone d'étude
   }
   
   dep <- SpatialPolygonsDataFrame(spTemp, dfTemp[-2])
-  #regSQL <- paste("select * 
-                   #from dm_vecteurs.departement
-                   #where code_reg similar to '",reg,"'",sep="")
-#  dep <- readOgrSql(dsn, regSQL, stringsAsFactors=FALSE)
   }else{}
   
 # Conversion des spatialdataframe pour la cartographie sous ggpplot2

@@ -1,18 +1,20 @@
 ---
 title: "Mode opératoire pour reprendre en main le projet Carbo_elevage"
-author: "Jean-Baptiste Paroissien" 
+author: "Jean-Baptiste Paroissien"
+date: "22/02/2017"
 output:
-  github_document:
-    toc: true
-    toc_depth: 2
-    fig_width: 10
-    fig_height: 10
-    dev: png
-    md_extensions: +autolink_bare_uris+hard_line_breaks+header_attributes+line_blocks+table_captions
+  html_document:
+    toc: yes
+    toc_float: yes
+    fig_caption: yes
+    highlight: zenburn
+    number_sections: yes
+    theme: spacelab    
+
 ---
 
 ```{r, tidy=FALSE,eval=TRUE,echo=FALSE}
-mo_url <- "https://github.com/Rosalien/GISEDSol/tree/master/Documentation/Modes_operatoires/"
+mo_url <- "https://github.com/GisEDSol/Carbo_elevage/tree/master/Documentation/Modes_operatoires/"
 ```
 
 # Objectif et domaine d'application
@@ -48,13 +50,11 @@ Pour faciliter la navigation dans l'arborescence et le contenu des fichiers, le 
 - Les fichiers de suivi relatifs à la création de la base de données `FS_bdd`
 - Les fichiers de suivi relatifs à la création des données élaborées la base de données `FS_elab`
 
-
-
 # Etape 1 : Accès aux scripts de travail
 
 L'ensemble du travail (création de la BDD et les analyses statistiques) est développé sous forme de scripts utilisant principalement le langage R, SQL et bash. Tous les rapports du projet sont écrits en `R+markdown` ce qui permet d'inclure dans le corps du texte du code `R` (les chunks). C'est un langage en balisage léger qui offre une syntaxe facile à lire et à écrire (comme le langage wiki).
 
-Tous les scripts sont centralisés et organisés dans un dépôt [GitHub](). Il s'agit d'un service web d'hébergement et de gestion de développement de scripts utilisant le logiciel de gestion de versions [Git](). Dans ce type de logiciel, le dépôt représente une copie du projet. Chaque ordinateur d’un développeur qui travaille sur le projet possède donc une copie du dépôt. Dans chaque dépôt, on trouve les fichiers du projet ainsi que leur historique.
+Tous les scripts sont centralisés et organisés dans un dépôt [GitHub](https://fr.wikipedia.org/wiki/GitHub). Il s'agit d'un service web d'hébergement et de gestion de développement de scripts utilisant le logiciel de gestion de versions **git**. Dans ce type de logiciel, le dépôt représente une copie du projet. Chaque ordinateur d’un développeur qui travaille sur le projet possède donc une copie du dépôt. Dans chaque dépôt, on trouve les fichiers du projet ainsi que leur historique.
 
 **Dans la suite**, le mode opératoire est principalement dédié à un système basé sous linux. Des liens vers des modes opératoires spécifiques à Windows seront proposés.
 
@@ -98,8 +98,6 @@ git clone https://github.com/GisEDSol/Carbo_elevage.git
 
 L'organisation du dépôt est décrit dans le fichier [Readme.md](https://github.com/GisEDSol/Carbo_elevage/blob/master/Readme.md). 
 
-**Important :** pour faciliter la navigation dans l'arborescence du projet, plusieurs fichier `Readme.md` sont présents, il est important de les maintenir à jour.
-
 ```{r,eval=FALSE,echo=TRUE}
 ├── Documentation
 │   ├── Metadonnees
@@ -115,6 +113,8 @@ L'organisation du dépôt est décrit dans le fichier [Readme.md](https://github
 │   ├── R
 │   └── Readme.md
 ```
+**Important :** pour faciliter la navigation dans l'arborescence du projet, plusieurs fichier `Readme.md` sont présents, il est important de les maintenir à jour.
+
 # Etape 2 : Importation de la base de données
 
 Description de la base de données. Ici, renvoyer vers un mode opératoire basé un fichier sqlite/spatialite.
@@ -187,7 +187,7 @@ Quoi qu'il en soit, les paramètres de connexion à retenir pour se connecter à
 
 ### Connexion ODBC
 
-*Dans la suite, le mode opératoire est proposé pour un système linux. Pour un système basé sous windows, le lecteur intéressé peut consulter la page [suivante](http://informatique-mia.inra.fr/r4ciam/ODBC.html).*
+*Pour un système basé sous windows, le lecteur intéressé peut consulter la page [suivante](http://informatique-mia.inra.fr/r4ciam/ODBC.html).*
 
 Les connexions odbc servent de lien entre le logiciel R et la base de données sous postgreSQL/postGIS. Dans linux, les paramètres de connexion sont configurées dans le fichier `\etc\odbc.ini`. Pour configurer une connexion, une modification de ce fichier est nécessaire. Tapez dans un terminal `sudo gedit \etc\odbc.ini` puis apporter les modifications nécessaires. 
 

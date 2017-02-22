@@ -1,27 +1,22 @@
 ---
 title: "Traitement des données topographiques"
 author: "Jean-Baptiste Paroissien"
-date: "26/01/2017"
+date: "22/02/2017"
 output:
-  github_document:
-    toc: true
-    toc_depth: 2
-    fig_width: 10
-    fig_height: 10
-    dev: png
-    md_extensions: +autolink_bare_uris+hard_line_breaks+header_attributes+line_blocks+table_captions
+  html_document:
+    toc: yes
+    toc_float: yes
+    fig_caption: yes
+    highlight: zenburn
+    number_sections: yes
+    theme: spacelab  
 ---
 
-```{r setup, include=FALSE,eval=TRUE}
+```{r setup, include=FALSE,eval=FALSE}
 # Importation des paramètres de travail
 source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
 repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
 importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
-```
-
-```{r, tidy=FALSE,eval=TRUE}
-Sys.Date()
-sessionInfo()
 ```
 
 # Objectifs
@@ -120,7 +115,7 @@ print(sqlQuery(loc,paste("
 ```
 ## Cartographie
 
-```{r,echo=FALSE,eval=TRUE}
+```{r,echo=FALSE,eval=FALSE}
 tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
 variablecarto <- "altimean"
 style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
@@ -133,7 +128,7 @@ nomfichier <- "elevation_fr" #Nom du fichier
 carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=1,position="bottom",ggsaveheight=7,ggsavewidth=10)
 ```
 
-```{r map_topo_fr, echo = F, results = 'asis'}
+```{r map_topo_fr, echo = F, results = 'asis',eval=FALSE}
 # Pour insérer l'image
 fichiers <- paste(repsortie,"elevation_fr.png",sep="")
 cat(paste("![](",fichiers,")",sep=""))

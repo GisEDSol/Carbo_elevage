@@ -29,7 +29,7 @@ ipak <- function(pkg){
 
 # Chargement des librairies
 listpaquets <- c("RODBC","gdata","fields","stringr","ggplot2","rgdal","maptools","RColorBrewer","classInt","devtools","reshape2","Hmisc","gridExtra","mapproj","wesanderson","FactoMineR",
-	"knitr","pander","GGally","factoextra","caret","plyr","doMC","sp","raster","RPostgreSQL","corrplot")
+	"knitr","pander","GGally","factoextra","caret","plyr","doMC","sp","raster","RPostgreSQL","corrplot","MASS")
 ipak(listpaquets)
 #new.packages <- listpaquets[!(listpaquets %in% installed.packages()[,"Package"])]
 #if(length(new.packages)) install.packages(new.packages)
@@ -191,6 +191,48 @@ lm_eqn = function(m) {
 }
 
 assign("lm_eqn",lm_eqn,.GlobalEnv)
+
+# Fonction pour effectuer une requête sql avant d'importer un postgis (selon https://geospatial.commons.gc.cuny.edu/2013/12/31/subsetting-in-readogr/)
+readOgrSql = function (dsn, sql, ...) {
+   # check dsn starts "PG:" and strip
+  if (str_sub(dsn, 1, 3) != "PG:") {
+    stop("readOgrSql only works with PostgreSQL DSNs")
+  }
+  dsnParamList = str_trim(str_split(dsn, ":")[[1]][2])
+
+  # Build dbConnect expression, quote DSN parameter values 
+  # if not already quoted
+  if (str_count(dsnParamList, "=") 
+      == str_count(dsnParamList, "='[[:alnum:]]+'")) {
+    strExpression = str_c(
+      "dbConnect(dbDriver('PostgreSQL'), ", 
+      str_replace_all(dsnParamList, " ", ", "), 
+      ")"
+      )
+  }
+  else {
+    dsnArgs = word(str_split(dsnParamList, " ")[[1]], 1, sep="=")
+    dsnVals = sapply(
+      word(str_split(dsnParamList, " ")[[1]], 2, sep="="), 
+      function(x) str_c("'", str_replace_all(x, "'", ""), "'")
+      )
+    strExpression = str_c(
+      "dbConnect(dbDriver('PostgreSQL'), ", 
+      str_c(dsnArgs, "=", dsnVals, collapse=", "), 
+      ")"
+      )
+  }
+
+  # Connect, create spatial view, read spatial view, drop spatial view
+  conn = eval(parse(text=strExpression))
+  print(dbSendQuery(conn, "DROP VIEW if exists vw_tmp_read_ogr;"))
+  strCreateView = paste("CREATE VIEW vw_tmp_read_ogr AS", sql)
+  dbSendQuery(conn, strCreateView)
+  temp = readOGR(dsn = dsn, layer = "vw_tmp_read_ogr", ...)
+  print(dbDisconnect(conn))
+  return(temp)
+}
+assign("readOgrSql",readOgrSql,.GlobalEnv)
 
 #return(list(grid_arrange_shared_legend,gsub2,fig=fig))
 }#Fin fonction

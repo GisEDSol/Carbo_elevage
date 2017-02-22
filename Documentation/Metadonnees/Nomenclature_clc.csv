@@ -1,16 +1,16 @@
-code_clc_niveau_2;libelle
-11;Zones urbanisées
-12;Zones industrielles ou commerciales et réseaux de communication
-13;Mines, décharges et chantiers
-14;Espaces verts artificialisés, non agricoles
-21;Terres arables
-22;Cultures permanentes
-23;Prairies
-24;Zones agricoles hétérogènes
-31;Forêts
-32;Milieux à végétation arbustive et/ou herbacée
-33;Espaces ouverts, sans ou avec peu de végétation
-41;Zones humides intérieures
-42;Zones humides côtières
-51;Eaux continentales
-52;Eaux maritimes
+code_clc_niveau_2,libelle
+11,Zones urbanisées
+12,Zones industrielles ou commerciales et réseaux de communication
+13,Mines, décharges et chantiers
+14,Espaces verts artificialisés, non agricoles
+21,Terres arables
+22,Cultures permanentes
+23,Prairies
+24,Zones agricoles hétérogènes
+31,Forêts
+32,Milieux à végétation arbustive et/ou herbacée
+33,Espaces ouverts, sans ou avec peu de végétation
+41,Zones humides intérieures
+42,Zones humides côtières
+51,Eaux continentales
+52,Eaux maritimes

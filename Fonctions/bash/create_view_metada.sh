@@ -1,4 +1,5 @@
 #!/bin/bash
+#from https://www.postgresql.org/message-id/CAFTc7AcnmiRhWNv6Po8BPHo_RPVN-ObU2gDqdvRnkGSPezyL7w@mail.gmail.com
 
 psql -U jb -d sol_elevage -c "
 CREATE OR REPLACE VIEW metadata AS
