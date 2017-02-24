@@ -85,6 +85,17 @@ rownames(tt) <- 1:nrow(tt)
 pander(tt,caption = "Liste des tables brutes de la BDAT",justify = c('left', 'left'),split.cells = c("35%", "65%"),use.hyphening = TRUE)
 ```
 
+## Les tables de la Base de données Géographique des Sols de France (BDGSF)
+
+La Base de données Géographique des Sols de France (BDGSF) représente la partie française de la Base de Données Géographique des Sols d'Europe à 1/1000000. La construction est basée sur le principe des Unité Cartographique de Sol (UCS) et des Unités Typologique de Sol (UTS).
+
+La documentation de cette base de données est disponible sur ce [site](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDBv2/fr_advan.htm), avec notamment :
+
+- Une [description](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDBv2/popup/sg_meta.htm) de la base de données,
+- Un dictionnaire de la base de [données](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDBv2/popup/sg_dict.htm),
+- Une [description](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDBv2/popup/sg_attr.htm) des codes attributaires.
+
+
 ## Les tables du recensement agricole
 
 ```{r,evaL=TRUE,echo=FALSE}

@@ -1,0 +1,217 @@
+---
+title: "Traitement des données de la BDGSF"
+author: "Jean-Baptiste Paroissien"
+date: "22/02/2017"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    fig_caption: yes
+    highlight: zenburn
+    number_sections: yes
+    theme: spacelab  
+---
+
+```{r setup, include=FALSE,eval=FALSE}
+# Importation des paramètres de travail
+source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
+repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
+importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
+```
+
+# Objectifs
+
+L'objectif de ce fichier de suivi est de stocker l'ensemble des traitements élaborés associés à la base de données BDGSF. Ces traitements concernent pour le moment l'intégration des données de données élaborées issues de modélisation, dont notamment :
+
+- Le calcul du type de sol majoritaire
+- Le calcul du matériau parental majoritaire
+- Le taux d'argile
+
+# Création de statistiques majoritaire de la BDGSF
+
+## Matériaux parental
+
+```{r,highlight=TRUE,eval=FALSE}
+
+# Construction du matériel parental de niveau 1 appelé MAT11 
+table_dm  <- "bdgsf.sgdb_fr"
+vName <- "mat11hev"
+
+# Ajout de la colonne
+sqlQuery(loc,paste("alter table ",table_dm,"
+                    drop column if exists ",vName,";
+                    alter table ",table_dm,"
+                    add column ",vName," numeric",sep=""))  
+
+# Updata de la colonne crééeJointure 
+sqlQuery(loc,paste("update ",table_dm,"
+                    SET ",vName," = SUBSTR(cast(MAT1hev as text),1,1)::numeric",sep=""))
+
+
+
+####################################################
+
+#Création d'une table sol majoritaire (sélection 50/50 entre les smu majoritaire identique)- 
+schema <- "bdgsf"
+tablebdgsf <- "bdgsf.sgdb_fr"
+smu <- "smu_sgdbe"
+stuorg <- "stuorg"
+stu <- "bdgsf.stu_sgdbe"
+
+variables <- c("mat1","fao85fu")
+typecol <- c("text","text")
+# La jointure se base sur l'uts majoritaire de l'ucs (stu_dom) et les données attributaires sont récoltées dans stu_sgdbet
+cpt <- 0
+for(i in variables){
+    cpt <- cpt + 1
+    nomcol <- paste(i,"_maj",sep="")
+
+    #Suppression de la colonne si déjà existante
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        drop column if exists ",nomcol,sep=""))
+
+    sqlQuery(loc,paste("alter table ",tablebdgsf,"
+                        add column ",nomcol," ",typecol[cpt],";
+                        update ",tablebdgsf,"
+                        SET ",nomcol," = s1.",i," from(
+                        select distinct pr.smu,stu.",i,"
+                        from ",tablebdgsf," as pr
+                        left join ",stu," as stu on stu.stu=pr.stu_dom) as s1
+                        where ",tablebdgsf,".smu=s1.smu",sep=""))
+}
+
+
+table_dm  <- "bdgsf.sgdb_fr"
+vName <- "mat11_maj"
+
+# Ajout de la colonne
+sqlQuery(loc,paste("alter table ",table_dm,"
+                    drop column if exists ",vName,";
+                    alter table ",table_dm,"
+                    add column ",vName," numeric",sep=""))  
+
+# Updata de la colonne crééeJointure 
+sqlQuery(loc,paste("update ",table_dm,"
+                    SET ",vName," = SUBSTR(cast(mat1_maj as text),1,1)::numeric",sep=""))
+```
+
+# Calcul de différentes statistiques jointes vers la table `dm_vecteurs.canton`
+
+
+## Agrégation majoritaire
+
+
+```{r,highlight=TRUE,eval=FALSE}
+
+#Paramètres
+variable <- "mat11maj"
+tablepedo <- "bdgsf.sgdb_fr" # Nom de la table 
+table_dm <- "dm_vecteurs.canton"
+
+# Calcul de la valeur majoritaire par canton
+cpt <- 0
+for(i in variable){
+  cpt <- cpt + 1
+  print(i)
+
+  #Suppression et ajout de la colonne si déjà existante
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                      drop column if exists ",i,";
+                      alter table ",table_dm,"
+                      add column ",i," numeric",sep=""))
+  
+  #Requête spatiale (sélection de la plus grande surface totale par canton)
+    spatialquery <- paste("
+        WITH summary AS (
+            SELECT p.code_canton, 
+            p.",i,", 
+            p.area, 
+            ROW_NUMBER() OVER(PARTITION BY p.code_canton    
+                              ORDER BY p.area DESC) AS rk
+        FROM(
+        --selection
+        SELECT code_canton,",i,",area
+             FROM (
+                SELECT code_canton,",i,", sum(area_max) AS area
+                FROM (
+                --Overlay
+                    SELECT code_canton, smu,bdgsf.",i," as ",i," ,ST_Area(ST_Intersection(canton.geom, bdgsf.geom)) as area_max
+                    FROM ",table_dm," as canton
+                    JOIN ",tablepedo," AS bdgsf ON ST_Intersects(canton.geom, bdgsf.geom)           
+                    ) sub1
+                GROUP BY code_canton,",i,"
+                ORDER BY area DESC
+            ) sub2
+        )p)
+    --selection finale
+    SELECT s.code_canton,s.mat11maj
+    FROM summary s
+    WHERE s.rk = 1
+    ",sep="")
+
+  # Jointure 
+
+  sqlQuery(loc,paste("update ",table_dm,"
+                      SET ",i," = s1.",i," from(",spatialquery,") as s1
+                      where ",table_dm,".code_canton=s1.code_canton::text",sep=""))
+}
+
+
+# A rajouter  
+#Ajout d'un commentaire sur la nouvelle colonne crée
+  print(sqlQuery(loc,paste("
+       COMMENT ON COLUMN ",table_dm,".",i," IS \'",signification[cpt],"\';",sep="")))
+```
+
+## Agrégation par la moyenne à l'échelle du canton
+
+*Plus d'infos sur la construction des rasters à travers cette [publication](https://www.researchgate.net/publication/280608975_Mapping_topsoil_physical_properties_at_European_scale_using_the_LUCAS_database)*
+
+```{r,highlight=TRUE,eval=FALSE}
+# Voir pour réaliser le calcul dans PostGIS
+
+
+reptopo <- "/media/sf_GIS_ED/Dev/Data/Sol/Lucas/Elaborees/" #répertoire contenant les rasters à assembler
+Fr_demName <- paste(reptopo,"fr_Clay_eu23.tif",sep="")
+
+# Lecture du raster
+table_dm <- "dm_vecteurs.canton"
+mapcanton <- dbReadSpatial(con, schemaname="dm_vecteurs", tablename="canton", geomcol="geom")
+
+rasterdem1<-readGDAL(Fr_demName) 
+r <- raster(rasterdem1,layer=1,values=TRUE)
+
+r.vals <- extract(r, mapcanton, fun = mean, na.rm = TRUE,sp=TRUE)#fonctionne mais prend un certain temps...(l'extension 'Statistiques zones' est plus rapide)
+
+# Jointure
+tmp <- merge(mapcanton@data,r.vals, by.x="code_canton", by.y="code_canton",all.x=TRUE,all.y=TRUE)[,c("id_geofla.x","band1")]
+
+vName <- "clay_lucas"  #Nom du champs calculé
+colnames(tmp) <- c("id_geofla2",vName)
+
+# Création d'une table provisoire pour jointure
+sqlQuery(loc,"drop table if exists dm_vecteurs.tmp")
+sqlSave(loc,tmp,tablename="dm_vecteurs.tmp")
+
+# Ajout de la colonne
+sqlQuery(loc,paste("alter table ",table_dm,"
+                    drop column if exists ",vName,";
+                    alter table ",table_dm,"
+                    add column ",vName," numeric",sep=""))                 
+# Jointure 
+sqlQuery(loc,paste("update ",table_dm,"
+                    SET ",vName," = s1.",vName," from(
+                    select ",vName,",id_geofla2
+                    from dm_vecteurs.tmp) as s1
+                    where ",table_dm,".id_geofla=s1.id_geofla2",sep=""))
+
+# Ajout d'un commentaire sur la nouvelle colonne créée
+print(sqlQuery(loc,paste("
+COMMENT ON COLUMN ",table_dm,".",vName," IS \'Taux d\\'argile moyen par canton (%) issues de la modélisation des échantillons LUCAS.\';",sep="")))
+    
+# Suppression de la table temporaire
+sqlQuery(loc,"drop table if exists dm_vecteurs.tmptopo")
+
+# Ci-dessous, une solution en postGIS (intéressant à exploiter)
+#http://gis.stackexchange.com/questions/155974/calculate-mean-value-of-polygon-from-raster-in-postgis
+```

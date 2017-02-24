@@ -29,7 +29,7 @@ ipak <- function(pkg){
 
 # Chargement des librairies
 listpaquets <- c("RODBC","gdata","fields","stringr","ggplot2","rgdal","maptools","RColorBrewer","classInt","devtools","reshape2","Hmisc","gridExtra","mapproj","wesanderson","FactoMineR",
-	"knitr","pander","GGally","factoextra","caret","plyr","doMC","sp","raster","RPostgreSQL","corrplot","MASS")
+	"knitr","pander","GGally","factoextra","caret","plyr","doMC","sp","raster","RPostgreSQL","corrplot","MASS","foreign")
 ipak(listpaquets)
 #new.packages <- listpaquets[!(listpaquets %in% installed.packages()[,"Package"])]
 #if(length(new.packages)) install.packages(new.packages)

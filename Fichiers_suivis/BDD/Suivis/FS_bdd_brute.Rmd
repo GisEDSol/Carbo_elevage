@@ -189,16 +189,17 @@ for(r in repmethodo){
 ```
 ## La BDGSF (en cours)
 
-La base de données européenne des sols a été téléchargée sur ce [site](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDB_data_1k_raster_intro/ESDB_1k_raster_data_intro.html). 
+La base de données européenne des sols a été téléchargée sur ce [site](http://esdac.jrc.ec.europa.eu/content/european-soil-database-v20-vector-and-attribute-data#tabs-0-description=1&tabs-0-description-2=). 
 Les instructions ci-dessous permettent de :
 
 - changer la projection du shapefiles vers le Lambert93 (avec ogr2ogr),
 - intégrer le shapefiles dans la base de données,
 - découper le shapefiles au contour de la France.
 
+Pour les métadonnées de la BDGSF, [voir](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDBv2/fr_easy.htm)
 
 ```{r importBDGSF, eval=FALSE}
-repbdgsf <- "/media/sf_GIS_ED/Dev/Data/Sol/bdgsf/ESDB/"
+repbdgsf <- "/media/sf_GIS_ED/Dev/Data/Sol/bdgsf/"
 vectorname <- "SGDB_PTR.shp"
 file1 <- paste(repbdgsf,vectorname,sep="")
 file2 <- paste(repbdgsf,"L93_",vectorname,sep="")
@@ -223,22 +224,35 @@ sqlQuery(loc,paste("CREATE TABLE ",schema,".",sortie,"_fr AS
 
 # Suppression des fichiers temporaires
 system(paste("rm ",file1," ",file2,sep=""))
+
+# Intégration des tables de la BDGSF
+
+Liste_dbf <- gsub("\\.dbf$","",list.files(repbdgsf,pattern="\\.dbf$"))
+Liste_dbf <- Liste_dbf[4:length(Liste_dbf)]
+for(i in Liste_dbf){
+  dbf <- read.dbf(paste(repbdgsf,i,".dbf",sep=""))
+  sqlSave(loc,dbf,tablename = paste(schema,".",i,sep=""))
+}
+
 ```
 
 ## Données élaborées LUCAS (en cours)
 
 ```{r eval=FALSE}
 rep_rasterjrc <- "/media/sf_GIS_ED/Dev/Data/Sol/Lucas/Elaborees/"
-list.rast <- list.files(rep_rasterjrc,pattern=".tif$")#Le $ signifie la fin du pattern
 shaperef <- "/media/sf_GIS_ED/Dev/Data/Base/DEPARTEMENT.shp"
+list.rast <- gsub("\\.tif$","",list.files(rep_rasterjrc,pattern="\\.tif$"))# Liste des xls présent dans le répertoire de travail (repagreste)
+
 for(i in list.rast){
     # 
-    system(paste("gdalwarp -t_srs EPSG:2154 ",rep_rasterjrc,i," ",rep_rasterjrc,"tmp",i," -overwrite",sep=""))
-    system(paste("gdalwarp --config GDALWARP_IGNORE_BAD_CUTLINE YES -cutline ",shaperef," -crop_to_cutline ",rep_rasterjrc,"tmp",i," ",rep_rasterjrc,"fr_",i," -overwrite",sep=""))
-    system(paste("rm ",rep_rasterjrc,"tmp",i,sep=""))
+    system(paste("gdalwarp -t_srs EPSG:2154 ",rep_rasterjrc,i,".tif ",rep_rasterjrc,"tmp",i,".tif -overwrite",sep=""))
+    system(paste("gdalwarp --config GDALWARP_IGNORE_BAD_CUTLINE YES -cutline ",shaperef," -crop_to_cutline ",rep_rasterjrc,"tmp",i,".tif ",rep_rasterjrc,"fr_",i,".tif -overwrite",sep=""))
+    system(paste("rm ",rep_rasterjrc,"tmp",i,".tif",sep=""))
     
     # Intégration dans la base postgis
-    #system(paste("shp2pgsql -s 2154 -c -D -W \"latin1\" -I ",rep_rasterjrc,"sgdbe4_0.shp | psql -d sol_elevage -h localhost -U jb -s bdgdf",sep=""))#option -s ne fonctionnne pas
+    rpostgisname <- paste("dm_rasters.fr_",i,".tif",sep="")
+    sqlQuery(loc,paste("drop table if exists ",rpostgisname,sep=""))
+    system(paste("raster2pgsql -I -C -s 2154 ",rep_rasterjrc,"fr_",i,".tif ",rpostgisname," | psql -h localhost -U jb -d sol_elevage",sep=""))
 } 
 ```
 
@@ -607,14 +621,18 @@ system(paste("gdalwarp -tr 90 90 -co BIGTIFF=YES -co TILED=YES -co 'COMPRESS=LZW
 
 ```
 
-Le raster est ensuite intégré sur le serveur PostGIS (voir la pertinence). Si celà ne fonctionne pas, revoir les scripts pour calculer les moyennes entre vecteurs et rasters avec R.
+Le raster est ensuite intégré sur le serveur PostGIS (revoir, problème d'intégration)
 
 ```{r demtopostgis,eval=FALSE}
-rastername <- paste(reptopo,"Fr_L93_",rastername,sep="")
-rpostgisname <- "m_rasters.dem_copernicus"
+rastername <- Fr_demNamelight
+rpostgisname <- "dm_rasters.dem_copernicus_90"
 
-system(paste("raster2sql -s 2154 -t 30x30 -f -I -Y myRaster.tif ",rpostgisname," > raster.sql`
-psql -h localhost -U jb -d sol_elevage -f raster.sql",sep=""))
+sqlQuery(loc,paste("drop table if exists ",rpostgisname,sep=""))
+system(paste("raster2pgsql -I -C -s 2154 ",rastername," ",rpostgisname," | psql -h localhost -U jb -d sol_elevage",sep=""))
+
+# Ajout d'un commentaire
+print(sqlQuery(loc,paste("
+      COMMENT ON TABLE ",rpostgisname," IS \'Modèle numérique de terrain du programme Copernicus (résolution 90m).\';",sep="")))
 ```
 
 # Les métadonnées

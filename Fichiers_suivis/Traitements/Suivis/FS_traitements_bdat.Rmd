@@ -235,18 +235,25 @@ pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"])
 
 ## Analyse des facteurs contrôlant la distribution spatiale
 
-Dans cette partie, les facteurs contrôlant la distribution spatiale des teneurs en carbone organique des différentes périodes sont analysés. Le travail est dans un premier porté par une analyse en composante principale pour identifier les relations entre les facteurs potentiellement explicatifs et dans un deuxième temps par une modélisation avec la méthode des arbres de régression boostés pour affiner l'analyser et classer les variables explicatives par ordre d'importance (contribution).
+Dans cette partie, les facteurs contrôlant la distribution spatiale des teneurs en carbone organique des différentes périodes sont analysés. Le travail est dans un premier porté par une analyse en composante principale pour identifier les relations entre les facteurs potentiellement explicatifs et identifier les principales variables d'intérêts. Dans un deuxième temps par une modélisation avec la méthode des arbres de régression boostés pour affiner l'analyser et classer les variables explicatives par ordre d'importance (contribution).
 
-### Analyse en composante principale
+### Analyse en composante principale 
 
+L'objectif de l'analyse en composante principale (ACP) est d'identifier les principales variables explicatives. Compte-tenu du nombre important de variables, les ACP seront réalisées par type de variables :
 
-#### Test avec les données climatiques
+- Naturel : variables climatiques, topographiques et géologiques
+- Anthropique : variables d'occupation du sol 
+
+#### ACP sur les variables naturels
+
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE}
+#voir https://www.r-bloggers.com/introduction-to-feature-selection-for-bioinformaticians-using-r-correlation-matrix-filters-pca-backward-selection/
+
 # Sélection du jeu de données
 dcast.bdat <- bdat9514
 
 # Sélection des variables de travail
-Rcovarclimato <- c("hpluie_an","jchauds_an","jfroids_an","ttemp_an","pluie_ecart_janv","pluie_ecart_juil","ampli_t_juil_janv","jpluie_janv","jpluie_juil")
+Rcovarclimato <- c("hpluie_an","jchauds_an","jfroids_an","ttemp_an","pluie_ecart_janv","pluie_ecart_juil","ampli_t_juil_janv","jpluie_janv","jpluie_juil","std_pluie_juil","std_pluie_janv","std_temp_janv","std_temp_juil")
 typeclimato <- replicate(length(Rcovarclimato), "climat")
 
 Rcovartopo <- "altimean"
@@ -254,9 +261,6 @@ typetopo <- replicate(length(Rcovartopo), "topographie")
 
 Rcovarpedo <- "argi_med"
 typetopo <- replicate(length(Rcovartopo), "pedologie")
-
-#Rcovaroccup <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
-#typeoccup <- replicate(length(Rcovaroccup), "occup")
 
 type <- c(typeclimato,typetopo)#,typeoccup)
 Rcovar <- c(Rcovarclimato,Rcovartopo,Rcovarpedo,"classe_C")#Rcovaroccup
@@ -266,11 +270,7 @@ vNames <- c("corg_medequiv9599",Rcovar)
 lvNames <- length(vNames)
 dcast.bdat_variables <- dcast.bdat[complete.cases(dcast.bdat[,vNames[-lvNames]]),vNames[-lvNames]]
 
-# Création d'une classe de valeur pour le carbone
-classe_valeur <- classIntervals(dcast.bdat_variables[vNames[1]][[1]],n=4,style="quantile",digits=1,na.rm=TRUE)[[2]]
-dcast.bdat_variables[,"classe_C"] <- cut(dcast.bdat_variables[vNames[1]][[1]],breaks = data.frame(classe_valeur)[,1],include.lowest=T) 
-
-res.pca <- PCA(dcast.bdat_variables[,!names(dcast.bdat_variables) %in% "classe_C"], quanti.sup=1,graph = FALSE)# Mettre le carbone en illustratif (quanti.sup=num de colonne)
+res.pca <- PCA(dcast.bdat_variables[,!names(dcast.bdat_variables) %in% "classe_C"], quanti.sup=1,graph = FALSE)# 
 #fviz_screeplot(res.pca, ncp=10)
 
 #for(i in c(10,25,50)){
@@ -286,9 +286,11 @@ pca <- fviz_pca_var(res.pca, axes = c(1,3),col.var="contrib") +
 scale_color_gradient2(low="white", mid="blue", 
                   high="red", midpoint=50) + theme_minimal()
 pca 
+#ggsave(pca,file = paste(repsortie,"pca_10.png",sep=""), width = 8, height = 8)  
 
-ggsave(pca,file = paste(repsortie,"pca_10.png",sep=""), width = 8, height = 8)  
-
+# Sélection des 5 variables les plus contributrices
+test <- as.data.frame(res.pca$var$contrib)
+test2 <- test[with(test, order(-Dim.1,-Dim.2,-Dim.3)),]
 
 ```
 
@@ -380,38 +382,186 @@ typetopo <- replicate(length(Rcovartopo), "pedologie")
 
 Rcovaroccup <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
 
-pt <- dcast.bdat
 Ranthrop <- Rcovaroccup
 Rnaturel <- c(Rcovartopo,Rcovarclimato)
 vNames <- c("corg_medequiv9599",Rnaturel)
 
-ptpedo <- pt[vNames][complete.cases(pt[vNames]),]
-attach(ptpedo)
-labels <- names(ptpedo[,2:ncol(ptpedo)])
+# Préparation du jeu de données
+d <- dcast.bdat[complete.cases(dcast.bdat[vNames]),vNames]
+datax <- d[, vNames[-1]]
+datay <- d[, vNames[1]]
+labels <- names(d[,2:ncol(d)])
 
-#Combinaisons
+
+# Paramètres de modélisation
 allcomb <- unlist(lapply(seq(along=labels), function(x) combn(labels, m=x, simplify=FALSE, FUN=paste, collapse="+")))
-allcomb <- as.factor(allcomb)
+allcomb <- as.factor(allcomb) # Combinaisons des modèles
 
-#Stepwise
-co <- as.matrix(ptpedo[[1]])
-rest <- array(NA, dim = c(length(allcomb), 3), list(loop = 1:length(allcomb), mod = c("model","r2","AIC")))
-compt <- 0
+nbr <- 50 #nbr de répétitions
+prob <- 0.8 #
+rest2 <- array(NA, dim = c(nbr, 5),list(loop = 1:nbr, mod = c("model","r2","MSE","RMSE","AIC"))) # Table de stockage des résultats
+p <- list()
+cpt <- 0
+for (i in 1:nbr){
+  cpt <- cpt + 1
+  print(i)
+  set.seed(157+i)
+  gc()  
+  # Sélection aléatoire du masque
+  masko <- createDataPartition(d[,1],p = prob, list = FALSE)
+  
+  donneeL <- d[masko,]
+  donneeV <- d[-masko,]
+  learningx <- datax[masko,]
+  learningy <- datay[masko]
+  indepx <- datax[-masko,]
+  indepy <- datay[-masko]
+  
+  rest <- array(NA, dim = c(length(allcomb), 5),list(loop = 1:length(allcomb), mod = c("model","r2","MSE","RMSE","AIC"))) # Table de stockage des résultats
 
-for(i in allcomb){
-  compt <- compt+1
-  print(paste(compt,i,sep="_"))
-  rest[compt, "model"] <- i
-  formula <- as.formula(paste(vNames[1], " ~ ", paste(i,collapse=" + ")))
-  rest[compt, "r2"] <- summary(lm(formula))$r.squared
-  rest[compt, "AIC"] <- AIC(lm(formula))
+  compt <- 0
+  for(l in allcomb){
+    compt <- compt+1
+#    print(paste(compt,i,sep="_"))
+    
+    formula <- as.formula(paste(vNames[1], " ~ ", paste(l,collapse=" + ")))
+    mlm <- lm(formula,data=donneeL)
+    #rest[compt, "r2"] <- summary(mlm)$r.squared
+    rest[compt, "AIC"] <- AIC(lm(formula,data=donneeL))
+
+    rest[compt, "model"] <- as.character(l)
+    
+    # Validation externe
+    indep.pred <- predict.lm(mlm, indepx)
+   
+    rest[compt,"r2"] <- as.numeric(round(cor(indep.pred,indepy,use="na.or.complete")^2,4))
+    rest[compt,"MSE"] <- mean((indep.pred-indepy)^2,na.rm=TRUE)
+    rest[compt,"RMSE"] <- mean((indep.pred-indepy)^2,na.rm=TRUE)^0.5
+    }
+  # Sélection du meilleur modèle
+  rest <- as.data.frame(rest)
+  rest <- rest[with(rest, order(-r2,AIC)),]
+  rest2[i,"model"] <- as.character(rest[1,"model"])
+  rest2[i,"r2"] <- as.numeric(as.character(rest[1,"r2"]))
+  rest2[i,"MSE"] <- as.numeric(as.character(rest[1,"MSE"]))
+  rest2[i,"RMSE"] <- as.numeric(as.character(rest[1,"RMSE"]))
+  rest2[i,"AIC"] <- as.numeric(as.character(rest[1,"AIC"]))
 }
-rest <- as.data.frame(rest)
-rest <- rest[with(rest, order(-r2,AIC)),]
-bstcovar <- rest["model"][1,]
-head(rest)
+ rest3 <- as.data.frame(rest2)
+ rest3[,"model"] <- as.character(rest3[,"model"])
+ rest3[,2:5] <- apply(rest3[,2:5],2,function(x){as.numeric(as.character(x))})
+ restclimat <- rest3[with(rest3, order(-r2,AIC)),]
+
+save(restclimat,file=paste(repsortie,"rest2_naturel.RData",sep=""))
 
 
+# Ajout des variables anthropiques
+
+Rcovaroccup <- c("p_sfp1988","p_prairie1979","p_prairie1988","p_sfp1979","p_mf1988","p_sth1979","p_sth1988","p_mf1979","p_mf1988","ugbta1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1979")
+
+Ranthrop <- Rcovaroccup
+vNames <- c("corg_medequiv9599",Ranthrop)
+
+# Préparation du jeu de données
+d <- dcast.bdat[complete.cases(dcast.bdat[vNames]),vNames]
+datax <- d[, vNames[-1]]
+datay <- d[, vNames[1]]
+labels <- vNames[-1]
+
+# Paramètres de modélisation
+allcomb <- unlist(lapply(seq(along=labels), function(x) combn(labels, m=x, simplify=FALSE, FUN=paste, collapse="+")))
+allcomb <- as.factor(allcomb) # Combinaisons des modèles
+
+nbr <- 5 #nbr de répétitions
+prob <- 0.8 #
+rest2 <- array(NA, dim = c(nbr, 5),list(loop = 1:nbr, mod = c("model","r2","MSE","RMSE","AIC"))) # Table de stockage des résultats
+p <- list()
+cpt <- 0
+for (i in 1:nbr){
+  cpt <- cpt + 1
+  print(i)
+  set.seed(157+i)
+  gc()  
+  # Sélection aléatoire du masque
+  masko <- createDataPartition(d[,1],p = prob, list = FALSE)
+  
+  donneeL <- d[masko,]
+  donneeV <- d[-masko,]
+  learningx <- datax[masko,]
+  learningy <- datay[masko]
+  indepx <- datax[-masko,]
+  indepy <- datay[-masko]
+  
+  rest <- array(NA, dim = c(length(allcomb), 5),list(loop = 1:length(allcomb), mod = c("model","r2","MSE","RMSE","AIC"))) # Table de stockage des résultats
+
+  compt <- 0
+  for(l in allcomb){
+    compt <- compt+1
+    print(paste(compt,l,sep="_"))
+    
+    formula <- as.formula(paste(vNames[1], " ~ ", paste(l,collapse=" + ")))
+    mlm <- lm(formula,data=donneeL)
+    #rest[compt, "r2"] <- summary(mlm)$r.squared
+    rest[compt, "AIC"] <- AIC(lm(formula,data=donneeL))
+
+    rest[compt, "model"] <- as.character(l)
+    
+    # Validation externe
+    indep.pred <- predict.lm(mlm, indepx)
+   
+    rest[compt,"r2"] <- as.numeric(round(cor(indep.pred,indepy,use="na.or.complete")^2,4))
+    rest[compt,"MSE"] <- mean((indep.pred-indepy)^2,na.rm=TRUE)
+    rest[compt,"RMSE"] <- mean((indep.pred-indepy)^2,na.rm=TRUE)^0.5
+    }
+  # Sélection du meilleur modèle
+  rest <- as.data.frame(rest)
+  rest <- rest[with(rest, order(-r2,AIC)),]
+  rest2[i,"model"] <- as.character(rest[1,"model"])
+  rest2[i,"r2"] <- as.numeric(as.character(rest[1,"r2"]))
+  rest2[i,"MSE"] <- as.numeric(as.character(rest[1,"MSE"]))
+  rest2[i,"RMSE"] <- as.numeric(as.character(rest[1,"RMSE"]))
+  rest2[i,"AIC"] <- as.numeric(as.character(rest[1,"AIC"]))
+}
+ rest3 <- as.data.frame(rest2)
+ rest3[,"model"] <- as.character(rest3[,"model"])
+ rest3[,2:5] <- apply(rest3[,2:5],2,function(x){as.numeric(as.character(x))})
+ restantrop <- rest3[with(rest3, order(-r2,AIC)),]
+save(restantrop,file=paste(repsortie,"rest2_anthrop.RData",sep=""))
+
+####
+# Modèle complet #
+####
+
+load("/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/rest2_anthrop.RData")
+load("/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/rest2_naturel.RData")
+
+bestmodelclimat <- restclimat[1,"model"]
+bestmodelantrop <- restantrop[1,"model"]
+
+modelcplt <- paste(c(bestmodelclimat,bestmodelantrop),collapse="+")
+vNamescplt <- c("corg_medequiv9599",str_split(modelcplt,"\\+")[[1]])
+d <- dcast.bdat[complete.cases(dcast.bdat[vNamescplt]),vNamescplt]
+
+# On applique les modèles sur l'ensemble du jeu de données
+formuleantrop <- as.formula(paste(vNames[1], " ~ ", bestmodelantrop,sep=""))
+vNamesantrop <- c("corg_medequiv9599",str_split(bestmodelantrop,"\\+")[[1]])
+lmanthrop <- lm(formuleantrop,data=d)
+
+formulenaturel <- as.formula(paste(vNames[1], " ~ ", bestmodelclimat,sep=""))
+vNamesnaturel <- c("corg_medequiv9599",str_split(bestmodelclimat,"\\+")[[1]])
+lmnaturel <- lm(formulenaturel,data=d)
+
+tt <- anova(lmnaturel,lmanthrop)
+summary(lmanthrop)
+summary(lmnaturel)
+
+# Paramètres de modélisation
+allcomb <- unlist(lapply(seq(along=labels), function(x) combn(labels, m=x, simplify=FALSE, FUN=paste, collapse="+")))
+allcomb <- as.factor(allcomb) # Combinaisons des modèles
+
+step <- stepAIC(lm(formulecplt,data=d),direction="both",data=d)
+print(step$anova)
+print(names(step$model))
 
 ```
 
@@ -431,6 +581,7 @@ L'algo permet d'ajuster un modèle en fonction d'un processus itératif. A chaqu
 
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,error=FALSE}
 ##### Sélection des variables explicatives (revoir cette sélection, se baser sur un tableau à charger en fonction des périodes à analyser)
+
 Rcovarclimato <- c("hpluie_an","jfroids_an","ampli_t_juil_janv","pluie_ecart_janv","pluie_ecart_juil","ampli_t_juil_janv","jpluie_janv","jpluie_juil","ttemp_an","jchauds_an")
 typeclimato <- replicate(length(Rcovarclimato), "climat")
 
@@ -467,120 +618,54 @@ test <- d[!trainrows,] #Données pour test
 set.seed(157) #Pour assurer la reproductibilité
 registerDoMC(4)
 #formula <- as.formula(paste(vNames[1],"~",paste(vNames[-1],collapse="+"),sep=""))
-trControl <- trainControl(method = "cv",p=0.8,number=100)
+trControl <- trainControl(method = "cv",p=0.8,number=10)
 tuneGrid <- expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 10)
+
+
+## Pour cubist
+finalModel <- modelObjects$cubist$finalModel
+param <- modelObjects$cubist$bestTune$.neighbors
+
 
 ##
 datax <- d[, vNames[-1]]
 datay <- d[, vNames[1]]
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Utilisation de caret, car plus rapide qu'une simple fonction gbm
-mgbm <- train(x = datax , y = datay,method="gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
+mgbm <- train(x = datax , y = datay,method="cubist",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
 ##
 
-#mgbm_strat_elevage <- train(formula,data=train,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T,na.action = na.omit)
+save(mgbm,file=paste(repsortie,"mgbm_fr2302.RData",sep=""))
+load(paste(repsortie,"mgbm_fr2302.RData",sep=""))
 
-save(mgbm,file=paste(repsortie,"mgbm_fr1302.RData",sep=""))
-load(paste(repsortie,"mgbm_fr1302.RData",sep=""))
 # Maintenant, on lancer le code x fois avec les paramètres de modélisation optimisé
-# Calcul de la moyenne de l'importance + du résultat de prédiction (30% du jeu de données indépendant)
+# Calcul de la moyenne de l'importance + du résultat de prédiction (30% du jeu de données indépendant). Voir si c'est pertinent, caret le fait peut être déjà...
+
+# Test avec la fonction
+source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/F_gbm.R")
+
 trControl <- trainControl(method = "cv",p=0.8,number=10)
 tuneGrid <- expand.grid(interaction.depth = mgbm$bestTune$interaction.depth,n.trees = mgbm$bestTune$n.trees,shrinkage = 0.1,n.minobsinnode = 10)
+   
+
+# Rajouter le fonctionnement des variables         
+testmodel <- boot_caret(vNames=vNames,datax=datax,datay=datay,nbr=5,prob=0.8,model="gbm",tuneGrid=tuneGrid,trControl=trControl,repsortie=repsortie)
 
 
-nbr <- 50
-prob <- 0.8
-rest <- array(NA, dim = c(nbr, 3),list(loop = 1:nbr, mod = c("r2","MSE","RMSE")))
-importVar <- array(NA, dim = c(length(vNames)-1,nbr+1))
-pvar <- list()
-
-cpt <- 0
-for (i in 1:nbr){
-  cpt <- cpt + 1
-  print(i)
-  set.seed(157+i)
-  gc()  
-  # randomizes the mask 
-  masko <- createDataPartition(d[,1],p = prob, list = FALSE)
-  
-  donneeL <- d[masko,]
-  donneeV <- d[-masko,]
-  learningx <- datax[masko,]
-  learningy <- datay[masko]
-  indepx <- datax[-masko,]
-  indepy <- datay[-masko]
-
- #train <- d[masko,] #Données pour l'apprentissage
- #test <- d[-masko,] #Données pour test
-
-  mgbm <- train(x = learningx , y = learningy,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T)
-
-#  mgbm <- train(formula,data=train,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T,na.action = na.omit)
- 
-  pvar[[i]] <- varImp(mgbm)
-  
-  vaript <- summary(mgbm,plotit=FALSE)
-  vaript <- vaript[order(vaript$var),]
-  importVar[,1] <- as.character(vaript$var)
-  importVar[,cpt] <- as.numeric(vaript$rel.inf)
-
-  f.predict <- predict(mgbm$finalModel, learningx , n.trees = mgbm$bestTune$n.trees)
-  
-  ### External validation on independent data ###   
-  indep.pred <- predict(mgbm$finalModel, indepx , n.trees=mgbm$bestTune$n.trees)
-
-  rest[i,"r2"] <- round(cor(indep.pred,indepy,use="na.or.complete")^2,4)
-  rest[i,"MSE"] <- mean((indep.pred-indepy)^2,na.rm=TRUE)
-  rest[i,"RMSE"] <- mean((indep.pred-indepy)^2,na.rm=TRUE)^0.5
-}
-
-summary(rest)
-
-save(rest,file=paste(repsortie,"rest.RData",sep=""))
-save(importVar,file=paste(repsortie,"importVar.RData",sep=""))
-
-datapred <- as.data.frame(cbind(indep.pred,indepy))
-
-p_corel_fr <- ggplot(datapred, aes(indep.pred,indepy)) +
-            geom_point(alpha = 0.8, size = 2) +
-            scale_x_continuous("Teneur en carbone prédite (g/kg)")+scale_y_continuous("Teneur en carbone observée (g/kg)")+
-            theme(plot.title = element_text(size = 14, face = "bold"), 
-            text = element_text(size = 12),
-            axis.title = element_text(face="bold"),
-            axis.text.x=element_text(size = 11))+ labs(title=i)+
-            annotate("text", x=20, y=50, label=lm_eqn(lm(datapred[,"indep.pred"]~datapred[,"indepy"], datapred)), parse=TRUE)+
-            geom_smooth(method = "lm", se = FALSE,color="black")    
-
-ggsave(p_corel_fr,file = paste(repsortie,"corel_fr.jpg",sep=""), width = 8, height = 8)  
-
-
-varimp <- as.data.frame(importVar[,-1])
-
-n <- 0
-for(i in 1:nbr){
-    n <- n + 1
-    varimp[,n] <- as.numeric(varimp[,n])
-}
-
-MeanimportVar <- apply(varimp, 1, function(x){median(x,na.rm=TRUE)}) 
-
-#MeanimportVar <- rowMeans(varimp,na.rm=TRUE)           
-MeanimportVar <- cbind.data.frame(importVar[,1],MeanimportVar)
-colnames(MeanimportVar) <- c("variable","importance")
-
-MeanimportVar <- MeanimportVar[with(MeanimportVar, order(-importance)),]
-varimport <- MeanimportVar[1:15,]
-varimport$variable <- reorder(varimport$variable, varimport$importance)
-
-varimport$type <- varimport$variable
-varimport$type <- gsub2(as.character(Rcovar),type,as.character(varimport$variable))#Ajout du type de facteurs
-
-pimp <- ggplot(varimport, aes(x = variable, y = importance,fill=type)) + 
-  geom_bar(stat = "identity") + coord_flip()
-
-save(pimp,file=paste(repsortie,"p_mgbm_classeC.RData",sep=""))
-
-ggsave(pimp,file = paste(repsortie,"pimp.jpg",sep=""), width = 8, height = 8)  
 
 ```
 Les principales variables explicatives de la distribution des teneurs en carbone organique sont présentées figure `r fig$ref("gbm_fr",link=TRUE)`. Les facteurs les plus importants sont d'ordre climatiques et topographiques. Ces résultats confirment les premières observations de l'ACP.
