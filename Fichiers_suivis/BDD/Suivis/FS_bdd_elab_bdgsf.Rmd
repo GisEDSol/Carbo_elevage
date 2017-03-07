@@ -21,7 +21,7 @@ importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/",dsn="PG:dbn
 
 # Objectifs
 
-L'objectif de ce fichier de suivi est de stocker l'ensemble des traitements élaborés associés à la base de données BDGSF. Ces traitements concernent pour le moment l'intégration des données de données élaborées issues de modélisation, dont notamment :
+L'objectif de ce fichier de suivi est de stocker l'ensemble des traitements élaborés associés aux données de la BDGSF. Ces traitements concernent pour le moment :
 
 - Le calcul du type de sol majoritaire
 - Le calcul du matériau parental majoritaire
@@ -29,38 +29,23 @@ L'objectif de ce fichier de suivi est de stocker l'ensemble des traitements éla
 
 # Création de statistiques majoritaire de la BDGSF
 
-## Matériaux parental
+Le fichier fourni par le JRC propose plusieurs jointures de propriétés de sols majoritaires calculées par UCS (SMU dans la base). Après vérification, plusieurs erreurs ont été décelées et la suite des traitements suivants permet de les résoudre. 
+
+## Matériaux parental & Type de sol selon la FAO85
+
+
+### Jointure vers la table bdgsf.sgdb_fr
 
 ```{r,highlight=TRUE,eval=FALSE}
 
-# Construction du matériel parental de niveau 1 appelé MAT11 
-table_dm  <- "bdgsf.sgdb_fr"
-vName <- "mat11hev"
+tablebdgsf <- "esdac.bdgsf"
+stu <- "esdac.stu_sgdbe"
 
-# Ajout de la colonne
-sqlQuery(loc,paste("alter table ",table_dm,"
-                    drop column if exists ",vName,";
-                    alter table ",table_dm,"
-                    add column ",vName," numeric",sep=""))  
+variables <- "mat1"
+typecol <- "text"
 
-# Updata de la colonne crééeJointure 
-sqlQuery(loc,paste("update ",table_dm,"
-                    SET ",vName," = SUBSTR(cast(MAT1hev as text),1,1)::numeric",sep=""))
+# La jointure se base sur l'uts majoritaire de l'ucs (stu_dom) présente déjà dans la table sgdb_fr. Les données attributaires sont récoltées dans stu_sgdbe.
 
-
-
-####################################################
-
-#Création d'une table sol majoritaire (sélection 50/50 entre les smu majoritaire identique)- 
-schema <- "bdgsf"
-tablebdgsf <- "bdgsf.sgdb_fr"
-smu <- "smu_sgdbe"
-stuorg <- "stuorg"
-stu <- "bdgsf.stu_sgdbe"
-
-variables <- c("mat1","fao85fu")
-typecol <- c("text","text")
-# La jointure se base sur l'uts majoritaire de l'ucs (stu_dom) et les données attributaires sont récoltées dans stu_sgdbet
 cpt <- 0
 for(i in variables){
     cpt <- cpt + 1
@@ -80,9 +65,19 @@ for(i in variables){
                         where ",tablebdgsf,".smu=s1.smu",sep=""))
 }
 
+```
 
-table_dm  <- "bdgsf.sgdb_fr"
-vName <- "mat11_maj"
+#### Simplification des codes
+
+Ci-dessous, les nomenclatures utilisées pour mat1 et fao85ful sont simplifiées sur différents niveaux. Ces niveaux correspondent toujours à la [nomenclature](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDBv2/popup/sg_attr.htm) de la base :
+
+- Le champ mat11_maj est une simplification de la nomenclature du champ mat1, soit le niveau 1 du code (premier chiffre). Ce champ correspond au champ mat11 de la table stu et donc à la même nomenclature
+    
+```{r,highlight=TRUE,eval=FALSE}
+
+# Création et calcul du champ mat11_maj
+table_dm  <- "esdac.bdgsf"
+vName <- "mat11"
 
 # Ajout de la colonne
 sqlQuery(loc,paste("alter table ",table_dm,"
@@ -93,10 +88,13 @@ sqlQuery(loc,paste("alter table ",table_dm,"
 # Updata de la colonne crééeJointure 
 sqlQuery(loc,paste("update ",table_dm,"
                     SET ",vName," = SUBSTR(cast(mat1_maj as text),1,1)::numeric",sep=""))
+
 ```
+
 
 # Calcul de différentes statistiques jointes vers la table `dm_vecteurs.canton`
 
+Ci-dessous, les champs précédemment créés sont joints dans la table `dm_vecteurs.canton` par une requête spatiale.
 
 ## Agrégation majoritaire
 
@@ -104,9 +102,11 @@ sqlQuery(loc,paste("update ",table_dm,"
 ```{r,highlight=TRUE,eval=FALSE}
 
 #Paramètres
-variable <- "mat11maj"
-tablepedo <- "bdgsf.sgdb_fr" # Nom de la table 
+variable <- c("mat11","fao85lv1")
+tablepedo <- "esdac.bdgsf" # Nom de la table 
 table_dm <- "dm_vecteurs.canton"
+
+signification <- c("Matériau parental dominant de niveau 1 par canton","Type de sol majoritaire par canton. Code de la FAO-UNESCO de 1974 (modifiée 1985).")
 
 # Calcul de la valeur majoritaire par canton
 cpt <- 0
@@ -114,13 +114,13 @@ for(i in variable){
   cpt <- cpt + 1
   print(i)
 
-  #Suppression et ajout de la colonne si déjà existante
+  # Suppression et ajout de la colonne si déjà existante
   sqlQuery(loc,paste("alter table ",table_dm,"
                       drop column if exists ",i,";
                       alter table ",table_dm,"
-                      add column ",i," numeric",sep=""))
+                      add column ",i," text",sep=""))
   
-  #Requête spatiale (sélection de la plus grande surface totale par canton)
+  # Requête spatiale (sélection de la plus grande surface totale par canton)
     spatialquery <- paste("
         WITH summary AS (
             SELECT p.code_canton, 
@@ -144,7 +144,7 @@ for(i in variable){
             ) sub2
         )p)
     --selection finale
-    SELECT s.code_canton,s.mat11maj
+    SELECT s.code_canton,s.",i,"
     FROM summary s
     WHERE s.rk = 1
     ",sep="")
@@ -154,22 +154,19 @@ for(i in variable){
   sqlQuery(loc,paste("update ",table_dm,"
                       SET ",i," = s1.",i," from(",spatialquery,") as s1
                       where ",table_dm,".code_canton=s1.code_canton::text",sep=""))
-}
 
-
-# A rajouter  
-#Ajout d'un commentaire sur la nouvelle colonne crée
+  # Ajout d'un commentaire sur la nouvelle colonne crée
   print(sqlQuery(loc,paste("
        COMMENT ON COLUMN ",table_dm,".",i," IS \'",signification[cpt],"\';",sep="")))
-```
+}
 
+```
 ## Agrégation par la moyenne à l'échelle du canton
 
-*Plus d'infos sur la construction des rasters à travers cette [publication](https://www.researchgate.net/publication/280608975_Mapping_topsoil_physical_properties_at_European_scale_using_the_LUCAS_database)*
+*Plus d'infos sur la construction des rasters importés à travers cette [publication](https://www.researchgate.net/publication/280608975_Mapping_topsoil_physical_properties_at_European_scale_using_the_LUCAS_database)*
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Voir pour réaliser le calcul dans PostGIS
-
 
 reptopo <- "/media/sf_GIS_ED/Dev/Data/Sol/Lucas/Elaborees/" #répertoire contenant les rasters à assembler
 Fr_demName <- paste(reptopo,"fr_Clay_eu23.tif",sep="")

@@ -29,7 +29,7 @@ ipak <- function(pkg){
 
 # Chargement des librairies
 listpaquets <- c("RODBC","gdata","fields","stringr","ggplot2","rgdal","maptools","RColorBrewer","classInt","devtools","reshape2","Hmisc","gridExtra","mapproj","wesanderson","FactoMineR",
-	"knitr","pander","GGally","factoextra","caret","plyr","doMC","sp","raster","RPostgreSQL","corrplot","MASS","foreign")
+	"knitr","pander","GGally","factoextra","caret","plyr","doMC","sp","raster","RPostgreSQL","corrplot","MASS","foreign","doParallel")
 ipak(listpaquets)
 #new.packages <- listpaquets[!(listpaquets %in% installed.packages()[,"Package"])]
 #if(length(new.packages)) install.packages(new.packages)
@@ -133,6 +133,11 @@ assign("con",dbConnect(m, dbname="sol_elevage"),.GlobalEnv)
 # Chargement des fonctions
 source(paste(repfonctions,"R/F_carto.R",sep=""))
 source(paste(repfonctions,"R/Rpostgis.R",sep=""))
+source(paste(repfonctions,"R/F_variaeffect.R",sep=""))
+source(paste(repfonctions,"R/F_gbm.R",sep=""))
+
+
+
 
 # Fonction très pratique pour remplacer une suite de charact?res par une autre
 gsub2 <- function(pattern, replacement, x, ...) {

@@ -116,7 +116,7 @@ Le deuxième jeu de données intégrée prend en compte ce biais par un ré-éch
 
 ### Importation des données de la BDAT non harmonisées 
 
-Ces données sont uniquement utilisées pour les analyses pédologiques où les variations temporelles sont minimes. Pour le moment, seules les analyses sur la texture du sol sont exploitées (taux d'argile notamment).
+Ces données sont uniquement utilisées pour les analyses pédologiques où les variations temporelles sont minimes. Pour le moment, seules les analyses sur la texture du sol sont exploitées (taux d'argile notamment). Ces données ont été téléchargées à cette [adresse](http://www.gissol.fr/wp-content/uploads/2015/04/bdat.zip).
 
 ```{r importBDAT, eval=FALSE}
 period <- c("9094","9599","0004","0509")
@@ -169,7 +169,7 @@ for(i in ListBDAT){
 }
 ```
 
-Ci-dessous, les analyses des teneurs en C classées par méthode de mesure sont intégrées dans la base de données. Les analyses réalisées avec la méthode oxydation humide sont nommée `corgox` et les analyses mesurées avec la méthode combustion sèche `corgco`.
+Ci-dessous, les analyses des teneurs en C classées par méthode de mesure sont intégrées dans la base de données. Les analyses réalisées avec la méthode oxydation humide sont nommées `corgox` et les analyses mesurées avec la méthode combustion sèche `corgco`.
 
 ```{r importBDAT_harmomethodes, eval=FALSE}
 # Selection des fichiers à importer
@@ -187,16 +187,20 @@ for(r in repmethodo){
   }
 }
 ```
-## La BDGSF (en cours)
+## Les données de l'European Soil Data Centre (ESDAC)
 
-La base de données européenne des sols a été téléchargée sur ce [site](http://esdac.jrc.ec.europa.eu/content/european-soil-database-v20-vector-and-attribute-data#tabs-0-description=1&tabs-0-description-2=). 
+
+### La BDGSF 
+
+La base de données européenne des sols a été téléchargée sur ce [site](http://esdac.jrc.ec.europa.eu/content/european-soil-database-v20-vector-and-attribute-data#tabs-0-description=1&tabs-0-description-2=). La base est à l'échelle européenne et l'objectif est de découper la base au contour de la France. Au final, cette base correspondra globalement à la Base de données Géographique des Sols de France (BDGSF) produite par InfoSol.
+
 Les instructions ci-dessous permettent de :
 
 - changer la projection du shapefiles vers le Lambert93 (avec ogr2ogr),
 - intégrer le shapefiles dans la base de données,
 - découper le shapefiles au contour de la France.
 
-Pour les métadonnées de la BDGSF, [voir](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDBv2/fr_easy.htm)
+Les traitements associés à ces données sont réalisés dans le fichier [FS_bdd_elab_bdgsf.Rmd](https://github.com/GisEDSol/Carbo_elevage/blob/master/Fichiers_suivis/BDD/Suivis/FS_bdd_elab_bdgsf.Rmd).
 
 ```{r importBDGSF, eval=FALSE}
 repbdgsf <- "/media/sf_GIS_ED/Dev/Data/Sol/bdgsf/"
@@ -204,15 +208,16 @@ vectorname <- "SGDB_PTR.shp"
 file1 <- paste(repbdgsf,vectorname,sep="")
 file2 <- paste(repbdgsf,"L93_",vectorname,sep="")
 file3 <- paste(repbdgsf,"Fr_L93_",vectorname,sep="")
-schema <- "bdgsf"
-sortie <- "sgdb"
+schema <- "esdac"
+sortie <- "bdgsf"
+
 # Changement de la projection (L93) 
 system(paste("ogr2ogr -t_srs EPSG:2154 ",file2," ",file1," -overwrite",sep=""))
 
 # Intégration dans la base sous forme de postGIS
 system(paste("shp2pgsql -s 2154 -c -D -W \"latin1\" -I ",file2," ",schema,".",sortie,"| psql -d sol_elevage -h localhost -U jb",sep=""))
 
-bdgsf <- sqlQuery(loc,"select * from bdgsf.sgdb limit 1")
+bdgsf <- sqlQuery(loc,paste("select * from ",schema,".sgdb limit 1",sep=""))
 n_bdgsf <- names(bdgsf)[-length(bdgsf)]
 n_bdgsf <- paste(n_bdgsf,collapse=",")
 
@@ -226,7 +231,6 @@ sqlQuery(loc,paste("CREATE TABLE ",schema,".",sortie,"_fr AS
 system(paste("rm ",file1," ",file2,sep=""))
 
 # Intégration des tables de la BDGSF
-
 Liste_dbf <- gsub("\\.dbf$","",list.files(repbdgsf,pattern="\\.dbf$"))
 Liste_dbf <- Liste_dbf[4:length(Liste_dbf)]
 for(i in Liste_dbf){
@@ -236,7 +240,9 @@ for(i in Liste_dbf){
 
 ```
 
-## Données élaborées LUCAS (en cours)
+### Données élaborées LUCAS
+
+Ci-dessous, intégration des rasters dans la base postgreSQL/postGIS.
 
 ```{r eval=FALSE}
 rep_rasterjrc <- "/media/sf_GIS_ED/Dev/Data/Sol/Lucas/Elaborees/"
@@ -254,96 +260,6 @@ for(i in list.rast){
     sqlQuery(loc,paste("drop table if exists ",rpostgisname,sep=""))
     system(paste("raster2pgsql -I -C -s 2154 ",rep_rasterjrc,"fr_",i,".tif ",rpostgisname," | psql -h localhost -U jb -d sol_elevage",sep=""))
 } 
-```
-
-## Les données LUCAS soil Database (en cours)
-
-Ici, on présente l'intégration des différentes données lucas.
-Il y a les données de bases lucas topsoil et également d'autres données élaborées en partie construite avec LucasTopsoil.
-
-
-```{r importLucas_topsoil, eval=FALSE}
-# Décompression de l'archive télécharger après une demande ici : http://eusoils.jrc.ec.europa.eu/content/lucas-2009-topsoil-data#tabs-0-description=1&tabs-0-description-2=
-system("unzip Data/Lucas/LUCAS_TOPSOIL_v1.zip -d Data/Lucas/Topsoil/.")
-
-# Conversion vers un fichier csv
-installXLSXsupport()
-Lucasdf <- read.xls(paste(repLucas,"Topsoil/LUCAS_TOPSOIL_v1.xlsx",sep=""),sheet="Sheet1")
-Lucasdf <- Lucasdf[complete.cases(Lucasdf[,c("GPS_LAT","GPS_LONG")]),]
-# Enregistrement dans la base locale
-sqlSave(loc,Lucasdf)
-
-# Conversion en postgis/définition du srid
-sqlQuery(loc,"ALTER TABLE Lucasdf ADD COLUMN geom geometry(Point,4326);
-              UPDATE Lucasdf SET geom = ST_SetSRID(ST_MakePoint(gps_long, gps_lat), 4326);")
-
-# Reprojection en L93
-sqlQuery(loc,"ALTER TABLE Lucasdf
-              ALTER COLUMN geom 
-              TYPE Geometry(Point, 2154) 
-              USING ST_Transform(geom, 2154);")
- 
-# Sélection spatiale des points Lucas pour la France
-sqlQuery(loc,"CREATE table public.test AS
-              SELECT *
-              FROM Lucasdf
-              WHERE ST_Contains(Lucasdf.the_geom,commune.the_geom")
-
-SELECT "KDhh_survey".* 
-FROM
-public."KDhh_survey",
-public."ur_pilot_survey"
-WHERE
-ST_contains(public."ur_pilot_survey".the_geom, public."KDhh_survey".the_geom);
-
-system("v.select --overwrite ainput=lucasref_L93 atype=point binput=franceL93 output=lucasref_L93_fr")
-
-# Exportation vers un shapefile
-system("v.out.ogr input=lucasref_L93_fr type=point dsn=/home/jb/Bureau/PrLucas/")
-
-# Exportation vers PostGis
-sqlQuery(databaracoa,"drop table if exists data.lucastopsoil_fr")
-system("shp2pgsql -c -s 2154 /home/jb/Bureau/PrLucas/lucasref_L93_fr.shp data.lucastopsoil_fr| psql -h baracoa.orleans.inra.fr -p 5434 -U jbparoissien jbparoissien")
-
-# Préparation finale
-#Ajout d'une colonne geom pour le système de coodonnées lambert2etendue
-
-# Reprojection de la table en lambert9
-# Ajout des colonnes
-
-sqlQuery(databaracoa,paste("select addgeometrycolumn('data','lucastopsoil_fr', 'the_geom_l2e',27582,'POINT',2)",sep=""))
-sqlQuery(databaracoa,paste("select addgeometrycolumn('data','lucastopsoil_fr', 'the_geom_l93',2154,'POINT',2)",sep=""))
-sqlQuery(databaracoa,paste("update lucastopsoil_fr set the_geom_l93 = geom",sep=""))
-sqlQuery(databaracoa,paste("select DropGeometryColumn('data','lucastopsoil_fr','geom')",sep=""))
-
-# Reprojection
-sqlQuery(databaracoa,paste("update lucastopsoil_fr set the_geom_l2e = st_setsrid(st_transform(st_setsrid(the_geom_l93,2154),27582),27582);",sep=""))
-
-# Pour connaître les coordonnées géographiques
-sqlQuery(databaracoa,"alter table lucastopsoil_fr
-	 add column x_l93 double precision;
-	 alter table lucastopsoil_fr
-	 add column y_l93 double precision;
-	 alter table lucastopsoil_fr
-	 add column x_l2e double precision;
- 	 alter table lucastopsoil_fr
-	 add column y_l2e double precision;")
-
-
-sqlQuery(databaracoa,"update lucastopsoil_fr set x_l93 = ST_X(ST_SetSRID(the_geom_l93, 2154));
-	 update lucastopsoil_fr set y_l93 = ST_Y(ST_SetSRID(the_geom_l93, 2154));")
-
-sqlQuery(databaracoa,"update lucastopsoil_fr set x_l2e = ST_X(ST_SetSRID(the_geom_l2e, 27582));
-	 update lucastopsoil_fr set y_l2e = ST_Y(ST_SetSRID(the_geom_l2e, 27582));")
-```
-
-```{r importLucas, eval=FALSE}
-# Décompression des différentes archives vers le réperoire 'Elaborees'
-LucasData <- c("AWC_EU23","BulkDensity_EU23","Clay_EU23","CoarseFragments_EU23","ER100mFinal","ESDB_soil_compaction_pack")
-for(i in LucasData){
-  system(paste("unzip ",repLucas,i,".zip -d ",repLucas,"Elaborees/.",sep=""))
-}
-
 ```
 
 # Les données d'occupation du sol

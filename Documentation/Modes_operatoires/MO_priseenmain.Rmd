@@ -1,7 +1,7 @@
 ---
 title: "Mode opératoire pour reprendre en main le projet Carbo_elevage"
 author: "Jean-Baptiste Paroissien"
-date: "22/02/2017"
+date: "06/03/2017"
 output:
   html_document:
     toc: yes
@@ -10,25 +10,26 @@ output:
     highlight: zenburn
     number_sections: yes
     theme: spacelab    
-
 ---
 
 ```{r, tidy=FALSE,eval=TRUE,echo=FALSE}
 mo_url <- "https://github.com/GisEDSol/Carbo_elevage/tree/master/Documentation/Modes_operatoires/"
+raw_mo_url <- "https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Modes_operatoires/"
 ```
 
 # Objectif et domaine d'application
 
-Ce mode opératoire décrit le projet appelé `Carbo_elevage` dans sa globalité. Le projet `Carbo_elevage` à pour objectif d'étudier l'évolution des teneurs en carbone organique en France sous le regard de l'évolution de l'occupation du sol en lien avec l'élevage. Le travail est basé sur les analyses de la [BDAT]() et il se divise en deux grandes phases :
+Ce document la démarche et l'organisation de travail du projet appelé par la suite (par facilité) `Carbo_elevage`. Le projet a pour objectif d'étudier l'évolution des teneurs en carbone organique en France sous le regard de l'évolution de l'occupation du sol en lien avec l'élevage. Le travail est basé sur les analyses de la [BDAT](https://www.gissol.fr/le-gis/programmes/base-de-donnees-danalyses-des-terres-bdat-62) et il se divise en deux grandes phases :
 
 - La construction d'une base de données regroupant des données sols (essentiellement la BDAT) et les facteurs potentiellement explicatifs des teneurs en carbone organique et des évolutions associées,
 - L'analyse statistique de la distribution des teneurs en carbone organique et de ces évolutions.
  
-L'objectif du document est de fournir l'ensemble des éléments pratiques pour reprendre le projet en 3 étapes :
+L'objectif du document est de fournir l'ensemble des éléments pratiques pour reprendre le projet en 4 étapes :
 
 - **Etape 1** Accès aux scripts de travail
 - **Etape 2** Accès à la base de données
 - **Etape 3** Mise en place des connexions entre les scripts et la base de données
+- **Etape 4** Exploitation des scripts
 
 # Démarche de travail
 
@@ -36,11 +37,11 @@ L'organisation des fichiers suit la chaine de traitement générale présentée 
 
 ![Chaine de traitement générale](Figures/workflow1_1.png)
 
-Ce schéma décrit l'organisation générale des scripts et leur impact sur la base de données. Il suit la démarche suivante : 
+Ce schéma décrit l'organisation générale des scripts et leur lien avec la base de données. Il suit la démarche suivante : 
 
 - les données brutes (données sur les sol + autres données) sont intégrées dans la base de données à travers plusieurs commandes centralisées dans le fichier `FS_bdd_brute`. Ces données sont organisées dans la base à travers plusieurs schémas portant le nom des données intégrées (par ex. `bdat`) ou la thématique (par ex. `climat`),
-- Plusieurs scripts exploitent ces tables brutes pour générer des indicateurs à l'échelle du canton. Ils portent le nom de la données manipulées. L'ensemble de ces scripts permet d'alimenter les tables de travail appelé data_mart (préfixe `dm`),
-- Ces tables de travail sont exploitées pour analyser les teneurs et les évolutions des teneurs en carbone organique. L'analyse de ces données a lieu dans scripts portant le nom du traitement réalisé.
+- Plusieurs scripts exploitent ces tables brutes pour générer des indicateurs à l'échelle du canton. Ils portent le nom de la donnée manipulée. L'ensemble de ces scripts permet d'alimenter les tables de travail appelé data_mart (préfixe `dm`),
+- Ces tables de travail sont exploitées pour analyser les teneurs et les évolutions des teneurs en carbone organique. L'analyse de ces données a lieu dans les scripts portant le nom du traitement réalisé.
 
 Pour faciliter la navigation dans l'arborescence et le contenu des fichiers, le nom des scripts (type .Rmd) est nommé selon la règle suivante :
 
@@ -49,6 +50,7 @@ Pour faciliter la navigation dans l'arborescence et le contenu des fichiers, le 
 - Tous les fichiers de suivi : préfixe `FS_`
 - Les fichiers de suivi relatifs à la création de la base de données `FS_bdd`
 - Les fichiers de suivi relatifs à la création des données élaborées la base de données `FS_elab`
+- Les fichiers de suivi relatifs aux traitements des données `FS_traitements`
 
 # Etape 1 : Accès aux scripts de travail
 
@@ -105,26 +107,26 @@ L'organisation du dépôt est décrit dans le fichier [Readme.md](https://github
 ├── Fichiers_suivis
 │   ├── BDD
 │   ├── Readme.md
-│   ├── Shiny
 │   └── Traitements
 ├── Fonctions
 │   ├── bash
 │   ├── python
 │   ├── R
 │   └── Readme.md
+└── Readme.md
 ```
 **Important :** pour faciliter la navigation dans l'arborescence du projet, plusieurs fichier `Readme.md` sont présents, il est important de les maintenir à jour.
 
 # Etape 2 : Importation de la base de données
 
-Description de la base de données. Ici, renvoyer vers un mode opératoire basé un fichier sqlite/spatialite.
-Rapidement présenter le deux types de base de données
+Deux formats de système de gestion de base de données sont proposées :
 
-**Important** Pour une description de la base de données, voir ce [mode opératoire](`r mo_url`MO_bdd.Rmd).
+- PostgreSQL/PostGIS : la base initiale a été développée sous PostgreSQL/PostGIS et une copie de cette base est disponible. L'ensemble des scripts de traitements de données sont directement est lié à ce type de format. **L'importation de la base PostgreSQL est donc indispensable pour exploiter les scripts**.
+- SQLIte/SpatiaLite : une version au format sqLite/SpatiaLite est proposée pour l'utilisateur souhaitant visualiser et exploiter les données présente dans la base. En revanche, la base n'est pas organisée, ne contient pas de métadonnées et ne pourra pas être directement exploitée avec les scripts de traitements du dépôt.
+
+**Important** Pour une description de la base de données, voir ce [mode opératoire](`r raw_mo_url`MO_bdd.html).
 
 ## Chargement de la base sous SQLite/SpatiaLite
-
-
 
 ## Importation de la base de données en PostgreSQL/PostGIS
 
@@ -132,10 +134,10 @@ Rapidement présenter le deux types de base de données
 
 *Pour une création de base de données sous windows, vous pouvez consulter ce [mode opératoire](http://www.supinfo.com/articles/single/977-creer-une-base-donnees-avec-postgresql-windows)*
 
-L'imporation de la base de données sous le format PostgreSQL/PostGIS nécessite la création d'un serveur PostgreSQL/PostGIS.
-Les commandes suivantes permettent d'installer un serveur et de le configurer pour importer la base de données :
+L'imporation de la base de données sous le format PostgreSQL/PostGIS nécessite la création d'un serveur dédié. Celui-ci peut être créé en local ou être déposé sur un serveur à distance.
+Les commandes suivantes permettent d'installer un serveur postgreSQL et de le configurer pour importer la base de données :
 
-- Installation des paquets postgreSQL/postGIS et du logiciel pgadmin pour visualiser les tables
+- Installation des paquets postgreSQL/postGIS et du logiciel pgadmin3 pour visualiser les tables
 
 ```{r, engine='bash',highlight=TRUE,eval=FALSE}
 sudo su -
@@ -161,12 +163,11 @@ CREATE EXTENSION postgis_topology;
 
 *Pour plus d'informations sur la sauvegarde et la restauration d'une base de données postgresql, voir la [documentation officielle](http://doc.postgresql.fr/9.5/backup.html)*
 
-L'importation de la base est réalisée de la manière suivante :
+L'importation de la base est réalisée avec la commande suivante, dans l'arborescence contenant le fichier `sol_elevage.sql` :
 
 ```{r, engine='bash',highlight=TRUE,eval=FALSE}
 psql -U nomutilisateur sol_elevage < sol_elevage.sql
 ```
-
 
 # Etape 3 : Définition des paramètres de connexion entre les scripts et la base de données
 
@@ -191,13 +192,7 @@ Quoi qu'il en soit, les paramètres de connexion à retenir pour se connecter à
 
 Les connexions odbc servent de lien entre le logiciel R et la base de données sous postgreSQL/postGIS. Dans linux, les paramètres de connexion sont configurées dans le fichier `\etc\odbc.ini`. Pour configurer une connexion, une modification de ce fichier est nécessaire. Tapez dans un terminal `sudo gedit \etc\odbc.ini` puis apporter les modifications nécessaires. 
 
-Voici ci-dessous les différents paramètres de connexions relatifs aux différents alias présentés précédemment. Vous pouvez directement copier ces lignes vers le fichier `\etc\odbc.ini` en remplaçant nomutilisateur_ldap et mdp_ldap par votre nom d'utilisateur et votre mot de passe LDAP.
-
-- Database : Nom de la base de données
-- Servername : Nom du serveur
-- Username : Nom d'utilisateur
-- Password : Mot de passe
-- Port : Port de la base de données
+Voici ci-dessous les différents paramètres de connexions relatifs aux différents alias présentés précédemment. Vous pouvez directement copier ces lignes vers le fichier `\etc\odbc.ini` en remplaçant nomutilisateur et mdp par votre nom d'utilisateur et votre mot de passe.
 
 ```{r, tidy=FALSE,eval=FALSE}
 [ODBC]
@@ -205,15 +200,15 @@ InstallDir = /usr/lib
 
 [solelevage] # A garder
 Driver = /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so # A garder
-Database = sol_elevage # A garder
-Servername = localhost # A garder
+Database = sol_elevage # A garder Nom de la base de données
+Servername = localhost # A garder Nom du serveur en local
 Username = ****** # Changer en fonction du nom d'utilisateur
 Password = ****** # Changer en fonction du mdp défini par l'utilisateur
-Port=5432 # A garder
+Port=5432 # A garder Port de la base de données
 Protocol = 8.1 # A garder
 ReadOnly = 0 # A garder
 ```
-Les connexions ODBC dans R sont possibles avec le paquet `RODBC`. Pour l'installer, tapez la commande suivante dans un terminal R : `install.packages("RODBC")`.
+Les connexions ODBC dans R sont possibles avec le paquet `RODBC`. Pour l'installer, tapez la commande suivante dans un terminal R : `install.packages("RODBC")`. **Pour l'installation de R, voir l'étape 4**.
 Ensuite, vous pouvez utiliser l'alias des paramètres de connexions du fichier `odbc.ini` dans la fonction décrivant les paramètres de connexion `odbcConnect`. Pour vérifier les modifications apportées au fichier de configuration `odbc.ini`, vous pouvez lancer les lignes de commandes suivantes dans le logiciel R. La liste des paramètres de connexion doit alors s'afficher comme ci-dessous:
 
 ```{r, tidy=FALSE,eval=TRUE}
@@ -227,39 +222,48 @@ La gestion des fonctions, des paquets et des variables locales utilisées dans l
 Voici les commandes utiles pour charger les paramètres :
 
 ```{r chargement, echo=TRUE,eval=FALSE}
-repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/" #Chemin du dépôt GitHub en local
+repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/" #Chemin du dépôt GitHub en local (A changer pour l'utilisateur)
+repdata <- "/media/sf_GIS_ED/Dev/Data/" #Chemin d'accès aux répertoires de données brutes
 source(paste(repmaster,"Fonctions/R/importparametres.R",sep=""))
-importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/Data/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='nomutilisateur'")
+importparametres(repmaster=repmaster,repdata=repdata,dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='nomutilisateur'")
 ```
+Une fois lancé, les différents scripts du dépôt peuvent être utilisé. C'est l'objet de l'étape 4
 
-# Les logiciels utilisés
+# Etape 4 : Exploitation des scripts
 
-## R
+Cette étape présente rapidement les modalités d'action pour exploiter les scripts.
 
-## Préparation/installation des paquets
+## Installation de RStudio
 
-1. Télécharger et installer la dernière version de Rstudio :
+### Préparation/installation des paquets
 
-- Ouvrir un terminal linux est taper `sudo apt-get install libjpeg62`	
-- Ouvrir un terminal linux et taper `wget http://download1.rstudio.org/rstudio-0.98.1080-amd64.deb` pour une machine en 64-bit ou `wget http://download1.rstudio.org/rstudio-0.98.1080-i386.deb` pour une machine en 32-bit (voir [le site web](http://www.rstudio.com/products/rstudio/download/) pour récupérer le nom de la dernière version de Rstudio)
-- Lancer la commande suivante dans le même terminal en fonction du nom du fichier que vous venez de télécharger : `sudo dpkg -i rstudio-0.98.1080-amd64.deb`
+1. Télécharger et installer la dernière version de Rstudio.
 
-2. Configurer le système et installer les paquets R nécessaires :
+- Pour linux :
+	- Ouvrir un terminal linux est taper `sudo apt-get install libjpeg62`	
+	- Ouvrir un terminal linux et taper `wget https://download1.rstudio.org/rstudio-1.0.136-amd64.deb` pour une machine en 64-bit ou `wget http://download1.rstudio.org/rstudio-0.98.1080-i386.deb` pour une machine en 32-bit (voir [le site web](http://www.rstudio.com/products/rstudio/download/) pour récupérer le nom de la dernière version de Rstudio)
+	- Lancer la commande suivante dans le même terminal en fonction du nom du fichier que vous venez de télécharger : `sudo dpkg -i rstudio-0.98.1080-amd64.deb`
+- Pour windows : Vous pouvez télécharger la dernière version en cliquant sur ce [lien](https://download1.rstudio.org/RStudio-1.0.136.exe)
+
+2. (Pour linux) Configurer le système et installer les paquets R nécessaires :
 - Toujours dans un terminal, lancer les commandes suivantes pour créer un lien symbolique : `sudo ln -s /usr/lib/rstudio/bin/pandoc/pandoc /usr/local/bin` et `sudo ln -s /usr/lib/rstudio/bin/pandoc/pandoc-citeproc /usr/local/bin`
+
+3. Une fois installer Rstudio. Vous pouvez 
 - Dans une console `R`, installer les paquets suivants avec la commande : `install.packages(c("knitr","htmltools","caTools","bitops","rmarkdown"))`
 
-3. Télécharger le modèle de fichier de suivi de la forge
+### Création d'un fichier dans Rstudio
 
-## Création d'un fichier dans Rstudio
 Une fois le modèle de fichier de suivi importé dans votre espace de travail (plus d'infos sur l'organisation d'un projet [ici](`r mo_url`MO_accesdepot.html)) :
 
 - Double clics sur le fichier `.Rmd`
 - Assurez-vous que `KnitR` soit bien configuré par défault (Tools>>Global Options>> Sweave >> sélectionnez KnitR)
-- Essayez de compiler le document : 
+- Compiler le document : 
 	* cliquez sur knitHTML pour compiler le document en html
 ![](Figures/compilation_markdown.png)
 
-## Création d'un fichier en dehors de Rstudio (en ligne de commande pour linux)
+*En cas de problème (ou pour avoir davantage d'information) avec la compilation des fichiers de suivi, vous pouvez consulter la [documentation officielle](http://rmarkdown.rstudio.com/lesson-1.html) de R+Markdown.*
+
+### Création d'un fichier en dehors de Rstudio (en ligne de commande pour linux)
 
 Si vous souhaitez utiliser ces fonctionnalités en dehors de Rstudio (le logiciel peut se révéler parfois très lent lors de la génération de rapport complexe et long), il est possible de créer les fichiers de suivi à travers une ligne de commande (en **bash**). Le rendu est identique aux sorties de Rstudio (selon https://stat.ethz.ch/pipermail/r-help/2014-August/421215.html) :
 
@@ -271,4 +275,17 @@ Si vous souhaitez utiliser ces fonctionnalités en dehors de Rstudio (le logicie
 for i in *.Rmd; do
 	echo "Sys.setenv(RSTUDIO_PANDOC=\"/usr/lib/rstudio/bin/pandoc/\") & rmarkdown::render('$i')" | R --vanilla
 done
+```
+
+## Utilisation du dépôt GitHub
+
+Nous avons vu précédemment (étape 1) comment importer le projet stocker sur GitHub. Cette section a pour objectif de présenter rapidement les principales commandes utiles pour mettre à jour le dépôt. Pour aller plus loin dans l'utilisation de Git (surtout si plusieurs personnes travaillent sur le dépôt), consultez ce [tutoriel](https://openclassrooms.com/courses/gerez-vos-codes-source-avec-git).
+
+*Le commit consiste à mettre à jour le dépôt à partir de la copie de travail locale. Une nouvelle révision est alors créée. Un log (simple message texte contenant une description des modifications effectuées) doit être saisi à cette occasion. À noter que pour qu'un commit soit possible, il faut que la copie de travail corresponde à la dernière version du dépôt (modifications locales exceptées). Si ce n'est pas le cas, il est nécessaire d'effectuer d'abord un update et de résoudre les conflits éventuels avant de réessayer le commit.*
+
+```{r,echo=TRUE,eval=FALSE}
+git status # Pour connaître le status du dépôt
+git add nomfichier ou * # Pour ajouter un fichier ou tous les fichiers au dépôt
+git commit -m "Mon premier commit" # Pour réaliser un commit en local. 
+git push --set-upstream origin master # Pour mettre les corrections vers le dépôt GitHub
 ```

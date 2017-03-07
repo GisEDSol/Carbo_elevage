@@ -108,25 +108,7 @@ for(i in variable){
 }
 ```
 
-# Cartographie
 
-Plusieurs cartes peuvent être proposées pour appréhender les données
-
-## Les types de climat
-
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
-tablecarto <- "dm_vecteurs.canton" 
-dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
-variablecarto <- "typo_clim" #variable à spatialiser
-l_legend <- "Type de climat"#label de la variable
-nclasse <- 8 #Nombre de classes de valeurs pour la cartographie
-style_classe <- "fixed" #"pretty"#"jenks","fixed"
-couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
-nomfichier <- "typo_clim"
-
-# Lancement
-cartoperiod(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE)
-```
 
 ## Autres variables
 

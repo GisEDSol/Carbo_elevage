@@ -1,15 +1,14 @@
 # Le projet "Carbo_elevage"
 
-> Ce projet regroupe l'ensemble des scripts développés pour la création d'une base de données sur les sols et l'élevage et les différents traitements statistiques associés. Il est organisé selon l'arborescence suivante :
+> Ce dépôt rassemble l'ensemble des scripts développés pour analyser les évolutions des teneurs en carbone organique dans les sols en lien avec les changements d'occupation du sol l'élevage.~~Le dépôt rassemble les scripts associés à la création d'une base de données composés de données sur les sols et l'élevage et les différents traitements statistiques associés. Il est organisé selon l'arborescence suivante :
 
 * **[Fichiers_suivis](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis)** Répertoire de stockage des fichiers de suivis associés à la création de la base de données et aux traitements statistiques des données. Ce répertoire est constitué des sous-répertoires suivants :
       * [BDD](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/BDD) Répertoire de stockage des fichiers de suivis liés à la création de la base de données. Le répertoire est constitué du [script](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/BDD/FS_bdd_brute.Rmd) de création de la bdd brute et de plusieurs fichiers décrivant la création de données élaborées, directement exploitables pour les traitements, les analyses et la cartographie.
       * [Traitements](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/Traitements) Répertoire regroupant l'ensemble des traitements de données des analyses de sol et des facteurs explicatifs potentiels.
-      * [Shiny](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/Shiny) Répertoire test pour la création d'une application Shiny. Ce travail sera réalisé dans un second temps.
 
 * **[Fonctions](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fonctions)** Regroupe des fonctions communes, utilisées dans plusieurs traitements. 
 
-* **[Documentation](https://github.com/GisEDSol/Carbo_elevage/tree/master/Documentation)** Regroupe l'ensemble de la documentation associée au projet (description du workflow général, de la base de données et des principaux traitements). Ce répertoire est constitué de métadonnées présentant :
+* **[Documentation](https://github.com/GisEDSol/Carbo_elevage/tree/master/Documentation)** Comporte l'ensemble de la documentation du projet (description du workflow général, de la base de données et des principaux traitements). Ce répertoire est constitué :
 	* De plusieurs [métadonnées](https://github.com/GisEDSol/Carbo_elevage/tree/master/Documentation/Metadonnees) présentées sous forme de tableaux,
 	* De différents modes opératoires, dont notamment :
 		* un [mode opératoire](https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Modes_operatoires/MO_priseenmain.html) pour prendre en main le projet (importation du projet, importation de la base de données et paramètres de connexion),

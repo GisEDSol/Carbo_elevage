@@ -18,7 +18,7 @@ ra,UGBHerbi_canton2000,Unité gros bétail tous aliments des herbivores par cant
 ra,UGBHerbi_canton2010,Unité gros bétail tous aliments des herbivores par canton pour le ra 2010
 ra,UGBTA_canton2000,Unité gros bétail tous aliments par canton pour le ra 2000
 ra,UGBTA_canton2010,Unité gros bétail tous aliments par canton pour le ra 2010
-ra,UGBTA_canton880010,Unité gros bétail tous aliments par canton pour les ra 1988,2000,2010
+ra,UGBTA_canton880010,Unité gros bétail tous aliments par canton pour les ra 1988-2000-2010
 clc,changements00_06,Superficies changements Corine Land Cover entre 2000 et 2006 par poste initial (CODE_00) et final (CODE_06) et suivant le découpage géographique
 clc,changements06_12,Superficies changements CORINE Land Cover entre 2006 et 2012 par poste initial (CODE_06) et final (CODE_12) et suivant le découpage géographique
 clc,changements90_00,Superficies changements Corine Land Cover entre 1990 et 2000 par poste initial (CODE_90) et final (CODE_00) et suivant le découpage géographique
@@ -26,6 +26,10 @@ clc,clc00_revisee,Superficies Corine Land Cover 2000 révisé par poste et suiva
 clc,clc06_revisee,Superficies CORINE Land Cover 2006 révisée par poste et suivant le découpage géographique
 clc,clc12,Superficies CORINE Land Cover 2012 par poste et suivant le découpage géographique
 clc,clc90,Superficies Corine Land Cover 1990 par poste et suivant le découpage géographique
+esdac,bdgsf,Base de données géographiques des sols de France (format PostGIS)
+esdac,stu_sgdbe,Table attributaire des STU
+esdac,stuorg,Table de correspondance définissant l'ensemble de STU présent dans une SMU (en pourcentage)
+esdac,smu_sgdbe,Table attributaire des SMU. Les caractéristiques des SMU proviennent des caractéristiques de la STU dominante dans la SMU
 bdat,bdat_cantonXXXX,Analyses cantonales de la BDAT provenant du datapaper
 bdat,bdat_depart_XXXX,Analyses départementales de la BDAT provenant du datapaper
 bdat,bdat_pra_XXXX,Analyses par petites régions agricoles de la BDAT provenant du datapaper
@@ -36,10 +40,14 @@ bdat,bdat_canton_corgequivXXXX,Analyses après ré-échantillonnage des teneurs 
 bdat,bdat_canton_corgequiv_comp_XX,Comparaison entre deux périodes de la médiane des teneurs en carbone organique  après ré-échantillonnage pour les deux méthodes (ox et co)
 bdat,bdat_canton_corgox_XXXX,Analyses après ré-échantillonnage des teneurs en carbone organique issues de la méthode oxydation humide (ox)
 bdat,bdat_canton_corgox_comp_XX,Comparaison entre deux périodes de la médiane des teneurs en carbone organique  après ré-échantillonnage pour la méthode oxydation humide (ox)
-climat,climatjoly,Base de données climatiques à l’échelle communale (Joly et al., 2010)
+climat,climatjoly,Base de données climatiques à l’échelle communale (Joly et al. 2010)
 dm_vecteurs,canton,Vecteur postgis du Geofla à l’échelle du canton (table de travail)
 dm_vecteurs,commune,Vecteur postgis du Geofla à l’échelle de la commune (uniquement données  administratives)
 dm_vecteurs,departement,Vecteur postgis du Geofla à l’échelle du département (uniquement données  administratives)
 dm_traitements,melted_bdat,Table au format long des teneurs en carbone organique  de la BDAT
 dm_traitements,melted_bdatdiff,Table au format long de l’évolution des teneurs en carbone organique de la BDAT
 dm_traitements,melted_ra,Table au format long des statistiques du recencement agricole
+dm_rasters,fr_awc_eu23,Réserve utile du sol (0-20cm). Raster provenant de http://esdac.jrc.ec.europa.eu/content/topsoil-physical-properties-europe-based-lucas-topsoil-data
+dm_rasters,fr_bulk_density_eu23,Densité apparente (0-20cm). Raster provenant de http://esdac.jrc.ec.europa.eu/content/topsoil-physical-properties-europe-based-lucas-topsoil-data
+dm_rasters,fr_clay_eu23,Taux d’argile (%) (0-20cm). Raster provenant de http://esdac.jrc.ec.europa.eu/content/topsoil-physical-properties-europe-based-lucas-topsoil-data
+dm_rasters,fr_coarse_frag_eu23,Eléments grossiers (%) (0-20cm). Raster provenant de  http://esdac.jrc.ec.europa.eu/content/topsoil-physical-properties-europe-based-lucas-topsoil-data

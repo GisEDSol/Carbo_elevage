@@ -84,14 +84,21 @@ melted.bdatdiff <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdatd
 melted.bdatdiff$diffmedian <- as.numeric(melted.bdatdiff$diffmedian)
 melted.bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff),]
 
-dcast.bdat <- sqlQuery(loc,paste("select * from dm_vecteurs.canton_cplt",sep=""))
-
 ##BDAT
-melted.bdat <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdat_cplt",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE))
-period <- c("9094","9599","0004","0509","1014")
-melted.bdat$value <- as.numeric(melted.bdat$value)
-melted.bdat <- melted.bdat[complete.cases(melted.bdat$value),]
-melted.bdat$annees <- factor(melted.bdat$annees,levels=period)
+melted.9514 <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdat_9514",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE))
+melted.9514$value <- as.numeric(melted.9514$value)
+melted.9514 <- melted.9514[complete.cases(melted.9514$value),]
+melted.9514$annees <- factor(melted.9514$annees,levels=c("9599","0004","0509","1014"))
+
+# Sélection des teneurs mesurées avec la méthode OX
+melted.9514 <- melted.9514[melted.9514$variable %in% "corgox",]
+
+# Jeu de données sur 4 périodes de temps
+bdat9514 <- sqlQuery(loc,paste("select * from dm_vecteurs.canton_9514",sep=""))
+
+# Changement du nom des tables pour l'exploitation rapide dans le fichier de suivi
+dcast.bdat <- bdat9514
+melted.bdat <- melted.9514 
 ```
 
 # Objectifs
@@ -497,8 +504,8 @@ dcast.focus <- dcast.bdat[dcast.bdat$code_reg %in% reg_focus,]
 
 xlabel <- "Teneur en carbone organique initiale (g/kg)"
 ylabel <- "Différence des teneurs en carbone organique (14) (g/kg)"
-x <- "corg_medequiv9094"
-y <- "diffmedian14"
+x <- "corgox9094"
+y <- "diffmedian_corgox14"
 
 p <- ggplot(dcast.focus, aes_string(x,y)) +
             geom_point(aes(colour = factor(diff14)),alpha = 0.8, size = 1) +

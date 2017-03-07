@@ -269,9 +269,13 @@ for(m in methodo){
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
 period <- "9009"
 schema <- "bdat"
-vpedo <- "argi_med"
+vpedo <- c("argi_med","sabt_med")
 
+signification <- c("taux d\''argile","taux de sable")
+
+cpt <- 0
 for(i in vpedo){
+  cpt <- cpt + 1
   tableBDAT <- paste("bdat_canton_",period,sep="")
   
   sqlQuery(loc,paste("alter table ",table_dm,"
@@ -287,7 +291,7 @@ for(i in vpedo){
 
   # Ajout d'un commentaire sur la nouvelle colonne créée
   print(sqlQuery(loc,paste("
-  COMMENT ON COLUMN ",table_dm,".",i," IS \'Médiane du taux d\''argile (g/kg) calculée sur 1990-2009.\';",sep="")))
+  COMMENT ON COLUMN ",table_dm,".",i," IS \'Médiane du ",signification[cpt]," (g/kg) calculée sur 1990-2009.\';",sep="")))
 }
 ```
 
@@ -310,7 +314,7 @@ variaoccup <- c("p_sth","p_sfp","p_prairie","p_cop","p_c")
 #id_class <- apply(expand.grid(varia,period), 1, paste, collapse="")
 periodoccup <- c("1970","1979","1988","2000","2010")
 id_class <- apply(expand.grid(variaoccup,periodoccup),1, function(x){paste("classe_",x[1],x[2],sep="")})
-id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean",id_class) #Nom des identifiants
+id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean","mat11",id_class) #Nom des identifiants
 
 # Lecture de la table dm_vecteurs.canton
 mapcanton <- sqlQuery(loc,paste("select * from ",table_dm,sep=""))
@@ -388,7 +392,7 @@ id_varclass <- id_varclass[1:(length(id_varclass)-length(variaoccup))] # Ici, on
 id_diff <- apply(expand.grid(p_variable,period_ra,periodref_ra),1, function(x){paste("diff_var_",x[1],x[2],"_",x[3],sep="")})
 id_diff <- id_diff[1:(length(id_diff)-length(variaoccup))]# Ici, on supprime les dernières combinaisons représentant une différence 2000-2000
 
-id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean",id_class,id_diff,id_varclass)
+id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean","mat11",id_class,id_diff,id_varclass)
 
 # Lecture de la table dm_vecteurs.canton
 mapcanton <- sqlQuery(loc,paste("select * from ",table_dm,sep=""))
@@ -430,7 +434,7 @@ for(m in methodo){
     }else{
       # Ajout à chaque itération de la variable (i)
       melt.canton <- merge(melt.canton,stats.canton, by.x=c(id,"period"), by.y=c(id,"period"),all.x=TRUE,all.y=TRUE)
-      print(melt.canton[,120:125])
+      
     }
   }
 }
@@ -502,7 +506,7 @@ variaoccup <- c("p_sth","p_sfp","p_prairie","p_cop","p_c")
 #id_class <- apply(expand.grid(varia,period), 1, paste, collapse="")
 periodoccup <- c("1970","1979","1988","2000","2010")
 id_class <- apply(expand.grid(variaoccup,periodoccup),1, function(x){paste("classe_",x[1],x[2],sep="")})
-id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean",id_class) #Nom des identifiants
+id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean","mat11",id_class) #Nom des identifiants
 
 # Lecture de la table dm_vecteurs.canton
 mapcanton <- sqlQuery(loc,paste("select * from ",table_dm,sep=""))
@@ -553,7 +557,7 @@ variaoccup <- c("p_sth","p_sfp","p_prairie","p_cop","p_c")
 #id_class <- apply(expand.grid(varia,period), 1, paste, collapse="")
 periodoccup <- c("1970","1979","1988","2000","2010")
 id_class <- apply(expand.grid(variaoccup,periodoccup),1, function(x){paste("classe_",x[1],x[2],sep="")})
-id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean",id_class) #Nom des identifiants
+id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean","mat11",id_class) #Nom des identifiants
 
 # Lecture de la table dm_vecteurs.canton
 mapcanton <- sqlQuery(loc,paste("select * from ",table_dm,sep=""))

@@ -11,7 +11,7 @@
 
 <meta name="author" content="Jean-Baptiste Paroissien" />
 
-<meta name="date" content="2017-12-02" />
+<meta name="date" content="2017-06-03" />
 
 <title>Prise en main pour exploiter la base de données</title>
 
@@ -202,28 +202,28 @@ div.tocify {
 
 <h1 class="title toc-ignore">Prise en main pour exploiter la base de données</h1>
 <h4 class="author"><em>Jean-Baptiste Paroissien</em></h4>
-<h4 class="date"><em>20/02/2017</em></h4>
+<h4 class="date"><em>06/03/2017</em></h4>
 
 </div>
 
 
 <div id="objectif-et-domaine-dapplication" class="section level1">
 <h1><span class="header-section-number">1</span> Objectif et domaine d’application</h1>
-<p>L’objectif de ce document est de fournir les informations nécessaires pour pouvoir utiliser la base de données appelée <code>sol_elevage</code>. Le document présente l’organisation des données et les explications pour son exploitation.</p>
+<p>L’objectif de ce document est de fournir les informations nécessaires pour utiliser la base de données appelée <code>sol_elevage</code>. Le document présente l’organisation des données et les explications pour son exploitation.</p>
 </div>
 <div id="larchitecture-et-lorganisation-de-la-base-de-donnees" class="section level1">
 <h1><span class="header-section-number">2</span> L’architecture et l’organisation de la base de données</h1>
 <div id="architecture-technique" class="section level2">
 <h2><span class="header-section-number">2.1</span> Architecture technique</h2>
-<p>L’ensemble des données est stocké dans une base de données type postgresql/postgis. Le serveur de la base est en local et des conversions seront réalisées régulièrement vers une base SQLite/Spatialite pour faciliter le partage des données. SQLite diffère de la plupart des systèmes de gestion de base de données par la gestion d’un fichier de base directement sur le disque dur. A la différence de postgresql/postgis, il ne nécessite pas la création d’un serveur, ce qui facilite les échanges. Plus d’infos, <a href="http://www.developpez.com/actu/94614/Un-developpeur-evoque-cinq-raisons-pour-vous-faire-utiliser-SQLite-en-2016-que-pensez-vous-de-ses-arguments/">ici</a>.</p>
+<p>L’ensemble des données est stocké dans une base de données type postgresql/postgis. Le serveur de la base est en local et des conversions sont possible vers une base SQLite/Spatialite pour faciliter le partage des données. SQLite diffère de la plupart des systèmes de gestion de base de données par la gestion d’un fichier de base directement sur le disque dur. A la différence de postgresql/postgis, il ne nécessite pas la création d’un serveur, ce qui facilite les échanges. Plus d’infos, <a href="http://www.developpez.com/actu/94614/Un-developpeur-evoque-cinq-raisons-pour-vous-faire-utiliser-SQLite-en-2016-que-pensez-vous-de-ses-arguments/">ici</a>.</p>
 </div>
 <div id="organisation-de-la-base-de-donnees" class="section level2">
 <h2><span class="header-section-number">2.2</span> Organisation de la base de données</h2>
-<p>Deux types de données sont intégrées dans la base : les données brutes et les données élaborées</p>
+<p>Deux types de données sont intégrées dans la base : les données “brutes” et les data marts. Les données appelée brutes représentent des données qui ne sont pas directement exploitables dans les traitements de données. Ces données sont stockées dans la base et servent à construire des données facilement exploitables, les data marts. Ci-dessous, les tables présentent les schémas de la base de données par type de données.</p>
 <div id="les-donnees-brutes" class="section level3">
 <h3><span class="header-section-number">2.2.1</span> Les données brutes</h3>
 <table>
-<caption>Liste des schémas de la base de données</caption>
+<caption>Liste des schémas contenant des données brutes</caption>
 <colgroup>
 <col width="11%"></col>
 <col width="88%"></col>
@@ -252,8 +252,8 @@ div.tocify {
 <td align="left">Schéma de stockage des données de la BDAT</td>
 </tr>
 <tr class="odd">
-<td align="left">bdgsf</td>
-<td align="left">Schéma de stockage de la base de données européenne des sols (emprise France)</td>
+<td align="left">esdac</td>
+<td align="left">Schéma de stockage des données sols provenant de l’European Soil Data Centre (ESDAC)</td>
 </tr>
 </tbody>
 </table>
@@ -262,7 +262,7 @@ div.tocify {
 <h3><span class="header-section-number">2.2.2</span> Les data marts</h3>
 <p>Les data marts (magasins de données) sont les données qui sont directement utilisables dans des traitements. Ces data marts se présentent sous la forme d’une ou plusieurs tables classées dans des schémas distincts. Le nom de ces schémas est préfixé par « dm_». Le tableau suivant dresse la liste des data marts disponibles :</p>
 <table style="width:62%;">
-<caption>Liste des schémas de la base de données</caption>
+<caption>Liste des schémas contenant des data marts</caption>
 <colgroup>
 <col width="20%"></col>
 <col width="41%"></col>
@@ -293,8 +293,7 @@ div.tocify {
 </div>
 <div id="les-donnees-brutes-1" class="section level1">
 <h1><span class="header-section-number">3</span> Les données brutes</h1>
-<p>Description des principales tables présentent dans les schémas. L’ensemble de la description des tables est également accessible sur cette table.</p>
-<p><em>Pour plus de détails sur la construction de ces tables, le lecteur intéressé peut consulter le <a href="https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/BDD/Suivis/FS_bdd_Brute.Rmd">fichier de suivi</a>.</em></p>
+<p>Dans cette section, les tables brutes sont présentées. <em>Pour plus de détails sur la construction de ces tables, le lecteur intéressé peut consulter le <a href="https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/BDD/Suivis/FS_bdd_Brute.Rmd">fichier de suivi</a> d’intégration de ces données.</em></p>
 <div id="les-tables-de-la-bdat" class="section level2">
 <h2><span class="header-section-number">3.1</span> Les tables de la BDAT</h2>
 <p>La description des tables brutes de la BDAT est décrit dans le tableau ci-dessous. Les <code>XXXX</code> correspondent aux périodes d’analyse suivantes :</p>
@@ -363,8 +362,50 @@ div.tocify {
 </tbody>
 </table>
 </div>
+<div id="les-tables-de-la-base-de-donnees-geographique-des-sols-de-france-bdgsf" class="section level2">
+<h2><span class="header-section-number">3.2</span> Les tables de la Base de données Géographique des Sols de France (BDGSF)</h2>
+<p>La Base de données Géographique des Sols de France (BDGSF) représente la partie française de la Base de Données Géographique des Sols d’Europe (European Soil Data Base) à l’échelle du 1/1000000. La construction est basée sur le principe des Unité Cartographique de Sol (UCS ou SMU) et des Unités Typologique de Sol (UTS ou STU).</p>
+<p>La documentation de cette base de données est disponible sur ce <a href="http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDBv2/fr_advan.htm">site</a>, avec notamment :</p>
+<ul>
+<li>Une <a href="http://eusoils.jrc.ec.europa.eu/Esdb_Archive/ESDBv2/fr_intro.htm">description</a> du concept de la base (principe des ucs et uts),</li>
+<li>Une <a href="http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDBv2/popup/sg_meta.htm">description</a> de la base de données,</li>
+<li>Un <a href="http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDBv2/popup/sg_dict.htm">dictionnaire</a> de la base de données,</li>
+<li>Et les <a href="http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDBv2/popup/sg_attr.htm">codes attributaires</a>.</li>
+</ul>
+<table style="width:88%;">
+<caption>Liste des tables brutes de la BDGSF</caption>
+<colgroup>
+<col width="13%"></col>
+<col width="73%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Table</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">bdgsf</td>
+<td align="left">Base de données géographiques des sols de France (format PostGIS)</td>
+</tr>
+<tr class="even">
+<td align="left">stu_sgdbe</td>
+<td align="left">Table attributaire des STU</td>
+</tr>
+<tr class="odd">
+<td align="left">stuorg</td>
+<td align="left">Table de correspondance définissant l’ensemble de STU présent dans une SMU (en pourcentage)</td>
+</tr>
+<tr class="even">
+<td align="left">smu_sgdbe</td>
+<td align="left">Table attributaire des SMU. Les caractéristiques des SMU proviennent des caractéristiques de la STU dominante dans la SMU</td>
+</tr>
+</tbody>
+</table>
+</div>
 <div id="les-tables-du-recensement-agricole" class="section level2">
-<h2><span class="header-section-number">3.2</span> Les tables du recensement agricole</h2>
+<h2><span class="header-section-number">3.3</span> Les tables du recensement agricole</h2>
 <table>
 <caption>Liste des tables brutes du recensement agricole</caption>
 <colgroup>
@@ -456,13 +497,13 @@ div.tocify {
 </tr>
 <tr class="even">
 <td align="left">UGBTA_canton880010</td>
-<td align="left">Unité gros bétail tous aliments par canton pour les ra 1988</td>
+<td align="left">Unité gros bétail tous aliments par canton pour les ra 1988-2000-2010</td>
 </tr>
 </tbody>
 </table>
 </div>
 <div id="les-tables-de-corine-land-cover" class="section level2">
-<h2><span class="header-section-number">3.3</span> Les tables de Corine Land Cover</h2>
+<h2><span class="header-section-number">3.4</span> Les tables de Corine Land Cover</h2>
 <table>
 <caption>Liste des tables brutes de Corine Land Cover</caption>
 <colgroup>
@@ -510,10 +551,10 @@ div.tocify {
 </div>
 <div id="les-data_mart" class="section level1">
 <h1><span class="header-section-number">4</span> Les data_mart</h1>
-<p>Les tables de travail utilisées sont stockées dans les <code>data_mart</code> et sont décrites dans le détail dans cette section. Pour plus de détails sur ces tables, l’ensemble des fichiers de suivi associés à leurs créations sont consultables dans ce <a href="https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/BDD/Suivis/">répertoire</a>. Le nom des fichiers ont comme préfixe <code>FS_bdd_elab</code>.</p>
+<p>Les tables de travail sont stockées dans les <code>data_mart</code> et sont décrites dans cette section. Pour plus de détails sur ces tables, l’ensemble des fichiers de suivi associés à leurs créations sont consultables dans ce <a href="https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/BDD/Suivis/">répertoire</a>. Le nom des fichiers a le préfixe <code>FS_bdd_elab</code>.</p>
 <div id="la-table-dm_vecteurs.canton-et-de-ses-filtres" class="section level2">
 <h2><span class="header-section-number">4.1</span> La table dm_vecteurs.canton et de ses filtres</h2>
-<p>La table <code>dm_vecteurs.canton</code> centralise l’ensemble des données de travail à l’échelle du canton. C’est une table au format PostGis, elle contient une colonne géométrique (<code>geom</code>) permettant une visualisation dans un Système d’Information Géographique. D’autres déclinaisons de cette table ont été créées pour répondre à des besoins d’analyses spécifiques. Il s’agit de filtres créés pour travailler sur des jeux de données homogènes en terme de données sur les sols. La création de ces filtres a été réalisée dans ce <a href="https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/BDD/Suivis/FS_bdd_elab_bdat.Rmd">fichier de suivi</a>.</p>
+<p>La table <code>dm_vecteurs.canton</code> centralise l’ensemble des données de travail à l’échelle du canton. C’est une table au format PostGis, elle contient une colonne géométrique (<code>geom</code>) permettant une visualisation dans un Système d’Information Géographique. D’autres déclinaisons de cette table ont été créées pour répondre à des besoins d’analyses spécifiques. Il s’agit de filtres créés pour travailler sur des jeux de données homogènes en terme de données sur les sols. La création de ces filtres a été réalisée dans ce <a href="https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/BDD/Suivis/FS_bdd_elab_bdat.Rmd">fichier de suivi</a>.</p>
 <ul>
 <li><strong>dm_vecteurs.canton_9014 :</strong> filtre de la table dm_vecteurs.canton basée sur la disponibilité complète et homogène des teneurs en carbone organique sur la période 1990-2014.</li>
 <li><strong>dm_vecteurs.canton_9514 :</strong> filtre de la table dm_vecteurs.canton basée sur la disponibilité homogène des teneurs en carbone organique sur la période 1995-2014 (exclusion de la période 1990-1994),</li>
@@ -1437,36 +1478,44 @@ div.tocify {
 <td align="left">Pourcentage exploitation ayant une orientation technico-economique de type elevage hors sol (otex 51,52,53,74) en 2010.</td>
 </tr>
 <tr class="odd">
+<td align="left">fao85lv1</td>
+<td align="left">Type de sol majoritaire par canton. Code de la FAO-UNESCO de 1974 (modifiée 1985).</td>
+</tr>
+<tr class="even">
 <td align="left">grdcultures1988</td>
 <td align="left">Pourcentage exploitation ayant une orientation technico-economique de type grandes cultures (otex 15,16) en 1988.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">grdcultures2000</td>
 <td align="left">Pourcentage exploitation ayant une orientation technico-economique de type grandes cultures (otex 15,16) en 2000.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">grdcultures2010</td>
 <td align="left">Pourcentage exploitation ayant une orientation technico-economique de type grandes cultures (otex 15,16) en 2010.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">hpluie_an</td>
 <td align="left">Cumul annuel (mm)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">jchauds_an</td>
 <td align="left">Jours/an de maximum supérieur à + 30°C</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">jfroids_an</td>
 <td align="left">Jours/an de minimum inférieur à -5°C</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">jpluie_janv</td>
 <td align="left">Jours de précipitation en janvier</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">jpluie_juil</td>
 <td align="left">Jours de précipitation en juillet</td>
+</tr>
+<tr class="even">
+<td align="left">mat11</td>
+<td align="left">Matériau parental dominant de niveau 1 par canton</td>
 </tr>
 <tr class="odd">
 <td align="left">p_c1970</td>
@@ -1645,250 +1694,254 @@ div.tocify {
 <td align="left">Pourcentage exploitation ayant une orientation technico-economique de type polyculture-elevage (otex 61,73,83,84,90) en 2010.</td>
 </tr>
 <tr class="odd">
+<td align="left">sabt_med</td>
+<td align="left">Médiane du taux de sable (g/kg) calculée sur 1990-2009.</td>
+</tr>
+<tr class="even">
 <td align="left">std_pluie_janv</td>
 <td align="left">Variabilité 1971-2000 en janvier (mm)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">std_pluie_juil</td>
 <td align="left">Variabilité 1971-2000 en juillet (mm)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">std_temp_janv</td>
 <td align="left">Variabilité 1971-2000 en janvier (°C)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">std_temp_juil</td>
 <td align="left">Variabilité 1971-2000 en juillet (°C)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">ttemp_an</td>
 <td align="left">Température moyenne annuelle</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">typo_clim</td>
 <td align="left">Type de climat</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">ugbgrani_sau2000</td>
 <td align="left">Pourcentage des UGB granivores en fonction de la surface agricole utile en 2000.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">ugbgrani_sau2010</td>
 <td align="left">Pourcentage des UGB granivores en fonction de la surface agricole utile en 2010.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">ugbh_sau2000</td>
 <td align="left">Pourcentage des UGB herbivores en fonction de la surface agricole utile en 2000.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">ugbh_sau2010</td>
 <td align="left">Pourcentage des UGB herbivores en fonction de la surface agricole utile en 2010.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">ugbta1988</td>
 <td align="left">Densité UGBTA/SAU pour 1988.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">ugbta2000</td>
 <td align="left">Densité UGBTA/SAU pour 2000.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">ugbta2010</td>
 <td align="left">Densité UGBTA/SAU pour 2010.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_c1970_2000</td>
 <td align="left">Evolution de la surface en céréales entre 2000 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_c1970_2010</td>
 <td align="left">Evolution de la surface en céréales entre 2010 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_c1979_2000</td>
 <td align="left">Evolution de la surface en céréales entre 2000 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_c1979_2010</td>
 <td align="left">Evolution de la surface en céréales entre 2010 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_c1988_2000</td>
 <td align="left">Evolution de la surface en céréales entre 2000 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_c1988_2010</td>
 <td align="left">Evolution de la surface en céréales entre 2010 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_c2000_2010</td>
 <td align="left">Evolution de la surface en céréales entre 2010 et 2000 par rapport à la SAU de 2000 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_cop1970_2000</td>
 <td align="left">Evolution des surfaces en cop entre 2000 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_cop1970_2010</td>
 <td align="left">Evolution des surfaces en cop entre 2010 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_cop1979_2000</td>
 <td align="left">Evolution des surfaces en cop entre 2000 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_cop1979_2010</td>
 <td align="left">Evolution des surfaces en cop entre 2010 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_cop1988_2000</td>
 <td align="left">Evolution des surfaces en cop entre 2000 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_cop1988_2010</td>
 <td align="left">Evolution des surfaces en cop entre 2010 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_cop2000_2010</td>
 <td align="left">Evolution des surfaces en cop entre 2010 et 2000 par rapport à la SAU de 2000 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_elevage1988_2010</td>
 <td align="left">Evolution du pourcentage d’OTEX en élevage entre 2010 et 1988.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_elevagehorsol1988_2010</td>
 <td align="left">Evolution du pourcentage d’OTEX en élevage hors sol entre 2010 et 1988.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_grdcultures1988_2010</td>
 <td align="left">Evolution du pourcentage d’OTEX en grandes cultures entre 2010 et 1988.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_mf1970_2000</td>
 <td align="left">Evolution de la surface en maîs fourrage ensilage entre 2000 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_mf1970_2010</td>
 <td align="left">Evolution de la surface en maîs fourrage ensilage entre 2010 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_mf1979_2000</td>
 <td align="left">Evolution de la surface en maîs fourrage ensilage entre 2000 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_mf1979_2010</td>
 <td align="left">Evolution de la surface en maîs fourrage ensilage entre 2010 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_mf1988_2000</td>
 <td align="left">Evolution de la surface en maîs fourrage ensilage entre 2000 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_mf1988_2010</td>
 <td align="left">Evolution de la surface en maîs fourrage ensilage entre 2010 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_mf2000_2010</td>
 <td align="left">Evolution de la surface en maîs fourrage ensilage entre 2010 et 2000 par rapport à la SAU de 2000 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_polyelevage1988_2010</td>
 <td align="left">Evolution du pourcentage d’OTEX en polyélevage entre 2010 et 1988.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_prairie1970_2000</td>
 <td align="left">Evolution des prairies entre 2000 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_prairie1970_2010</td>
 <td align="left">Evolution des prairies entre 2010 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_prairie1979_2000</td>
 <td align="left">Evolution des prairies entre 2000 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_prairie1979_2010</td>
 <td align="left">Evolution des prairies entre 2010 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_prairie1988_2000</td>
 <td align="left">Evolution des prairies entre 2000 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_prairie1988_2010</td>
 <td align="left">Evolution des prairies entre 2010 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_prairie2000_2010</td>
 <td align="left">Evolution des prairies entre 2010 et 2000 par rapport à la SAU de 2000 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_sfp1970_2000</td>
 <td align="left">Evolution de la surface fourragère principale entre 2000 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_sfp1970_2010</td>
 <td align="left">Evolution de la surface fourragère principale entre 2010 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_sfp1979_2000</td>
 <td align="left">Evolution de la surface fourragère principale entre 2000 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_sfp1979_2010</td>
 <td align="left">Evolution de la surface fourragère principale entre 2010 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_sfp1988_2000</td>
 <td align="left">Evolution de la surface fourragère principale entre 2000 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_sfp1988_2010</td>
 <td align="left">Evolution de la surface fourragère principale entre 2010 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_sfp2000_2010</td>
 <td align="left">Evolution de la surface fourragère principale entre 2010 et 2000 par rapport à la SAU de 2000 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_sth1970_2000</td>
 <td align="left">Evolution de la surface toujours en herbe entre 2000 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_sth1970_2010</td>
 <td align="left">Evolution de la surface toujours en herbe entre 2010 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_sth1979_2000</td>
 <td align="left">Evolution de la surface toujours en herbe entre 2000 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_sth1979_2010</td>
 <td align="left">Evolution de la surface toujours en herbe entre 2010 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_sth1988_2000</td>
 <td align="left">Evolution de la surface toujours en herbe entre 2000 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_sth1988_2010</td>
 <td align="left">Evolution de la surface toujours en herbe entre 2010 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_sth2000_2010</td>
 <td align="left">Evolution de la surface toujours en herbe entre 2010 et 2000 par rapport à la SAU de 2000 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_ugb1988_2010</td>
 <td align="left">Evolution des UGB tous aliment entre 2010 et 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">zonage_cplt</td>
 <td align="left">zonage_cplt des principales régions d élevage par canton. La valeur est issue des données communales (public.regelevage) et représente la valeur majoritaire par canton. La table public.regelevage présente la signification des codes utilisés pour le zonage. Source DG AGRI RICA UE 2012 - traitement IDELE</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">zonage_simple</td>
 <td align="left">zonage_simple des principales régions d élevage par canton. La valeur est issue des données communales (public.regelevage) et représente la valeur majoritaire par canton. La table public.regelevage présente la signification des codes utilisés pour le zonage. Source DG AGRI RICA UE 2012 - traitement IDELE</td>
 </tr>
@@ -2079,7 +2132,7 @@ div.tocify {
 </tr>
 </tbody>
 </table>
-<p>La création des tables au format long a été également réalisée pour les données liées aux évolutions des teneurs en carbone organique. Une seule table a été générée : <code>dm_traitements.melted_bdatdiff</code>. Le tableau ci-dessous décrit les champs de cette table.</p>
+<p>La création des tables au format long a été également réalisée pour les données liées aux évolutions des teneurs en carbone organique. Une seule table a été générée : <code>dm_traitements.melted_bdatdiff</code>. Le tableau ci-dessous décrit les principaux champs de cette table.</p>
 <table>
 <caption>Description des champs de la table dm_traitements.melted_bdatdiff</caption>
 <colgroup>
@@ -2095,23 +2148,72 @@ div.tocify {
 <tbody>
 <tr class="odd">
 <td align="left">diff</td>
-<td align="left">Résultat du test statistique de différence des teneurs en carbone organique entre deux périodes (test de Wilcoxon). Méthode de mesure oxydation humide (corgox).</td>
+<td align="left">Résultat du test statistique de différence des teneurs en carbone organique entre deux périodes (test de Wilcoxon). Toutes méthodes de mesure confondues (corgox+corgco).</td>
 </tr>
 <tr class="even">
 <td align="left">diff_corgox</td>
 <td align="left">Résultat du test statistique de différence des teneurs en carbone organique entre deux périodes (test de Wilcoxon). Méthode de mesure oxydation humide (corgox).</td>
 </tr>
 <tr class="odd">
-<td align="left">diffmedian</td>
-<td align="left">Différences des teneurs en carbone organique entre deux périodes. Toutes méthodes de mesure confondues (corgox+corgco).</td>
-</tr>
-<tr class="even">
 <td align="left">diffmedian_corgox</td>
 <td align="left">Différences des teneurs en carbone organique entre deux périodes. Méthode de mesure oxydation humide (corgox).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">period</td>
 <td align="left">Périodes comparées des teneurs en carbone organique.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="les-donnees-rasters-dm_rasters" class="section level2">
+<h2><span class="header-section-number">4.3</span> Les données rasters (<code>dm_rasters</code>)</h2>
+<p>Plusieurs données rasters sont stockées au format PostGis. Ces données peuvent être visualisées au travers d’un SIG comme QGis et peuvent être facilement traitées avec les fonctions PostGis. Dans la base de données, le répertoire de stockage des données rasters est appelé <code>dm_rasters</code>. La table suivante présente les rasters enregistrés dans la base.</p>
+<table style="width:28%;">
+<caption>Liste des rasters (continued below)</caption>
+<colgroup>
+<col width="27%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Table</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">fr_awc_eu23</td>
+</tr>
+<tr class="even">
+<td align="left">fr_bulk_density_eu23</td>
+</tr>
+<tr class="odd">
+<td align="left">fr_clay_eu23</td>
+</tr>
+<tr class="even">
+<td align="left">fr_coarse_frag_eu23</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="100%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Réserve utile du sol (0-20cm). Raster provenant de <a href="http://esdac.jrc.ec.europa.eu/content/topsoil-physical-properties-europe-based-lucas-topsoil-data" class="uri">http://esdac.jrc.ec.europa.eu/content/topsoil-physical-properties-europe-based-lucas-topsoil-data</a></td>
+</tr>
+<tr class="even">
+<td align="left">Densité apparente (0-20cm). Raster provenant de <a href="http://esdac.jrc.ec.europa.eu/content/topsoil-physical-properties-europe-based-lucas-topsoil-data" class="uri">http://esdac.jrc.ec.europa.eu/content/topsoil-physical-properties-europe-based-lucas-topsoil-data</a></td>
+</tr>
+<tr class="odd">
+<td align="left">Taux d’argile (%) (0-20cm). Raster provenant de <a href="http://esdac.jrc.ec.europa.eu/content/topsoil-physical-properties-europe-based-lucas-topsoil-data" class="uri">http://esdac.jrc.ec.europa.eu/content/topsoil-physical-properties-europe-based-lucas-topsoil-data</a></td>
+</tr>
+<tr class="even">
+<td align="left">Eléments grossiers (%) (0-20cm). Raster provenant de <a href="http://esdac.jrc.ec.europa.eu/content/topsoil-physical-properties-europe-based-lucas-topsoil-data" class="uri">http://esdac.jrc.ec.europa.eu/content/topsoil-physical-properties-europe-based-lucas-topsoil-data</a></td>
 </tr>
 </tbody>
 </table>

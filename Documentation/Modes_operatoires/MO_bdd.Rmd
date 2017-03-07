@@ -1,7 +1,7 @@
 ---
 title: "Prise en main pour exploiter la base de données"
 author: "Jean-Baptiste Paroissien"
-date: "20/02/2017"
+date: "06/03/2017"
 output:
   html_document:
     toc: yes
@@ -28,23 +28,23 @@ importparametres(repmaster=repmaster,repdata=repdata,dsn="PG:dbname='sol_elevage
 
 # Objectif et domaine d'application
 
-L'objectif de ce document est de fournir les informations nécessaires pour pouvoir utiliser la base de données appelée `sol_elevage`. Le document présente l'organisation des données et les explications pour son exploitation.
+L'objectif de ce document est de fournir les informations nécessaires pour utiliser la base de données appelée `sol_elevage`. Le document présente l'organisation des données et les explications pour son exploitation.
 
 # L'architecture et l'organisation de la base de données
 
 ## Architecture technique
 
-L'ensemble des données est stocké dans une base de données type postgresql/postgis. Le serveur de la base est en local et des conversions seront réalisées régulièrement vers une base SQLite/Spatialite pour faciliter le partage des données. SQLite diffère de la plupart des systèmes de gestion de base de données par la gestion d'un fichier de base directement sur le disque dur. A la différence de postgresql/postgis, il ne nécessite pas la création d'un serveur, ce qui facilite les échanges. Plus d'infos, [ici](http://www.developpez.com/actu/94614/Un-developpeur-evoque-cinq-raisons-pour-vous-faire-utiliser-SQLite-en-2016-que-pensez-vous-de-ses-arguments/).
+L'ensemble des données est stocké dans une base de données type postgresql/postgis. Le serveur de la base est en local et des conversions sont possible vers une base SQLite/Spatialite pour faciliter le partage des données. SQLite diffère de la plupart des systèmes de gestion de base de données par la gestion d'un fichier de base directement sur le disque dur. A la différence de postgresql/postgis, il ne nécessite pas la création d'un serveur, ce qui facilite les échanges. Plus d'infos, [ici](http://www.developpez.com/actu/94614/Un-developpeur-evoque-cinq-raisons-pour-vous-faire-utiliser-SQLite-en-2016-que-pensez-vous-de-ses-arguments/).
 
 ## Organisation de la base de données
 
-Deux types de données sont intégrées dans la base : les données brutes et les données élaborées
+Deux types de données sont intégrées dans la base : les données "brutes" et les data marts. Les données appelée brutes représentent des données qui ne sont pas directement exploitables dans les traitements de données. Ces données sont stockées dans la base et servent à construire des données facilement exploitables, les data marts. Ci-dessous, les tables présentent les schémas de la base de données par type de données.
 
 ### Les données brutes
 
 ```{r,evaL=TRUE,echo=FALSE}
 metatable <- read.csv(paste(repmetadonnees,"Catalogue_schema.csv",sep=""),sep=",")
-pander(metatable[metatable$Type %in% "Brute",][,c("Schéma","Description")],caption = "Liste des schémas de la base de données",justify = c('left', 'left'))
+pander(metatable[metatable$Type %in% "Brute",][,c("Schéma","Description")],caption = "Liste des schémas contenant des données brutes",justify = c('left', 'left'))
 ```
 
 ### Les data marts
@@ -55,14 +55,12 @@ Les data marts (magasins de données) sont les données qui sont directement uti
 metatable <- read.csv(paste(repmetadonnees,"Catalogue_schema.csv",sep=""),sep=",")
 tt <- metatable[metatable$Type %in% "Data_mart",][,c("Schéma","Description")][,1:2]
 rownames(tt) <- 1:nrow(tt)
-pander(tt,caption = "Liste des schémas de la base de données",justify = c('left', 'left'),include.rownames = FALSE)
+pander(tt,caption = "Liste des schémas contenant des data marts",justify = c('left', 'left'),include.rownames = FALSE)
 ```
 
 # Les données brutes
 
-Description des principales tables présentent dans les schémas. L'ensemble de la description des tables est également accessible sur cette table.
-
-*Pour plus de détails sur la construction de ces tables, le lecteur intéressé peut consulter le [fichier de suivi](`r fs_url`BDD/Suivis/FS_bdd_Brute.Rmd).*
+Dans cette section, les tables brutes sont présentées. *Pour plus de détails sur la construction de ces tables, le lecteur intéressé peut consulter le [fichier de suivi](`r fs_url`BDD/Suivis/FS_bdd_Brute.Rmd) d'intégration de ces données.*
 
 ## Les tables de la BDAT
 
@@ -87,14 +85,21 @@ pander(tt,caption = "Liste des tables brutes de la BDAT",justify = c('left', 'le
 
 ## Les tables de la Base de données Géographique des Sols de France (BDGSF)
 
-La Base de données Géographique des Sols de France (BDGSF) représente la partie française de la Base de Données Géographique des Sols d'Europe à 1/1000000. La construction est basée sur le principe des Unité Cartographique de Sol (UCS) et des Unités Typologique de Sol (UTS).
+La Base de données Géographique des Sols de France (BDGSF) représente la partie française de la Base de Données Géographique des Sols d'Europe (European Soil Data Base) à l'échelle du 1/1000000. La construction est basée sur le principe des Unité Cartographique de Sol (UCS ou SMU) et des Unités Typologique de Sol (UTS ou STU).
 
 La documentation de cette base de données est disponible sur ce [site](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDBv2/fr_advan.htm), avec notamment :
 
+- Une [description](http://eusoils.jrc.ec.europa.eu/Esdb_Archive/ESDBv2/fr_intro.htm) du concept de la base (principe des ucs et uts),
 - Une [description](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDBv2/popup/sg_meta.htm) de la base de données,
-- Un dictionnaire de la base de [données](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDBv2/popup/sg_dict.htm),
-- Une [description](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDBv2/popup/sg_attr.htm) des codes attributaires.
+- Un [dictionnaire](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDBv2/popup/sg_dict.htm) de la base de données,
+- Et les [codes attributaires](http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDBv2/popup/sg_attr.htm).
 
+```{r,evaL=TRUE,echo=FALSE}
+metatable <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=",")
+tt <- metatable[metatable[,"Schéma"] %in% "esdac",][,c("Table","Description")][,1:2]
+rownames(tt) <- 1:nrow(tt)
+pander(tt,caption = "Liste des tables brutes de la BDGSF",justify = c('left', 'left'),split.cells = c("30%", "70%"),use.hyphening = TRUE)
+```
 
 ## Les tables du recensement agricole
 
@@ -116,7 +121,7 @@ pander(tt,caption = "Liste des tables brutes de Corine Land Cover",justify = c('
 
 # Les data_mart
 
-Les tables de travail utilisées sont stockées dans les `data_mart` et sont décrites dans le détail dans cette section. Pour plus de détails sur ces tables, l'ensemble des fichiers de suivi associés à leurs créations sont consultables dans ce [répertoire](`r fs_url`BDD/Suivis/). Le nom des fichiers ont comme préfixe `FS_bdd_elab`.
+Les tables de travail sont stockées dans les `data_mart` et sont décrites dans cette section. Pour plus de détails sur ces tables, l'ensemble des fichiers de suivi associés à leurs créations sont consultables dans ce [répertoire](`r fs_url`BDD/Suivis/). Le nom des fichiers a le préfixe `FS_bdd_elab`.
 
 ## La table dm_vecteurs.canton et de ses filtres
 
@@ -166,10 +171,24 @@ pander(metatable,caption = "Description des types de climats",justify = c('left'
 ```
 
 La création des tables au format long a été également réalisée pour les données liées aux évolutions des teneurs en carbone organique. Une seule table a été générée : `dm_traitements.melted_bdatdiff`.
-Le tableau ci-dessous décrit les champs de cette table.
+Le tableau ci-dessous décrit les principaux champs de cette table.
 
 ```{r,evaL=TRUE,echo=FALSE}
 tt <- sqlQuery(loc,paste("select column_name,comment from public.metadata where table_name like 'melted_bdatdiff' and comment is not null",sep=""))
 colnames(tt) <- c("Colonne","Description")
 pander(tt,caption = "Description des champs de la table dm_traitements.melted_bdatdiff",justify = c('left', 'left'),split.cells = c("20%", "80%"),use.hyphening = TRUE)
 ```
+
+## Les données rasters (`dm_rasters`)
+
+Plusieurs données rasters sont stockées au format PostGis. Ces données peuvent être visualisées au travers d'un SIG comme QGis et peuvent être facilement traitées avec les fonctions PostGis.
+Dans la base de données, le répertoire de stockage des données rasters est appelé `dm_rasters`. La table suivante présente les rasters enregistrés dans la base.
+
+```{r,evaL=TRUE,echo=FALSE}
+metatable <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=",")
+tt <- metatable[metatable[,"Schéma"] %in% "dm_rasters",][,c("Table","Description")][,1:2]
+rownames(tt) <- 1:nrow(tt)
+pander(tt,caption = "Liste des rasters",justify = c('left', 'left'),split.cells = c("30%", "70%"),use.hyphening = TRUE)
+```
+
+
