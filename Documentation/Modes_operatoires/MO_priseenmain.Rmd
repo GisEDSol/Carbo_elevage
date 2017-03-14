@@ -1,5 +1,5 @@
 ---
-title: "Mode opératoire pour reprendre en main le projet Carbo_elevage"
+title: "Mode opératoire pour prendre en main le projet Carbo_elevage"
 author: "Jean-Baptiste Paroissien"
 date: "06/03/2017"
 output:
@@ -167,7 +167,7 @@ CREATE EXTENSION postgis_topology;
 
 *Pour plus d'informations sur la sauvegarde et la restauration d'une base de données postgresql, voir la [documentation officielle](http://doc.postgresql.fr/9.5/backup.html)*
 
-Pour l'importation de la base, il est nécessaire de lancer d'abord ces commandes intégrer les rasters (selon cette [discussion](http://postgis.17.x6.nabble.com/Error-on-a-raster-table-restore-td5009569.html)).
+Pour l'importation de la base, il est nécessaire de lancer d'abord ces commandes pour intégrer les rasters (selon cette [discussion](http://postgis.17.x6.nabble.com/Error-on-a-raster-table-restore-td5009569.html)).
 
 ```{r, engine='bash',highlight=TRUE,eval=FALSE}
 psql sol_elevage

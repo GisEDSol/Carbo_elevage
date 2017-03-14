@@ -1,5 +1,5 @@
 ---
-title: "Prise en main pour exploiter la base de données"
+title: "Mode opératoire pour exploiter la base de données"
 author: "Jean-Baptiste Paroissien"
 date: "06/03/2017"
 output:
@@ -161,17 +161,6 @@ colnames(tt) <- c("Colonne","Description")
 pander(tt,caption = "Description des champs de la table dm_traitements.melted_bdat",justify = c('left', 'left'),split.cells = c("15%", "85%"),use.hyphening = TRUE)
 ```
 
-```{r,evaL=TRUE,echo=FALSE}
-metatable <- read.csv(paste(repmetadonnees,"Nomenclature_regionelevage.csv",sep=""),sep=",")
-colnames(metatable) <- c("Code simple","Code cplt","Description simple","Description cplt")
-pander(metatable,caption = "Description des régions d'élevage",justify = c('left','left','left','left'),split.cells = c("0.05%","0.05%","4.9%","95%"),use.hyphening = TRUE,split.table = Inf)
-```
-
-```{r,evaL=TRUE,echo=FALSE}
-metatable <- read.csv(paste(repmetadonnees,"Nomenclature_typeclimat.csv",sep=""),sep=",")
-pander(metatable,caption = "Description des types de climats",justify = c('left','left'),split.cells = c("40%","60%"),use.hyphening = TRUE)
-```
-
 La création des tables au format long a été également réalisée pour les données liées aux évolutions des teneurs en carbone organique. Une seule table a été générée : `dm_traitements.melted_bdatdiff`.
 Le tableau ci-dessous décrit les principaux champs de cette table.
 
@@ -193,4 +182,34 @@ rownames(tt) <- 1:nrow(tt)
 pander(tt,caption = "Liste des rasters",justify = c('left', 'left'),split.cells = c("30%", "70%"),use.hyphening = TRUE)
 ```
 
+# Nomenclature de certaines variables
 
+Plusieurs variables catégorielles ont une nomenclature spécifiques qu'il est important de connaître pour interpréter les résultats. Cette section présente une description de ces variables
+
+## Les régions d'élevage
+
+Le tableau ci-dessous présente la nomenclature utilisée pour l'utilisation des données liées aux régions d'élevage.
+
+```{r,evaL=TRUE,echo=FALSE}
+metatable <- read.csv(paste(repmetadonnees,"Nomenclature_regionelevage.csv",sep=""),sep=",")
+colnames(metatable) <- c("Code simple","Code cplt","Description simple","Description cplt")
+pander(metatable,caption = "Description des régions d'élevage",justify = c('left','left','left','left'),split.cells = c("0.05%","0.05%","4.9%","95%"),use.hyphening = TRUE,split.table = Inf)
+```
+
+## Le type de climat
+
+La description des différents types de climat est présentée dans le tableau ci-dessous.
+
+```{r,evaL=TRUE,echo=FALSE}
+metatable <- read.csv(paste(repmetadonnees,"Nomenclature_typeclimat.csv",sep=""),sep=",")
+pander(metatable,caption = "Description des types de climats",justify = c('left','left'),split.cells = c("40%","60%"),use.hyphening = TRUE)
+```
+
+## Les données Corine Land Cover (CLC)
+
+La description des différents types de climat est présentée dans le tableau ci-dessous.
+
+```{r,evaL=TRUE,echo=FALSE}
+metatable <- read.csv(paste(repmetadonnees,"Nomenclature_clc.csv",sep=""),sep=",")
+pander(metatable,caption = "Description du code de niveau 2 de Corine Land Cover",justify = c('left','left'),split.cells = c("40%","60%"),use.hyphening = TRUE)
+```

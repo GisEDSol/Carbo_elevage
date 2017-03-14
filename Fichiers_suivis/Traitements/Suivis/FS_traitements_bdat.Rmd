@@ -859,6 +859,10 @@ for(i in Variay){
   #mtrace("cv_datamining")
   
   mcubist_fr <- cv_datamining(datax,datay,nbr=nbr,prob,model,select=1:15,tuneGrid,trControl,repsortie)
+
+  # Compte tenu du poid de ces objets, on recueille uniquement les sorties graphiques et on supprime le modèle
+  mcubist_fr <- mcubist_fr[c("qualityindex","varimport")]
+
   saveRDS(mcubist_fr,file=paste(repsortie,"mcubist_fr_",i,".rds",sep=""))
 }
 ```
@@ -872,9 +876,10 @@ cpt <- 0
 for(i in Variay){
   cpt <- cpt + 1
   namemodel <- paste("mcubist_fr_",i,sep="")
-  assign(namemodel,readRDS(paste(repsortie,namemodel,".rds",sep="")))
-  p[[cpt]] <- get(namemodel)$p + labs(title=i)
-
+  #assign(namemodel,readRDS(paste(repsortie,namemodel,".rds",sep="")))
+  modelcubistrds <- readRDS(paste(repsortie,namemodel,".rds",sep=""))
+  p[[cpt]] <- ggplot(modelcubistrds$varimport, aes(x = variable, y = importance,fill=type)) + 
+              geom_bar(stat = "identity") + coord_flip() + labs(title=i)
   rest[cpt,"r2"] <- get(namemodel)$qualityindex[,"R2"][[1]]
   rest[cpt,"MSE"] <- get(namemodel)$qualityindex[,"MSE"][[1]]
   rest[cpt,"RMSE"] <- get(namemodel)$qualityindex[,"RMSE"][[1]]
@@ -909,24 +914,6 @@ autre <- vNames[!(vNames %in% c("argi_med","pluie_ecart_janv","p_sfp1979","altim
 
 variaeffect(grille = grille,vNames = autre,data = d,model = mcubist,nameModel = "cubist",neighbors=tuneGrid,nomsortie="test",sortie=repsortie)
 ```
-
-### Test sur un modèle globale
-
-```{r,eval=FALSE}
-
-variable <-  c("value","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean","mat11","classe_p_sth1970","classe_p_sfp1970","classe_p_prairie1970","classe_p_cop1970","classe_p_c1970","classe_p_sth1979","classe_p_sfp1979","classe_p_prairie1979","classe_p_cop1979","classe_p_c1979","classe_p_sth1988","classe_p_sfp1988","classe_p_prairie1988","classe_p_cop1988","classe_p_c1988","classe_p_sth2000","classe_p_sfp2000","classe_p_prairie2000","classe_p_cop2000","classe_p_c2000","classe_p_sth2010","classe_p_sfp2010","classe_p_prairie2010","classe_p_cop2010","classe_p_c2010","annees")
-vNames <- variable
-
-d <- dm_traitements.melted_bdat_9514[,]
-
-
-
-```
-
-
-
-
-
 
 # Analyse par stratification
 
