@@ -137,7 +137,7 @@ Deux formats de système de gestion de base de données sont proposées :
 L'imporation de la base de données sous le format PostgreSQL/PostGIS nécessite la création d'un serveur dédié. Celui-ci peut être créé en local ou être déposé sur un serveur à distance.
 Les commandes suivantes permettent d'installer un serveur postgreSQL et de le configurer pour importer la base de données :
 
-- Installation des paquets postgreSQL/postGIS et du logiciel pgadmin3 pour visualiser les tables
+- Installation des paquets postgreSQL/postGIS, du logiciel pgadmin3 ainsi que des librairies ODBC :
 
 ```{r, engine='bash',highlight=TRUE,eval=FALSE}
 sudo su -
@@ -150,11 +150,15 @@ apt-get install -y pgadmin3 pgadmin3-data postgresql-contrib postgresql-9.5-plr 
 
 ```{r, engine='bash',highlight=TRUE,eval=FALSE}
 sudo -i -u postgres
+psql
 CREATE USER nomutilisateur;
 ALTER ROLE nomutilisateur WITH CREATEDB;
 CREATE DATABASE sol_elevage OWNER nomutilisateur;
 ALTER USER nomutilisateur WITH ENCRYPTED PASSWORD '******';
-CREATE DATABASE sol_elevage OWNER nomutilisateur;
+ALTER USER nomutilisateur with superuser;
+\q
+exit
+psql sol_elevage
 CREATE EXTENSION postgis;
 CREATE EXTENSION postgis_topology;
 ```    
@@ -163,7 +167,17 @@ CREATE EXTENSION postgis_topology;
 
 *Pour plus d'informations sur la sauvegarde et la restauration d'une base de données postgresql, voir la [documentation officielle](http://doc.postgresql.fr/9.5/backup.html)*
 
-L'importation de la base est réalisée avec la commande suivante, dans l'arborescence contenant le fichier `sol_elevage.sql` :
+Pour l'importation de la base, il est nécessaire de lancer d'abord ces commandes intégrer les rasters (selon cette [discussion](http://postgis.17.x6.nabble.com/Error-on-a-raster-table-restore-td5009569.html)).
+
+```{r, engine='bash',highlight=TRUE,eval=FALSE}
+psql sol_elevage
+Alter Function _raster_constraint_nodata_values (raster) SET Search_path="$user", pg_catalog,public;
+Alter Function _raster_constraint_out_db (raster) SET Search_path="$user", pg_catalog,public;
+Alter Function _raster_constraint_pixel_types(raster) SET Search_path="$user", pg_catalog,public;
+Alter Function _overview_constraint(raster, integer, name, name, name)  SET Search_path="$user", pg_catalog,public;
+```
+
+L'importation de la base est ensuite réalisée simplement avec la commande suivante dans l'arborescence contenant le fichier `sol_elevage.sql`. La commande donne de nombreux messages d'erreurs, c'est normal.
 
 ```{r, engine='bash',highlight=TRUE,eval=FALSE}
 psql -U nomutilisateur sol_elevage < sol_elevage.sql
@@ -173,10 +187,11 @@ psql -U nomutilisateur sol_elevage < sol_elevage.sql
 
 ## Connexion à la base de données
 
-La connexion à la base de données peut être réalisé avec :
+L'accès à la base de données peut être réalisé avec :
 
-- Un client PostgreSQL à jour ([PgAdminIII](https://www.pgadmin.org/) par exemple)
-- Le logiciel R avec une connexion ODBC.
+- Un client PostgreSQL à jour ([PgAdminIII](https://www.pgadmin.org/) par exemple),
+- Le logiciel R avec une connexion ODBC,
+- Un client PostGis (comme par exemple QGIS)
 
 Quoi qu'il en soit, les paramètres de connexion à retenir pour se connecter à la base sont les suivants :
  
@@ -190,23 +205,23 @@ Quoi qu'il en soit, les paramètres de connexion à retenir pour se connecter à
 
 *Pour un système basé sous windows, le lecteur intéressé peut consulter la page [suivante](http://informatique-mia.inra.fr/r4ciam/ODBC.html).*
 
-Les connexions odbc servent de lien entre le logiciel R et la base de données sous postgreSQL/postGIS. Dans linux, les paramètres de connexion sont configurées dans le fichier `\etc\odbc.ini`. Pour configurer une connexion, une modification de ce fichier est nécessaire. Tapez dans un terminal `sudo gedit \etc\odbc.ini` puis apporter les modifications nécessaires. 
+Les connexions odbc servent de lien entre le logiciel R et la base de données sous postgreSQL/postGIS. Dans linux, les paramètres de connexion sont configurées dans le fichier `/etc/odbc.ini`. Pour configurer une connexion, une modification de ce fichier est nécessaire. Tapez dans un terminal `sudo gedit /etc/odbc.ini` puis apporter les modifications nécessaires. 
 
-Voici ci-dessous les différents paramètres de connexions relatifs aux différents alias présentés précédemment. Vous pouvez directement copier ces lignes vers le fichier `\etc\odbc.ini` en remplaçant nomutilisateur et mdp par votre nom d'utilisateur et votre mot de passe.
+Voici ci-dessous les différents paramètres de connexions relatifs aux différents alias présentés précédemment. Vous pouvez directement copier ces lignes vers le fichier `/etc/odbc.ini` en remplaçant nomutilisateur et mdp par votre nom d'utilisateur et votre mot de passe.
 
 ```{r, tidy=FALSE,eval=FALSE}
 [ODBC]
 InstallDir = /usr/lib
 
-[solelevage] # A garder
-Driver = /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so # A garder
-Database = sol_elevage # A garder Nom de la base de données
-Servername = localhost # A garder Nom du serveur en local
-Username = ****** # Changer en fonction du nom d'utilisateur
-Password = ****** # Changer en fonction du mdp défini par l'utilisateur
-Port=5432 # A garder Port de la base de données
-Protocol = 8.1 # A garder
-ReadOnly = 0 # A garder
+[solelevage]
+Driver = /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so
+Database = sol_elevage
+Servername = localhost
+Username = ******
+Password = ******
+Port=5432
+Protocol = 8.1
+ReadOnly = 0
 ```
 Les connexions ODBC dans R sont possibles avec le paquet `RODBC`. Pour l'installer, tapez la commande suivante dans un terminal R : `install.packages("RODBC")`. **Pour l'installation de R, voir l'étape 4**.
 Ensuite, vous pouvez utiliser l'alias des paramètres de connexions du fichier `odbc.ini` dans la fonction décrivant les paramètres de connexion `odbcConnect`. Pour vérifier les modifications apportées au fichier de configuration `odbc.ini`, vous pouvez lancer les lignes de commandes suivantes dans le logiciel R. La liste des paramètres de connexion doit alors s'afficher comme ci-dessous:
@@ -219,7 +234,13 @@ print(odbcConnect("solelevage",case="postgresql", believeNRows=FALSE))
 ## Import des paquets et des variables locales
 
 La gestion des fonctions, des paquets et des variables locales utilisées dans le projet est centralisée au sein d'une seule fonction, appelée `importparametres.R`. En important cette fonction dans R, les paquets utiles au projet seront installés, les fonctions et les variables locales seront chargées.
-Voici les commandes utiles pour charger les paramètres :
+Sur linux, il est nécessaire d'installer certaines dépendances avant d'installer certains paquets (comme rgdal par exemple) :
+
+```{r, tidy=FALSE,eval=FALSE}
+sudo apt-get install libgdal1-dev
+```
+
+Voici les commandes utiles pour charger les paramètres dans une session R :
 
 ```{r chargement, echo=TRUE,eval=FALSE}
 repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/" #Chemin du dépôt GitHub en local (A changer pour l'utilisateur)
@@ -227,7 +248,7 @@ repdata <- "/media/sf_GIS_ED/Dev/Data/" #Chemin d'accès aux répertoires de don
 source(paste(repmaster,"Fonctions/R/importparametres.R",sep=""))
 importparametres(repmaster=repmaster,repdata=repdata,dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='nomutilisateur'")
 ```
-Une fois lancé, les différents scripts du dépôt peuvent être utilisé. C'est l'objet de l'étape 4
+Une fois lancé, les différents scripts du dépôt peuvent être utilisés. C'est l'objet de l'étape 4
 
 # Etape 4 : Exploitation des scripts
 
@@ -240,9 +261,9 @@ Cette étape présente rapidement les modalités d'action pour exploiter les scr
 1. Télécharger et installer la dernière version de Rstudio.
 
 - Pour linux :
-	- Ouvrir un terminal linux est taper `sudo apt-get install libjpeg62`	
+	- Ouvrir un terminal linux est taper `sudo apt-get install libjpeg62 libgstreamer0.10-0 libgstreamer-plugins-base0.10-0`	
 	- Ouvrir un terminal linux et taper `wget https://download1.rstudio.org/rstudio-1.0.136-amd64.deb` pour une machine en 64-bit ou `wget http://download1.rstudio.org/rstudio-0.98.1080-i386.deb` pour une machine en 32-bit (voir [le site web](http://www.rstudio.com/products/rstudio/download/) pour récupérer le nom de la dernière version de Rstudio)
-	- Lancer la commande suivante dans le même terminal en fonction du nom du fichier que vous venez de télécharger : `sudo dpkg -i rstudio-0.98.1080-amd64.deb`
+	- Lancer la commande suivante dans le même terminal en fonction du nom du fichier que vous venez de télécharger : `sudo dpkg -i rstudio-1.0.136-amd64.deb`
 - Pour windows : Vous pouvez télécharger la dernière version en cliquant sur ce [lien](https://download1.rstudio.org/RStudio-1.0.136.exe)
 
 2. (Pour linux) Configurer le système et installer les paquets R nécessaires :

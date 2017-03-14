@@ -1,16 +1,16 @@
-#' @title cartoperiod
+#' @title carto
 #'
-#' @description Construit une cartographie d'une variable d'un postgis vecteur
+#' @description Construit une carte d'une variable présente dans un vecteur postgis
 #'
 #' @param dsn Paramètre de connexion vers la base de données
 #' @param tablecarto Nom de la table utilisée pour la cartographie (table postgis)
 #' @param variablecarto Nom de la variable à cartographier
-#' @param nclasse Nombre de classes de valeurs pour la cartographie
-#' @param style_classe 
+#' @param nclasse Nombre de classes de valeurs pour la classification des valeurs
+#' @param style_classe Nom du type de classification (quantile, fixed, pretty, jenks)
 #' @param couleur Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
 #' @param l_legend Nom pour la légende
-#' @param repsortie
-#' @param nomfichier Répertoire de sortie pour le fichier (XXX/XXX/)
+#' @param repsortie Répertoire de sortie du fichier (XXX/XXX/)
+#' @param nomfichier Nom du fichier en sortie (sans extension)
 #' @param dept FALSE pour une cartographie france entière, dept <- "17|18" 
 #' @param reg FALSE pour une cartographie france entière, reg <- "26|23|83|54|74|52|53|25|74"
 #' @param nrowlayout nombre de rang pour la mise en page
@@ -25,16 +25,15 @@
 #' @export
 #' @examples
 #' ## Ne fonctionne pas 
-tablecarto <- "dm_vecteurs.canton" 
-dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
-period <- c("9094","9599","0004","0509") #
-variable <- "corgox_med"
-couleur <- "YlGnBu" 
-l_legend <- "Teneur en carbone organique (g/kg)" #label de la variable
-nomfichier <- "test"
-repsortie <- "/media/sf_GIS_ED/Dev/Scripts/master/Fichiers_suivis/Traitements/Fichiers/"
-
-#'carto(dsn,tablecarto,period,variable,nclasse=5,couleur="YlGnBu",l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=3,position="right")
+#tablecarto <- "dm_vecteurs.canton" 
+#dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
+#variablecarto <- "typo_clim" #variable à spatialiser
+#l_legend <- "Type de climat"#label de la variable
+#nclasse <- 8 #Nombre de classes de valeurs pour la cartographie
+#style_classe <- "fixed" #"pretty"#"jenks","fixed"
+#couleur <- "Paired"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+#nomfichier <- "typo_clim"
+#carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=1,position="bottom",ggsaveheight=7,ggsavewidth=10)  
 
 carto <- function(
        dsn,
@@ -63,9 +62,12 @@ library(gridExtra);library(RPostgreSQL);library(stringr);library(rgeos)
 # Lecture du postgis selon plusieurs conditions
 id <- "id_geofla"
 
+schema <- "dm_vecteurs"
+table <- gsub2(".*\\.", "", unlist(tablecarto))
+
 if((is.character(dept)==FALSE) & (is.character(reg)==FALSE)){
-  map <- dbReadSpatial(con, schemaname="dm_vecteurs", tablename="canton", geomcol="geom")
-  dep <- dbReadSpatial(con, schemaname="dm_vecteurs", tablename="departement", geomcol="geom")
+  map <- dbReadSpatial(con, schemaname=schema, tablename=table, geomcol="geom")
+  dep <- dbReadSpatial(con, schemaname=schema, tablename="departement", geomcol="geom")
   }else{}
 
 if(is.character(dept)==TRUE){
@@ -242,6 +244,4 @@ ggsave(tt, file = paste(repsortie,nomfichier,".png",sep=""),width = ggsavewidth,
 
 }else{}
 
-#return(tt)
-
-}#Fin
+}#Fin de la fonction

@@ -34,7 +34,7 @@ Le fichier fourni par le JRC propose plusieurs jointures de propriétés de sols
 ## Matériaux parental & Type de sol selon la FAO85
 
 
-### Jointure vers la table bdgsf.sgdb_fr
+### Jointure vers la table esdac.sgdb_fr
 
 ```{r,highlight=TRUE,eval=FALSE}
 

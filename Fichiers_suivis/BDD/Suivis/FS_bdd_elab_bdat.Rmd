@@ -1,6 +1,7 @@
 ---
 title: "Création des données élaborées de la BDAT"
 author: "Jean-Baptiste Paroissien"
+date: "07/03/2017"
 output:
   html_document:
     toc: yes
@@ -20,7 +21,7 @@ importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/Data/",dsn="P
 
 # Objectifs
 
-Ce fichier permet de créer les tables de données de la BDAT utilisables pour le traitement statistique. Deux principaux points sont réalisés :
+Ce fichier permet de créer les tables de données de la BDAT utilisables pour le traitement statistique. Deux principales actions sont réalisées :
 
 - Les teneurs en carbone organique et les calculs d'évolution de ces teneurs sont jointes dans la table de travail `dm_vecteurs.canton` pour faciliter la cartographie et l'analyse spatiale des données,
 - Plusieurs autres tables sont générées pour les différents travaux demandant un format de table "long".

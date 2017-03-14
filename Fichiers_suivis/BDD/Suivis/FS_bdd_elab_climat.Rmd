@@ -1,14 +1,15 @@
 ---
 title: "Traitement des données climatiques"
 author: "Jean-Baptiste Paroissien"
-date: "21/12/2016"
+date: "07/03/2017"
 output:
-  html_notebook:
-    toc: true
-    fig_caption: true
+  html_document:
+    toc: yes
+    toc_float: yes
+    fig_caption: yes
     highlight: zenburn
     number_sections: yes
-    theme: spacelab
+    theme: spacelab  
 ---
 
 ```{r setup, include=FALSE,eval=TRUE}
@@ -107,12 +108,9 @@ for(i in variable){
 	   COMMENT ON COLUMN ",table_dm,".",i," IS \'",signification[cpt],"\';",sep="")))
 }
 ```
+# Cartographie
 
-
-
-## Autres variables
-
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
+```{r,highlight=TRUE,eval=FALSE,echo=TRUE}
 tablecarto <- "canton" #Nom de la table utilisée pour la cartographie (table postgis)
 variablecarto <- c("ttemp_an","ampli_t_juil_janv","hpluie_an","jpluie_janv")
 style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie

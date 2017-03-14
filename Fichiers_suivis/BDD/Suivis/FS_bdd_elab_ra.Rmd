@@ -1,15 +1,17 @@
 ---
 title: "Préparation des données du recencement agricole"
 author: "Jean-Baptiste Paroissien"
+date: "22/02/2017"
 output:
-  github_document:
-    toc: true
-    toc_depth: 2
-    fig_width: 10
-    fig_height: 10
-    dev: png
-    md_extensions: +autolink_bare_uris+hard_line_breaks+header_attributes+line_blocks+table_captions
+  html_document:
+    toc: yes
+    toc_float: yes
+    fig_caption: yes
+    highlight: zenburn
+    number_sections: yes
+    theme: spacelab  
 ---
+
 
 ```{r setup, include=FALSE,eval=TRUE}
 # Importation des paramètres de travail
@@ -39,12 +41,10 @@ Le code suivant détermine la proportion de la surface d'occupation du sol par r
 - Surface Fourragère Princiaple (SFP),
 - Maïs Fourrage Ensilage (MF),
 - Céréales (c),
-- Oléagineux (olea)
-- Protéagineux (protea)
+- Oléagineux (olea),
+- Protéagineux (protea).
 
 A chaque itération, un commentaire est ajouté dans la base de données pour décrire le champs nouvellement créé. Ces commentaires sont accessibles dans la vue `public.metadata`.
-
-Voir pour dans le détail le problème de Sau manquant pour certaines communes. Dans ce cas, on pourrait piocher dans la sau2000...
 
 ```{r,highlight=TRUE,eval=FALSE}
 #Paramètres
@@ -567,8 +567,6 @@ sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
 sqlSave(loc,melted.RA,tablename=tablename)
 ```
 
-A la suite de ce traitement, la table de travail est stockée sous le nom de `r tablename`.
-
 ### Evolution de l'occupation du sol
 
 ```{r,highlight=TRUE,eval=FALSE}
@@ -615,13 +613,6 @@ tablename <- paste("dm_traitements.","melted_radiff",sep="")
 sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
 sqlSave(loc,melted.RA,tablename=tablename)
 ```
-
-
-# Création d'un indicateur de changement d'occupation du sol ?
-
-Voir pour la création d'une table au format long pour les évolutions d'occupation du sol. Revoir également la méthode de calcul des changements d'occupation du sol.
-
-
 
 # Métadonnées
 

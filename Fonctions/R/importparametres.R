@@ -29,7 +29,7 @@ ipak <- function(pkg){
 
 # Chargement des librairies
 listpaquets <- c("RODBC","gdata","fields","stringr","ggplot2","rgdal","maptools","RColorBrewer","classInt","devtools","reshape2","Hmisc","gridExtra","mapproj","wesanderson","FactoMineR",
-	"knitr","pander","GGally","factoextra","caret","plyr","doMC","sp","raster","RPostgreSQL","corrplot","MASS","foreign","doParallel")
+	"knitr","pander","GGally","factoextra","caret","plyr","doMC","sp","raster","RPostgreSQL","corrplot","MASS","foreign","doParallel","scales") 
 ipak(listpaquets)
 #new.packages <- listpaquets[!(listpaquets %in% installed.packages()[,"Package"])]
 #if(length(new.packages)) install.packages(new.packages)
@@ -110,7 +110,7 @@ assign("repfonctions",paste(repmaster,"Fonctions/",sep=""),.GlobalEnv)
 #########################################
 
 ##
-assign("repLucas",paste(repdata,"Sol/Lucas/",sep=""),.GlobalEnv)
+assign("repLucas",paste(repdata,"Sol/ESDAC/Lucas/",sep=""),.GlobalEnv)
 assign("repCLC",paste(repdata,"Vegetation_Occup/CLC/",sep=""),.GlobalEnv)
 assign("repBDAT",paste(repdata,"Sol/bdat/",sep=""),.GlobalEnv)
 assign("repBase",paste(repdata,"Base/",sep=""),.GlobalEnv)
@@ -118,7 +118,7 @@ assign("repagreste",paste(repdata,"Vegetation_Occup/Agreste/Disar/",sep=""),.Glo
 #########################################
 
 # 
-assign("github_url",paste("https://github.com/Rosalien/GISEDSol/tree/master/",sep=""),.GlobalEnv) #url du dépôt github
+assign("github_url",paste("https://github.com/GisEDSol/Carbo_elevage/tree/master/",sep=""),.GlobalEnv) #url du dépôt github
 
 # Mise en place de la connexion ODBC
 assign("loc",odbcConnect("solelevage",case="postgresql", believeNRows=FALSE),.GlobalEnv)
@@ -134,10 +134,7 @@ assign("con",dbConnect(m, dbname="sol_elevage"),.GlobalEnv)
 source(paste(repfonctions,"R/F_carto.R",sep=""))
 source(paste(repfonctions,"R/Rpostgis.R",sep=""))
 source(paste(repfonctions,"R/F_variaeffect.R",sep=""))
-source(paste(repfonctions,"R/F_gbm.R",sep=""))
-
-
-
+source(paste(repfonctions,"R/F_modelisations.R",sep=""))
 
 # Fonction très pratique pour remplacer une suite de charact?res par une autre
 gsub2 <- function(pattern, replacement, x, ...) {

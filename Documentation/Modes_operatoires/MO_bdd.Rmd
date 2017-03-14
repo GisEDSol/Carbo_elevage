@@ -36,6 +36,8 @@ L'objectif de ce document est de fournir les informations nécessaires pour util
 
 L'ensemble des données est stocké dans une base de données type postgresql/postgis. Le serveur de la base est en local et des conversions sont possible vers une base SQLite/Spatialite pour faciliter le partage des données. SQLite diffère de la plupart des systèmes de gestion de base de données par la gestion d'un fichier de base directement sur le disque dur. A la différence de postgresql/postgis, il ne nécessite pas la création d'un serveur, ce qui facilite les échanges. Plus d'infos, [ici](http://www.developpez.com/actu/94614/Un-developpeur-evoque-cinq-raisons-pour-vous-faire-utiliser-SQLite-en-2016-que-pensez-vous-de-ses-arguments/).
 
+**Pour plus d'information sur la gestion d'une base postgresql/postgis, vous pouvez consulter ce [fichier](http://www.geoinformations.developpement-durable.gouv.fr/fichier/pdf/M02_administration_papier_cle2fcac4.pdf?arg=177833930&cle=739b4b630194dd91442c330ab018ec28aeb15948&file=pdf%2FM02_administration_papier_cle2fcac4.pdf)**
+
 ## Organisation de la base de données
 
 Deux types de données sont intégrées dans la base : les données "brutes" et les data marts. Les données appelée brutes représentent des données qui ne sont pas directement exploitables dans les traitements de données. Ces données sont stockées dans la base et servent à construire des données facilement exploitables, les data marts. Ci-dessous, les tables présentent les schémas de la base de données par type de données.

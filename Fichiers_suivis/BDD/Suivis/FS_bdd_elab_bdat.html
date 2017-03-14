@@ -11,6 +11,7 @@
 
 <meta name="author" content="Jean-Baptiste Paroissien" />
 
+<meta name="date" content="2017-07-03" />
 
 <title>Création des données élaborées de la BDAT</title>
 
@@ -245,15 +246,14 @@ div.tocify {
 
 <h1 class="title toc-ignore">Création des données élaborées de la BDAT</h1>
 <h4 class="author"><em>Jean-Baptiste Paroissien</em></h4>
+<h4 class="date"><em>07/03/2017</em></h4>
 
 </div>
 
 
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">Sys.Date</span>()
-<span class="kw">sessionInfo</span>()</code></pre></div>
 <div id="objectifs" class="section level1">
 <h1><span class="header-section-number">1</span> Objectifs</h1>
-<p>Ce fichier permet de créer les tables de données de la BDAT utilisables pour le traitement statistique. Deux principaux points sont réalisés :</p>
+<p>Ce fichier permet de créer les tables de données de la BDAT utilisables pour le traitement statistique. Deux principales actions sont réalisées :</p>
 <ul>
 <li>Les teneurs en carbone organique et les calculs d’évolution de ces teneurs sont jointes dans la table de travail <code>dm_vecteurs.canton</code> pour faciliter la cartographie et l’analyse spatiale des données,</li>
 <li>Plusieurs autres tables sont générées pour les différents travaux demandant un format de table “long”.</li>
@@ -494,9 +494,13 @@ for(m in methodo){
 table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
 period &lt;-<span class="st"> &quot;9009&quot;</span>
 schema &lt;-<span class="st"> &quot;bdat&quot;</span>
-vpedo &lt;-<span class="st"> &quot;argi_med&quot;</span>
+vpedo &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;argi_med&quot;</span>,<span class="st">&quot;sabt_med&quot;</span>)
 
+signification &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;taux d</span><span class="ch">\'</span><span class="st">'argile&quot;</span>,<span class="st">&quot;taux de sable&quot;</span>)
+
+cpt &lt;-<span class="st"> </span><span class="dv">0</span>
 for(i in vpedo){
+  cpt &lt;-<span class="st"> </span>cpt +<span class="st"> </span><span class="dv">1</span>
   tableBDAT &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;bdat_canton_&quot;</span>,period,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
   
   <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
@@ -512,7 +516,7 @@ for(i in vpedo){
 
   <span class="co"># Ajout d'un commentaire sur la nouvelle colonne créée</span>
   <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
-<span class="st">  COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,i,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">Médiane du taux d</span><span class="ch">\'</span><span class="st">'argile (g/kg) calculée sur 1990-2009.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+<span class="st">  COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,i,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">Médiane du &quot;</span>,signification[cpt],<span class="st">&quot; (g/kg) calculée sur 1990-2009.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
 }</code></pre></div>
 </div>
 </div>
@@ -533,7 +537,7 @@ variaoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="
 <span class="co">#id_class &lt;- apply(expand.grid(varia,period), 1, paste, collapse=&quot;&quot;)</span>
 periodoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;1970&quot;</span>,<span class="st">&quot;1979&quot;</span>,<span class="st">&quot;1988&quot;</span>,<span class="st">&quot;2000&quot;</span>,<span class="st">&quot;2010&quot;</span>)
 id_class &lt;-<span class="st"> </span><span class="kw">apply</span>(<span class="kw">expand.grid</span>(variaoccup,periodoccup),<span class="dv">1</span>, function(x){<span class="kw">paste</span>(<span class="st">&quot;classe_&quot;</span>,x[<span class="dv">1</span>],x[<span class="dv">2</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)})
-id &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;code_canton&quot;</span>,<span class="st">&quot;code_reg&quot;</span>,<span class="st">&quot;nom_region&quot;</span>,<span class="st">&quot;typo_clim&quot;</span>,<span class="st">&quot;zonage_simple&quot;</span>,<span class="st">&quot;zonage_cplt&quot;</span>,<span class="st">&quot;classe_altimean&quot;</span>,id_class) <span class="co">#Nom des identifiants</span>
+id &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;code_canton&quot;</span>,<span class="st">&quot;code_reg&quot;</span>,<span class="st">&quot;nom_region&quot;</span>,<span class="st">&quot;typo_clim&quot;</span>,<span class="st">&quot;zonage_simple&quot;</span>,<span class="st">&quot;zonage_cplt&quot;</span>,<span class="st">&quot;classe_altimean&quot;</span>,<span class="st">&quot;mat11&quot;</span>,id_class) <span class="co">#Nom des identifiants</span>
 
 <span class="co"># Lecture de la table dm_vecteurs.canton</span>
 mapcanton &lt;-<span class="st"> </span><span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;select * from &quot;</span>,table_dm,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
@@ -608,7 +612,7 @@ id_varclass &lt;-<span class="st"> </span>id_varclass[<span class="dv">1</span>:
 id_diff &lt;-<span class="st"> </span><span class="kw">apply</span>(<span class="kw">expand.grid</span>(p_variable,period_ra,periodref_ra),<span class="dv">1</span>, function(x){<span class="kw">paste</span>(<span class="st">&quot;diff_var_&quot;</span>,x[<span class="dv">1</span>],x[<span class="dv">2</span>],<span class="st">&quot;_&quot;</span>,x[<span class="dv">3</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)})
 id_diff &lt;-<span class="st"> </span>id_diff[<span class="dv">1</span>:(<span class="kw">length</span>(id_diff)-<span class="kw">length</span>(variaoccup))]<span class="co"># Ici, on supprime les dernières combinaisons représentant une différence 2000-2000</span>
 
-id &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;code_canton&quot;</span>,<span class="st">&quot;code_reg&quot;</span>,<span class="st">&quot;nom_region&quot;</span>,<span class="st">&quot;typo_clim&quot;</span>,<span class="st">&quot;zonage_simple&quot;</span>,<span class="st">&quot;zonage_cplt&quot;</span>,<span class="st">&quot;classe_altimean&quot;</span>,id_class,id_diff,id_varclass)
+id &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;code_canton&quot;</span>,<span class="st">&quot;code_reg&quot;</span>,<span class="st">&quot;nom_region&quot;</span>,<span class="st">&quot;typo_clim&quot;</span>,<span class="st">&quot;zonage_simple&quot;</span>,<span class="st">&quot;zonage_cplt&quot;</span>,<span class="st">&quot;classe_altimean&quot;</span>,<span class="st">&quot;mat11&quot;</span>,id_class,id_diff,id_varclass)
 
 <span class="co"># Lecture de la table dm_vecteurs.canton</span>
 mapcanton &lt;-<span class="st"> </span><span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;select * from &quot;</span>,table_dm,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
@@ -650,7 +654,7 @@ for(m in methodo){
     }else{
       <span class="co"># Ajout à chaque itération de la variable (i)</span>
       melt.canton &lt;-<span class="st"> </span><span class="kw">merge</span>(melt.canton,stats.canton, <span class="dt">by.x=</span><span class="kw">c</span>(id,<span class="st">&quot;period&quot;</span>), <span class="dt">by.y=</span><span class="kw">c</span>(id,<span class="st">&quot;period&quot;</span>),<span class="dt">all.x=</span><span class="ot">TRUE</span>,<span class="dt">all.y=</span><span class="ot">TRUE</span>)
-      <span class="kw">print</span>(melt.canton[,<span class="dv">120</span>:<span class="dv">125</span>])
+      
     }
   }
 }
@@ -716,7 +720,7 @@ variaoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="
 <span class="co">#id_class &lt;- apply(expand.grid(varia,period), 1, paste, collapse=&quot;&quot;)</span>
 periodoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;1970&quot;</span>,<span class="st">&quot;1979&quot;</span>,<span class="st">&quot;1988&quot;</span>,<span class="st">&quot;2000&quot;</span>,<span class="st">&quot;2010&quot;</span>)
 id_class &lt;-<span class="st"> </span><span class="kw">apply</span>(<span class="kw">expand.grid</span>(variaoccup,periodoccup),<span class="dv">1</span>, function(x){<span class="kw">paste</span>(<span class="st">&quot;classe_&quot;</span>,x[<span class="dv">1</span>],x[<span class="dv">2</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)})
-id &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;code_canton&quot;</span>,<span class="st">&quot;code_reg&quot;</span>,<span class="st">&quot;nom_region&quot;</span>,<span class="st">&quot;typo_clim&quot;</span>,<span class="st">&quot;zonage_simple&quot;</span>,<span class="st">&quot;zonage_cplt&quot;</span>,<span class="st">&quot;classe_altimean&quot;</span>,id_class) <span class="co">#Nom des identifiants</span>
+id &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;code_canton&quot;</span>,<span class="st">&quot;code_reg&quot;</span>,<span class="st">&quot;nom_region&quot;</span>,<span class="st">&quot;typo_clim&quot;</span>,<span class="st">&quot;zonage_simple&quot;</span>,<span class="st">&quot;zonage_cplt&quot;</span>,<span class="st">&quot;classe_altimean&quot;</span>,<span class="st">&quot;mat11&quot;</span>,id_class) <span class="co">#Nom des identifiants</span>
 
 <span class="co"># Lecture de la table dm_vecteurs.canton</span>
 mapcanton &lt;-<span class="st"> </span><span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;select * from &quot;</span>,table_dm,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
@@ -763,7 +767,7 @@ variaoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="
 <span class="co">#id_class &lt;- apply(expand.grid(varia,period), 1, paste, collapse=&quot;&quot;)</span>
 periodoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;1970&quot;</span>,<span class="st">&quot;1979&quot;</span>,<span class="st">&quot;1988&quot;</span>,<span class="st">&quot;2000&quot;</span>,<span class="st">&quot;2010&quot;</span>)
 id_class &lt;-<span class="st"> </span><span class="kw">apply</span>(<span class="kw">expand.grid</span>(variaoccup,periodoccup),<span class="dv">1</span>, function(x){<span class="kw">paste</span>(<span class="st">&quot;classe_&quot;</span>,x[<span class="dv">1</span>],x[<span class="dv">2</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)})
-id &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;code_canton&quot;</span>,<span class="st">&quot;code_reg&quot;</span>,<span class="st">&quot;nom_region&quot;</span>,<span class="st">&quot;typo_clim&quot;</span>,<span class="st">&quot;zonage_simple&quot;</span>,<span class="st">&quot;zonage_cplt&quot;</span>,<span class="st">&quot;classe_altimean&quot;</span>,id_class) <span class="co">#Nom des identifiants</span>
+id &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;code_canton&quot;</span>,<span class="st">&quot;code_reg&quot;</span>,<span class="st">&quot;nom_region&quot;</span>,<span class="st">&quot;typo_clim&quot;</span>,<span class="st">&quot;zonage_simple&quot;</span>,<span class="st">&quot;zonage_cplt&quot;</span>,<span class="st">&quot;classe_altimean&quot;</span>,<span class="st">&quot;mat11&quot;</span>,id_class) <span class="co">#Nom des identifiants</span>
 
 <span class="co"># Lecture de la table dm_vecteurs.canton</span>
 mapcanton &lt;-<span class="st"> </span><span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;select * from &quot;</span>,table_dm,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))

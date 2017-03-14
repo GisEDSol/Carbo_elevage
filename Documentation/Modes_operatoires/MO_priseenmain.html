@@ -376,18 +376,27 @@ git clone https:<span class="er">//</span>github.com/GisEDSol/Carbo_elevage.git<
 <li>Ci-dessous, les commandes permettent de créer un utilisateur et d’installer les extensions postgis. L’utilisateur devra définir son nom d’utilisateur ainsi que le mot de passe. Ces paramètres de connexion seront par la suite utilisés pour la connexion entre R et la base de données (avec ODBC)</li>
 </ul>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">sudo</span> -i -u postgres
+<span class="kw">psql</span>
 <span class="kw">CREATE</span> USER nomutilisateur<span class="kw">;</span>
 <span class="kw">ALTER</span> ROLE nomutilisateur WITH CREATEDB<span class="kw">;</span>
 <span class="kw">CREATE</span> DATABASE sol_elevage OWNER nomutilisateur<span class="kw">;</span>
 <span class="kw">ALTER</span> USER nomutilisateur WITH ENCRYPTED PASSWORD <span class="st">'******'</span><span class="kw">;</span>
-<span class="kw">CREATE</span> DATABASE sol_elevage OWNER nomutilisateur<span class="kw">;</span>
+<span class="kw">ALTER</span> USER nomutilisateur with superuser<span class="kw">;</span>
+\<span class="kw">q</span>
+<span class="kw">exit</span>
+<span class="kw">psql</span> sol_elevage
 <span class="kw">CREATE</span> EXTENSION postgis<span class="kw">;</span>
 <span class="kw">CREATE</span> EXTENSION postgis_topology<span class="kw">;</span></code></pre></div>
 </div>
 <div id="importation-de-la-base-de-donnees" class="section level3">
 <h3><span class="header-section-number">4.2.2</span> Importation de la base de données</h3>
 <p><em>Pour plus d’informations sur la sauvegarde et la restauration d’une base de données postgresql, voir la <a href="http://doc.postgresql.fr/9.5/backup.html">documentation officielle</a></em></p>
-<p>L’importation de la base est réalisée avec la commande suivante, dans l’arborescence contenant le fichier <code>sol_elevage.sql</code> :</p>
+<p>Pour l’importation de la base, il est nécessaire de lancer d’abord cette commande afin d’intégrer les rasters (selon cette <a href="http://postgis.17.x6.nabble.com/Error-on-a-raster-table-restore-td5009569.html">discussion</a>.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">Alter</span> Function _raster_constraint_nodata_values (raster) <span class="kw">SET</span> Search_path=<span class="st">&quot;</span><span class="ot">$user</span><span class="st">&quot;</span>, pg_catalog,public<span class="kw">;</span>
+<span class="kw">Alter</span> Function _raster_constraint_out_db (raster) <span class="kw">SET</span> Search_path=<span class="st">&quot;</span><span class="ot">$user</span><span class="st">&quot;</span>, pg_catalog,public<span class="kw">;</span>
+<span class="kw">Alter</span> Function _raster_constraint_pixel_types(raster) <span class="kw">SET</span> Search_path=<span class="st">&quot;</span><span class="ot">$user</span><span class="st">&quot;</span>, pg_catalog,public<span class="kw">;</span>
+<span class="kw">Alter</span> Function _overview_constraint(raster, integer, name, name, name)  <span class="kw">SET</span> Search_path=<span class="st">&quot;</span><span class="ot">$user</span><span class="st">&quot;</span>, pg_catalog,public<span class="kw">;</span></code></pre></div>
+<p>L’importation de la base est ensuite réalisée simplement avec la commande suivante, dans l’arborescence contenant le fichier <code>sol_elevage.sql</code>. La commande donne de nombreux messages d’erreurs, c’est normal.</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">psql</span> -U nomutilisateur sol_elevage <span class="kw">&lt;</span> sol_elevage.sql</code></pre></div>
 </div>
 </div>
@@ -412,12 +421,12 @@ git clone https:<span class="er">//</span>github.com/GisEDSol/Carbo_elevage.git<
 <div id="connexion-odbc" class="section level3">
 <h3><span class="header-section-number">5.1.1</span> Connexion ODBC</h3>
 <p><em>Pour un système basé sous windows, le lecteur intéressé peut consulter la page <a href="http://informatique-mia.inra.fr/r4ciam/ODBC.html">suivante</a>.</em></p>
-<p>Les connexions odbc servent de lien entre le logiciel R et la base de données sous postgreSQL/postGIS. Dans linux, les paramètres de connexion sont configurées dans le fichier <code>\etc\odbc.ini</code>. Pour configurer une connexion, une modification de ce fichier est nécessaire. Tapez dans un terminal <code>sudo gedit \etc\odbc.ini</code> puis apporter les modifications nécessaires.</p>
-<p>Voici ci-dessous les différents paramètres de connexions relatifs aux différents alias présentés précédemment. Vous pouvez directement copier ces lignes vers le fichier <code>\etc\odbc.ini</code> en remplaçant nomutilisateur et mdp par votre nom d’utilisateur et votre mot de passe.</p>
+<p>Les connexions odbc servent de lien entre le logiciel R et la base de données sous postgreSQL/postGIS. Dans linux, les paramètres de connexion sont configurées dans le fichier <code>/etc/odbc.ini</code>. Pour configurer une connexion, une modification de ce fichier est nécessaire. Tapez dans un terminal <code>sudo gedit /etc/odbc.ini</code> puis apporter les modifications nécessaires.</p>
+<p>Voici ci-dessous les différents paramètres de connexions relatifs aux différents alias présentés précédemment. Vous pouvez directement copier ces lignes vers le fichier <code>/etc/odbc.ini</code> en remplaçant nomutilisateur et mdp par votre nom d’utilisateur et votre mot de passe.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">[ODBC]
 InstallDir =<span class="st"> </span><span class="er">/</span>usr/lib
 
-[solelevage] <span class="co"># A garder</span>
+[solelevage]
 Driver =<span class="st"> </span><span class="er">/</span>usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so <span class="co"># A garder</span>
 Database =<span class="st"> </span>sol_elevage <span class="co"># A garder Nom de la base de données</span>
 Servername =<span class="st"> </span>localhost <span class="co"># A garder Nom du serveur en local</span>
@@ -496,10 +505,10 @@ repdata &lt;-<span class="st"> &quot;/media/sf_GIS_ED/Dev/Data/&quot;</span> <sp
 <ul>
 <li>Pour linux :
 <ul>
-<li>Ouvrir un terminal linux est taper <code>sudo apt-get install libjpeg62</code><br />
+<li>Ouvrir un terminal linux est taper <code>sudo apt-get install libjpeg62 libgstreamer0.10-0 libgstreamer-plugins-base0.10-0</code><br />
 </li>
 <li>Ouvrir un terminal linux et taper <code>wget https://download1.rstudio.org/rstudio-1.0.136-amd64.deb</code> pour une machine en 64-bit ou <code>wget http://download1.rstudio.org/rstudio-0.98.1080-i386.deb</code> pour une machine en 32-bit (voir <a href="http://www.rstudio.com/products/rstudio/download/">le site web</a> pour récupérer le nom de la dernière version de Rstudio)</li>
-<li>Lancer la commande suivante dans le même terminal en fonction du nom du fichier que vous venez de télécharger : <code>sudo dpkg -i rstudio-0.98.1080-amd64.deb</code></li>
+<li>Lancer la commande suivante dans le même terminal en fonction du nom du fichier que vous venez de télécharger : <code>sudo dpkg -i rstudio-1.0.136-amd64.deb</code></li>
 </ul></li>
 <li>Pour windows : Vous pouvez télécharger la dernière version en cliquant sur ce <a href="https://download1.rstudio.org/RStudio-1.0.136.exe">lien</a></li>
 </ul>

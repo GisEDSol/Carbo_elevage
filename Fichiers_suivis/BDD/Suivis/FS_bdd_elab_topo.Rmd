@@ -115,7 +115,7 @@ print(sqlQuery(loc,paste("
 ```
 ## Cartographie
 
-```{r,echo=FALSE,eval=FALSE}
+```{r,echo=TRUE,eval=FALSE}
 tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
 variablecarto <- "altimean"
 style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
@@ -128,11 +128,6 @@ nomfichier <- "elevation_fr" #Nom du fichier
 carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=1,position="bottom",ggsaveheight=7,ggsavewidth=10)
 ```
 
-```{r map_topo_fr, echo = F, results = 'asis',eval=FALSE}
-# Pour insérer l'image
-fichiers <- paste(repsortie,"elevation_fr.png",sep="")
-cat(paste("![](",fichiers,")",sep=""))
-```
 
 
 

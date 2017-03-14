@@ -11,7 +11,7 @@
 
 <meta name="author" content="Jean-Baptiste Paroissien" />
 
-<meta name="date" content="2017-12-02" />
+<meta name="date" content="2017-07-03" />
 
 <title>Fichier de suivi de la création de la base de données</title>
 
@@ -246,7 +246,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Fichier de suivi de la création de la base de données</h1>
 <h4 class="author"><em>Jean-Baptiste Paroissien</em></h4>
-<h4 class="date"><em>22/02/2017</em></h4>
+<h4 class="date"><em>07/03/2017</em></h4>
 
 </div>
 
@@ -333,11 +333,11 @@ pra &lt;-<span class="st"> </span>pra[,<span class="dv">1</span>:<span class="dv
 <h1><span class="header-section-number">5</span> Les données sols</h1>
 <div id="la-bdat" class="section level2">
 <h2><span class="header-section-number">5.1</span> La BDAT</h2>
-<p>Deux types de données sont intégrées dans la base de données. Dans un premier temps, les données BDAT disponibles sur le XXX sont intégrées. Il s’agit de statistiques descriptives agrégées à l’échelle du canton. Ces données ne sont pas exploitables dans le cadre d’une étude sur l’évolution temporelle car le nombre d’effectif n’est pas le même d’une année à l’autre. Ce jeu de données est utilisé pour l’analyse de variable “stable” dans le temps, comme la texture du sol par exemple.</p>
-<p>Le deuxième jeu de données intégrée prend en compte ce biais par un ré-échantillonnage artificiel des analyses afin d’assurer le calcul de statistiques descriptives basées sur un même nombre d’effectif. Ces données sont exploitées pour analyser l’évolution des teneurs en carbone organique dans les sols.</p>
+<p>Deux types de données sont intégrés dans la base de données. Dans un premier temps, les données BDAT disponibles sur le site du <a href="http://www.gissol.fr/wp-content/uploads/2015/04/bdat.zip">GISSol</a> sont intégrées. Il s’agit de statistiques descriptives agrégées à l’échelle du canton. Ces données ne sont pas exploitables dans le cadre d’une étude sur l’évolution temporelle car le nombre d’effectif n’est pas le même d’une année à l’autre. Ce jeu de données est utilisé pour l’analyse de variable “stable” dans le temps, comme la texture du sol par exemple.</p>
+<p>Le deuxième jeu de données intégré prend en compte ce biais par un ré-échantillonnage artificiel des analyses afin d’assurer le calcul de statistiques descriptives basées sur un même nombre d’effectif. Ces données sont exploitées pour analyser l’évolution des teneurs en carbone organique dans les sols.</p>
 <div id="importation-des-donnees-de-la-bdat-non-harmonisees" class="section level3">
 <h3><span class="header-section-number">5.1.1</span> Importation des données de la BDAT non harmonisées</h3>
-<p>Ces données sont uniquement utilisées pour les analyses pédologiques où les variations temporelles sont minimes. Pour le moment, seules les analyses sur la texture du sol sont exploitées (taux d’argile notamment).</p>
+<p>Ces données sont uniquement utilisées pour les analyses pédologiques où les variations temporelles sont minimes. Pour le moment, seules les analyses sur la texture du sol sont exploitées (taux d’argile notamment). Les données ont été téléchargées à cette <a href="http://www.gissol.fr/wp-content/uploads/2015/04/bdat.zip">adresse</a>.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;9094&quot;</span>,<span class="st">&quot;9599&quot;</span>,<span class="st">&quot;0004&quot;</span>,<span class="st">&quot;0509&quot;</span>)
 <span class="co"># Selection des fichiers à importer</span>
 ListBDAT &lt;-<span class="st"> </span><span class="kw">gsub</span>(<span class="st">&quot;</span><span class="ch">\\</span><span class="st">.txt$&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="kw">list.files</span>(<span class="kw">paste</span>(repBDAT,<span class="st">&quot;BDAT_datapaper/&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>),<span class="dt">pattern=</span><span class="st">&quot;</span><span class="ch">\\</span><span class="st">.txt$&quot;</span>))
@@ -383,7 +383,7 @@ for(i in ListBDAT){
   <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;drop table if exists bdat.&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
   <span class="kw">sqlSave</span>(loc,txtBDAT,<span class="dt">tablename=</span><span class="kw">paste</span>(<span class="st">&quot;bdat.&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
 }</code></pre></div>
-<p>Ci-dessous, les analyses des teneurs en C classées par méthode de mesure sont intégrées dans la base de données. Les analyses réalisées avec la méthode oxydation humide sont nommée <code>corgox</code> et les analyses mesurées avec la méthode combustion sèche <code>corgco</code>.</p>
+<p>Ci-dessous, les analyses des teneurs en C classées par méthode de mesure sont intégrées dans la base de données. Les analyses réalisées avec la méthode oxydation humide sont nommées <code>corgox</code> et les analyses mesurées avec la méthode combustion sèche <code>corgco</code>.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Selection des fichiers à importer</span>
 repmethodo &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;Oxydationhumide&quot;</span>,<span class="st">&quot;Combustionseche&quot;</span>)
 for(r in repmethodo){
@@ -400,28 +400,33 @@ for(r in repmethodo){
 }</code></pre></div>
 </div>
 </div>
-<div id="la-bdgsf-en-cours" class="section level2">
-<h2><span class="header-section-number">5.2</span> La BDGSF (en cours)</h2>
-<p>La base de données européenne des sols a été téléchargée sur ce <a href="http://eusoils.jrc.ec.europa.eu/ESDB_Archive/ESDB_data_1k_raster_intro/ESDB_1k_raster_data_intro.html">site</a>. Les instructions ci-dessous permettent de :</p>
+<div id="les-donnees-de-leuropean-soil-data-centre-esdac" class="section level2">
+<h2><span class="header-section-number">5.2</span> Les données de l’European Soil Data Centre (ESDAC)</h2>
+<div id="la-bdgsf" class="section level3">
+<h3><span class="header-section-number">5.2.1</span> La BDGSF</h3>
+<p>La base de données européenne des sols a été téléchargée sur ce <a href="http://esdac.jrc.ec.europa.eu/content/european-soil-database-v20-vector-and-attribute-data#tabs-0-description=1&amp;tabs-0-description-2=">site</a>. La base est à l’échelle européenne et l’objectif est de découper la base au contour de la France. Au final, cette base correspondra globalement à la Base de données Géographique des Sols de France (BDGSF) produite par InfoSol.</p>
+<p>Les instructions ci-dessous permettent de :</p>
 <ul>
 <li>changer la projection du shapefiles vers le Lambert93 (avec ogr2ogr),</li>
 <li>intégrer le shapefiles dans la base de données,</li>
 <li>découper le shapefiles au contour de la France.</li>
 </ul>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">repbdgsf &lt;-<span class="st"> &quot;/media/sf_GIS_ED/Dev/Data/Sol/bdgsf/ESDB/&quot;</span>
+<p>Les traitements associés à ces données sont réalisés dans le fichier <a href="https://github.com/GisEDSol/Carbo_elevage/blob/master/Fichiers_suivis/BDD/Suivis/FS_bdd_elab_bdgsf.Rmd">FS_bdd_elab_bdgsf.Rmd</a>.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">repbdgsf &lt;-<span class="st"> &quot;/media/sf_GIS_ED/Dev/Data/Sol/ESDAC/bdgsf/&quot;</span>
 vectorname &lt;-<span class="st"> &quot;SGDB_PTR.shp&quot;</span>
 file1 &lt;-<span class="st"> </span><span class="kw">paste</span>(repbdgsf,vectorname,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
 file2 &lt;-<span class="st"> </span><span class="kw">paste</span>(repbdgsf,<span class="st">&quot;L93_&quot;</span>,vectorname,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
 file3 &lt;-<span class="st"> </span><span class="kw">paste</span>(repbdgsf,<span class="st">&quot;Fr_L93_&quot;</span>,vectorname,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
-schema &lt;-<span class="st"> &quot;bdgsf&quot;</span>
-sortie &lt;-<span class="st"> &quot;sgdb&quot;</span>
+schema &lt;-<span class="st"> &quot;esdac&quot;</span>
+sortie &lt;-<span class="st"> &quot;bdgsf&quot;</span>
+
 <span class="co"># Changement de la projection (L93) </span>
 <span class="kw">system</span>(<span class="kw">paste</span>(<span class="st">&quot;ogr2ogr -t_srs EPSG:2154 &quot;</span>,file2,<span class="st">&quot; &quot;</span>,file1,<span class="st">&quot; -overwrite&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
 
 <span class="co"># Intégration dans la base sous forme de postGIS</span>
 <span class="kw">system</span>(<span class="kw">paste</span>(<span class="st">&quot;shp2pgsql -s 2154 -c -D -W </span><span class="ch">\&quot;</span><span class="st">latin1</span><span class="ch">\&quot;</span><span class="st"> -I &quot;</span>,file2,<span class="st">&quot; &quot;</span>,schema,<span class="st">&quot;.&quot;</span>,sortie,<span class="st">&quot;| psql -d sol_elevage -h localhost -U jb&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
 
-bdgsf &lt;-<span class="st"> </span><span class="kw">sqlQuery</span>(loc,<span class="st">&quot;select * from bdgsf.sgdb limit 1&quot;</span>)
+bdgsf &lt;-<span class="st"> </span><span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;select * from &quot;</span>,schema,<span class="st">&quot;.sgdb limit 1&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
 n_bdgsf &lt;-<span class="st"> </span><span class="kw">names</span>(bdgsf)[-<span class="kw">length</span>(bdgsf)]
 n_bdgsf &lt;-<span class="st"> </span><span class="kw">paste</span>(n_bdgsf,<span class="dt">collapse=</span><span class="st">&quot;,&quot;</span>)
 
@@ -432,103 +437,35 @@ n_bdgsf &lt;-<span class="st"> </span><span class="kw">paste</span>(n_bdgsf,<spa
 <span class="st">            where st_intersects(a.geom, b.geom);&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
 
 <span class="co"># Suppression des fichiers temporaires</span>
-<span class="kw">system</span>(<span class="kw">paste</span>(<span class="st">&quot;rm &quot;</span>,file1,<span class="st">&quot; &quot;</span>,file2,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))</code></pre></div>
+<span class="kw">system</span>(<span class="kw">paste</span>(<span class="st">&quot;rm &quot;</span>,file1,<span class="st">&quot; &quot;</span>,file2,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+
+<span class="co"># Intégration des tables de la BDGSF</span>
+Liste_dbf &lt;-<span class="st"> </span><span class="kw">gsub</span>(<span class="st">&quot;</span><span class="ch">\\</span><span class="st">.dbf$&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="kw">list.files</span>(repbdgsf,<span class="dt">pattern=</span><span class="st">&quot;</span><span class="ch">\\</span><span class="st">.dbf$&quot;</span>))
+Liste_dbf &lt;-<span class="st"> </span>Liste_dbf[<span class="dv">4</span>:<span class="kw">length</span>(Liste_dbf)]
+for(i in Liste_dbf){
+  dbf &lt;-<span class="st"> </span><span class="kw">read.dbf</span>(<span class="kw">paste</span>(repbdgsf,i,<span class="st">&quot;.dbf&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+  <span class="kw">sqlSave</span>(loc,dbf,<span class="dt">tablename =</span> <span class="kw">paste</span>(schema,<span class="st">&quot;.&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+}</code></pre></div>
 </div>
-<div id="donnees-elaborees-lucas-en-cours" class="section level2">
-<h2><span class="header-section-number">5.3</span> Données élaborées LUCAS (en cours)</h2>
+<div id="donnees-elaborees-lucas" class="section level3">
+<h3><span class="header-section-number">5.2.2</span> Données élaborées LUCAS</h3>
+<p>Ci-dessous, intégration des rasters dans la base postgreSQL/postGIS. Ces données ont été téchargées à cette <a href="http://esdac.jrc.ec.europa.eu/content/topsoil-physical-properties-europe-based-lucas-topsoil-data">adresse</a>.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">rep_rasterjrc &lt;-<span class="st"> &quot;/media/sf_GIS_ED/Dev/Data/Sol/Lucas/Elaborees/&quot;</span>
-list.rast &lt;-<span class="st"> </span><span class="kw">list.files</span>(rep_rasterjrc,<span class="dt">pattern=</span><span class="st">&quot;.tif$&quot;</span>)<span class="co">#Le $ signifie la fin du pattern</span>
 shaperef &lt;-<span class="st"> &quot;/media/sf_GIS_ED/Dev/Data/Base/DEPARTEMENT.shp&quot;</span>
+list.rast &lt;-<span class="st"> </span><span class="kw">gsub</span>(<span class="st">&quot;</span><span class="ch">\\</span><span class="st">.tif$&quot;</span>,<span class="st">&quot;&quot;</span>,<span class="kw">list.files</span>(rep_rasterjrc,<span class="dt">pattern=</span><span class="st">&quot;</span><span class="ch">\\</span><span class="st">.tif$&quot;</span>))<span class="co"># Liste des xls présent dans le répertoire de travail (repagreste)</span>
+
 for(i in list.rast){
     <span class="co"># </span>
-    <span class="kw">system</span>(<span class="kw">paste</span>(<span class="st">&quot;gdalwarp -t_srs EPSG:2154 &quot;</span>,rep_rasterjrc,i,<span class="st">&quot; &quot;</span>,rep_rasterjrc,<span class="st">&quot;tmp&quot;</span>,i,<span class="st">&quot; -overwrite&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
-    <span class="kw">system</span>(<span class="kw">paste</span>(<span class="st">&quot;gdalwarp --config GDALWARP_IGNORE_BAD_CUTLINE YES -cutline &quot;</span>,shaperef,<span class="st">&quot; -crop_to_cutline &quot;</span>,rep_rasterjrc,<span class="st">&quot;tmp&quot;</span>,i,<span class="st">&quot; &quot;</span>,rep_rasterjrc,<span class="st">&quot;fr_&quot;</span>,i,<span class="st">&quot; -overwrite&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
-    <span class="kw">system</span>(<span class="kw">paste</span>(<span class="st">&quot;rm &quot;</span>,rep_rasterjrc,<span class="st">&quot;tmp&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+    <span class="kw">system</span>(<span class="kw">paste</span>(<span class="st">&quot;gdalwarp -t_srs EPSG:2154 &quot;</span>,rep_rasterjrc,i,<span class="st">&quot;.tif &quot;</span>,rep_rasterjrc,<span class="st">&quot;tmp&quot;</span>,i,<span class="st">&quot;.tif -overwrite&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+    <span class="kw">system</span>(<span class="kw">paste</span>(<span class="st">&quot;gdalwarp --config GDALWARP_IGNORE_BAD_CUTLINE YES -cutline &quot;</span>,shaperef,<span class="st">&quot; -crop_to_cutline &quot;</span>,rep_rasterjrc,<span class="st">&quot;tmp&quot;</span>,i,<span class="st">&quot;.tif &quot;</span>,rep_rasterjrc,<span class="st">&quot;fr_&quot;</span>,i,<span class="st">&quot;.tif -overwrite&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+    <span class="kw">system</span>(<span class="kw">paste</span>(<span class="st">&quot;rm &quot;</span>,rep_rasterjrc,<span class="st">&quot;tmp&quot;</span>,i,<span class="st">&quot;.tif&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
     
     <span class="co"># Intégration dans la base postgis</span>
-    <span class="co">#system(paste(&quot;shp2pgsql -s 2154 -c -D -W \&quot;latin1\&quot; -I &quot;,rep_rasterjrc,&quot;sgdbe4_0.shp | psql -d sol_elevage -h localhost -U jb -s bdgdf&quot;,sep=&quot;&quot;))#option -s ne fonctionnne pas</span>
+    rpostgisname &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;dm_rasters.fr_&quot;</span>,i,<span class="st">&quot;.tif&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+    <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;drop table if exists &quot;</span>,rpostgisname,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+    <span class="kw">system</span>(<span class="kw">paste</span>(<span class="st">&quot;raster2pgsql -I -C -s 2154 &quot;</span>,rep_rasterjrc,<span class="st">&quot;fr_&quot;</span>,i,<span class="st">&quot;.tif &quot;</span>,rpostgisname,<span class="st">&quot; | psql -h localhost -U jb -d sol_elevage&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
 } </code></pre></div>
 </div>
-<div id="les-donnees-lucas-soil-database-en-cours" class="section level2">
-<h2><span class="header-section-number">5.4</span> Les données LUCAS soil Database (en cours)</h2>
-<p>Ici, on présente l’intégration des différentes données lucas. Il y a les données de bases lucas topsoil et également d’autres données élaborées en partie construite avec LucasTopsoil.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Décompression de l'archive télécharger après une demande ici : http://eusoils.jrc.ec.europa.eu/content/lucas-2009-topsoil-data#tabs-0-description=1&amp;tabs-0-description-2=</span>
-<span class="kw">system</span>(<span class="st">&quot;unzip Data/Lucas/LUCAS_TOPSOIL_v1.zip -d Data/Lucas/Topsoil/.&quot;</span>)
-
-<span class="co"># Conversion vers un fichier csv</span>
-<span class="kw">installXLSXsupport</span>()
-Lucasdf &lt;-<span class="st"> </span><span class="kw">read.xls</span>(<span class="kw">paste</span>(repLucas,<span class="st">&quot;Topsoil/LUCAS_TOPSOIL_v1.xlsx&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>),<span class="dt">sheet=</span><span class="st">&quot;Sheet1&quot;</span>)
-Lucasdf &lt;-<span class="st"> </span>Lucasdf[<span class="kw">complete.cases</span>(Lucasdf[,<span class="kw">c</span>(<span class="st">&quot;GPS_LAT&quot;</span>,<span class="st">&quot;GPS_LONG&quot;</span>)]),]
-<span class="co"># Enregistrement dans la base locale</span>
-<span class="kw">sqlSave</span>(loc,Lucasdf)
-
-<span class="co"># Conversion en postgis/définition du srid</span>
-<span class="kw">sqlQuery</span>(loc,<span class="st">&quot;ALTER TABLE Lucasdf ADD COLUMN geom geometry(Point,4326);</span>
-<span class="st">              UPDATE Lucasdf SET geom = ST_SetSRID(ST_MakePoint(gps_long, gps_lat), 4326);&quot;</span>)
-
-<span class="co"># Reprojection en L93</span>
-<span class="kw">sqlQuery</span>(loc,<span class="st">&quot;ALTER TABLE Lucasdf</span>
-<span class="st">              ALTER COLUMN geom </span>
-<span class="st">              TYPE Geometry(Point, 2154) </span>
-<span class="st">              USING ST_Transform(geom, 2154);&quot;</span>)
- 
-<span class="co"># Sélection spatiale des points Lucas pour la France</span>
-<span class="kw">sqlQuery</span>(loc,<span class="st">&quot;CREATE table public.test AS</span>
-<span class="st">              SELECT *</span>
-<span class="st">              FROM Lucasdf</span>
-<span class="st">              WHERE ST_Contains(Lucasdf.the_geom,commune.the_geom&quot;</span>)
-
-SELECT <span class="st">&quot;KDhh_survey&quot;</span>.*<span class="st"> </span>
-FROM
-public.<span class="st">&quot;KDhh_survey&quot;</span>,
-public.<span class="st">&quot;ur_pilot_survey&quot;</span>
-WHERE
-<span class="kw">ST_contains</span>(public.<span class="st">&quot;ur_pilot_survey&quot;</span>.the_geom, public.<span class="st">&quot;KDhh_survey&quot;</span>.the_geom);
-
-<span class="kw">system</span>(<span class="st">&quot;v.select --overwrite ainput=lucasref_L93 atype=point binput=franceL93 output=lucasref_L93_fr&quot;</span>)
-
-<span class="co"># Exportation vers un shapefile</span>
-<span class="kw">system</span>(<span class="st">&quot;v.out.ogr input=lucasref_L93_fr type=point dsn=/home/jb/Bureau/PrLucas/&quot;</span>)
-
-<span class="co"># Exportation vers PostGis</span>
-<span class="kw">sqlQuery</span>(databaracoa,<span class="st">&quot;drop table if exists data.lucastopsoil_fr&quot;</span>)
-<span class="kw">system</span>(<span class="st">&quot;shp2pgsql -c -s 2154 /home/jb/Bureau/PrLucas/lucasref_L93_fr.shp data.lucastopsoil_fr| psql -h baracoa.orleans.inra.fr -p 5434 -U jbparoissien jbparoissien&quot;</span>)
-
-<span class="co"># Préparation finale</span>
-<span class="co">#Ajout d'une colonne geom pour le système de coodonnées lambert2etendue</span>
-
-<span class="co"># Reprojection de la table en lambert9</span>
-<span class="co"># Ajout des colonnes</span>
-
-<span class="kw">sqlQuery</span>(databaracoa,<span class="kw">paste</span>(<span class="st">&quot;select addgeometrycolumn('data','lucastopsoil_fr', 'the_geom_l2e',27582,'POINT',2)&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
-<span class="kw">sqlQuery</span>(databaracoa,<span class="kw">paste</span>(<span class="st">&quot;select addgeometrycolumn('data','lucastopsoil_fr', 'the_geom_l93',2154,'POINT',2)&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
-<span class="kw">sqlQuery</span>(databaracoa,<span class="kw">paste</span>(<span class="st">&quot;update lucastopsoil_fr set the_geom_l93 = geom&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
-<span class="kw">sqlQuery</span>(databaracoa,<span class="kw">paste</span>(<span class="st">&quot;select DropGeometryColumn('data','lucastopsoil_fr','geom')&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
-
-<span class="co"># Reprojection</span>
-<span class="kw">sqlQuery</span>(databaracoa,<span class="kw">paste</span>(<span class="st">&quot;update lucastopsoil_fr set the_geom_l2e = st_setsrid(st_transform(st_setsrid(the_geom_l93,2154),27582),27582);&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
-
-<span class="co"># Pour connaître les coordonnées géographiques</span>
-<span class="kw">sqlQuery</span>(databaracoa,<span class="st">&quot;alter table lucastopsoil_fr</span>
-<span class="st">     add column x_l93 double precision;</span>
-<span class="st">     alter table lucastopsoil_fr</span>
-<span class="st">     add column y_l93 double precision;</span>
-<span class="st">     alter table lucastopsoil_fr</span>
-<span class="st">     add column x_l2e double precision;</span>
-<span class="st">     alter table lucastopsoil_fr</span>
-<span class="st">     add column y_l2e double precision;&quot;</span>)
-
-
-<span class="kw">sqlQuery</span>(databaracoa,<span class="st">&quot;update lucastopsoil_fr set x_l93 = ST_X(ST_SetSRID(the_geom_l93, 2154));</span>
-<span class="st">     update lucastopsoil_fr set y_l93 = ST_Y(ST_SetSRID(the_geom_l93, 2154));&quot;</span>)
-
-<span class="kw">sqlQuery</span>(databaracoa,<span class="st">&quot;update lucastopsoil_fr set x_l2e = ST_X(ST_SetSRID(the_geom_l2e, 27582));</span>
-<span class="st">     update lucastopsoil_fr set y_l2e = ST_Y(ST_SetSRID(the_geom_l2e, 27582));&quot;</span>)</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Décompression des différentes archives vers le réperoire 'Elaborees'</span>
-LucasData &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;AWC_EU23&quot;</span>,<span class="st">&quot;BulkDensity_EU23&quot;</span>,<span class="st">&quot;Clay_EU23&quot;</span>,<span class="st">&quot;CoarseFragments_EU23&quot;</span>,<span class="st">&quot;ER100mFinal&quot;</span>,<span class="st">&quot;ESDB_soil_compaction_pack&quot;</span>)
-for(i in LucasData){
-  <span class="kw">system</span>(<span class="kw">paste</span>(<span class="st">&quot;unzip &quot;</span>,repLucas,i,<span class="st">&quot;.zip -d &quot;</span>,repLucas,<span class="st">&quot;Elaborees/.&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
-}</code></pre></div>
 </div>
 </div>
 <div id="les-donnees-doccupation-du-sol" class="section level1">
@@ -552,7 +489,7 @@ for(i in feuilles ){
 </div>
 <div id="les-donnees-du-recensement-agricole-ra" class="section level2">
 <h2><span class="header-section-number">6.2</span> Les données du recensement agricole (RA)</h2>
-<p>Les données du recensement agricole ont été extraites de requêtes lancées sur <a href="https://stats.agriculture.gouv.fr/disar/">Disard</a>. Dans les tables de sorties de Disard, le numéro de canton et le nom du chef lieu sont enregistrés dans le même champ. Dans les commandes suivantes, le numéro de canton et le nom du chef lieu sont dissociés dans un champ qui leur est propre pour faciliter les jointures futures.</p>
+<p>Les données du recensement agricole ont été extraites de requêtes lancées sur <a href="https://stats.agriculture.gouv.fr/disar/">Disard</a>. Dans les tables de sorties de Disard, le numéro de canton et le nom du chef lieu sont enregistrés dans le même champ. Dans les commandes suivantes, le numéro de canton et le nom du chef lieu sont dissociés dans un champ qui leur est propre pour faciliter les futures jointures.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">installXLSXsupport</span>()
 schema &lt;-<span class="st"> &quot;ra&quot;</span> <span class="co">#Nom du schema de stockage des données</span>
 catalogue &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="kw">paste</span>(repmetadonnees,<span class="st">&quot;Catalogue_table.csv&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>),<span class="dt">sep=</span><span class="st">&quot;,&quot;</span>)
@@ -748,8 +685,8 @@ listbil &lt;-<span class="st"> </span><span class="kw">paste</span>(repSRTM,<spa
 </div>
 <div id="donnees-europeennes" class="section level2">
 <h2><span class="header-section-number">8.2</span> Données européennes</h2>
-<p>Le modèle numérique de terrain provient du programme Européen Copernic. Les données ont été téléchargées à cette <a href="http://www.eea.europa.eu/data-and-maps/data/eu-dem">adresse</a>. Pour l’exploitation des données, le fichier au format GeoTIFF est découpé aux contours de la France et projeté en Lambert 93 (EPSG 2154). Le raster est ensuite intégré dans le serveur postgis. Ces procédures sont réalisées avec la fonction <code>gdalwarp</code> et XXX dans les listes d’instructions ci-dessous. Les statistiques calculées avec ces données sont réalisées dans le fichier de suivi <a href="https://github.com/GisEDSol/Carbo_elevage/blob/master/Fichiers_suivis/BDD/Suivis/FS_bdd_elab_topo.Rmd">FS_bdd_elab_topo.Rmd</a>.</p>
-<p>Les tuiles téléchargées sont les suivantes : E30N20; E40N20;E30N30 (Pour connaître les tuiles, voir les webservices à cette adresse :<a href="http://image.discomap.eea.europa.eu/arcgis/services/Elevation/DEM_v_1_1/MapServer/WMSServer?version=1.3.0" class="uri">http://image.discomap.eea.europa.eu/arcgis/services/Elevation/DEM_v_1_1/MapServer/WMSServer?version=1.3.0</a> ). Les instructions suivantes permettent d’assembler les 3 rasters, de les découper aux contours de la France et de projeter le dernier fichier en Lambert 93 (EPSG 2154).</p>
+<p>Le modèle numérique de terrain provient du programme Européen Copernic. Les données ont été téléchargées à cette <a href="http://www.eea.europa.eu/data-and-maps/data/eu-dem">adresse</a>. Pour l’exploitation des données, le fichier au format GeoTIFF est découpé aux contours de la France et projeté en Lambert 93 (EPSG 2154). Le raster est ensuite intégré dans le serveur postgis. Ces procédures sont réalisées avec les fonctions <code>gdal</code>. Les statistiques calculées avec ces données sont réalisées dans le fichier de suivi <a href="https://github.com/GisEDSol/Carbo_elevage/blob/master/Fichiers_suivis/BDD/Suivis/FS_bdd_elab_topo.Rmd">FS_bdd_elab_topo.Rmd</a>.</p>
+<p>Les tuiles téléchargées sont les suivantes : E30N20; E40N20;E30N30. Les instructions suivantes permettent d’assembler les 3 rasters, de les découper aux contours de la France et de projeter le dernier fichier en Lambert 93 (EPSG 2154).</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">reptopo &lt;-<span class="st"> &quot;/media/sf_GIS_ED/Dev/Data/Topographie/dem_copernicus/&quot;</span> <span class="co">#répertoire contenant les rasters à assembler</span>
 shaperef3035 &lt;-<span class="st"> &quot;/media/sf_GIS_ED/Dev/Data/Base/DEPARTEMENT_3035.shp&quot;</span> <span class="co">#Shapefiles utilisé pour le découpage aux contours de la France</span>
 listtif &lt;-<span class="st"> </span><span class="kw">paste</span>(reptopo,<span class="kw">c</span>(<span class="st">&quot;eu_dem_v11_E40N20.tif&quot;</span>,<span class="st">&quot;eu_dem_v11_E30N30.tif&quot;</span>,<span class="st">&quot;eu_dem_v11_E30N20.tif&quot;</span>),<span class="dt">sep=</span><span class="st">&quot;&quot;</span>,<span class="dt">collapse=</span><span class="st">&quot; &quot;</span>)
@@ -779,12 +716,16 @@ Fr_demNamelight &lt;-<span class="st"> </span><span class="kw">paste</span>(rept
 
 <span class="co"># Création d'un raster plus léger pour les analyses</span>
 <span class="kw">system</span>(<span class="kw">paste</span>(<span class="st">&quot;gdalwarp -tr 90 90 -co BIGTIFF=YES -co TILED=YES -co 'COMPRESS=LZW' -t_srs EPSG:2154 &quot;</span>,Fr_demName,<span class="st">&quot; &quot;</span>,Fr_demNamelight,<span class="st">&quot; -overwrite&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))</code></pre></div>
-<p>Le raster est ensuite intégré sur le serveur PostGIS (voir la pertinence). Si celà ne fonctionne pas, revoir les scripts pour calculer les moyennes entre vecteurs et rasters avec R.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">rastername &lt;-<span class="st"> </span><span class="kw">paste</span>(reptopo,<span class="st">&quot;Fr_L93_&quot;</span>,rastername,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
-rpostgisname &lt;-<span class="st"> &quot;m_rasters.dem_copernicus&quot;</span>
+<p>Le raster est ensuite intégré sur le serveur PostGIS.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">rastername &lt;-<span class="st"> </span>Fr_demNamelight
+rpostgisname &lt;-<span class="st"> &quot;dm_rasters.dem_copernicus_90&quot;</span>
 
-<span class="kw">system</span>(<span class="kw">paste</span>(<span class="st">&quot;raster2sql -s 2154 -t 30x30 -f -I -Y myRaster.tif &quot;</span>,rpostgisname,<span class="st">&quot; &gt; raster.sql`</span>
-<span class="st">psql -h localhost -U jb -d sol_elevage -f raster.sql&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))</code></pre></div>
+<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;drop table if exists &quot;</span>,rpostgisname,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+<span class="kw">system</span>(<span class="kw">paste</span>(<span class="st">&quot;raster2pgsql -I -C -s 2154 &quot;</span>,rastername,<span class="st">&quot; &quot;</span>,rpostgisname,<span class="st">&quot; | psql -h localhost -U jb -d sol_elevage&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+
+<span class="co"># Ajout d'un commentaire</span>
+<span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">      COMMENT ON TABLE &quot;</span>,rpostgisname,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">Modèle numérique de terrain du programme Copernicus (résolution 90m).</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))</code></pre></div>
 </div>
 </div>
 <div id="les-metadonnees" class="section level1">
@@ -792,7 +733,7 @@ rpostgisname &lt;-<span class="st"> &quot;m_rasters.dem_copernicus&quot;</span>
 <div id="creation-de-metadonnees-pour-les-schemas" class="section level2">
 <h2><span class="header-section-number">9.1</span> Création de métadonnées pour les schémas</h2>
 <p>La description des schémas de la base de données est stockée dans le fichier <a href="https://github.com/GisEDSol/Carbo_elevage/tree/master/Documentation/Metadonnees/Catalogue_schema.csv">Catalogue_schema.csv</a> et ces commentaires sont intégrés dans la base de données avec la commande suivante :</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">meta_schema &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="kw">paste</span>(masterrep,<span class="st">&quot;Scripts/master/Documentation/Metadonnees/Catalogue_schema.csv&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>),<span class="dt">sep=</span><span class="st">&quot;,&quot;</span>,<span class="dt">header=</span><span class="ot">TRUE</span>)
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">meta_schema &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="kw">paste</span>(repmetadonnees,<span class="st">&quot;/Catalogue_schema.csv&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>),<span class="dt">sep=</span><span class="st">&quot;,&quot;</span>,<span class="dt">header=</span><span class="ot">TRUE</span>)
 for(i in <span class="dv">1</span>:<span class="kw">nrow</span>(meta_schema)){
   <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;COMMENT ON SCHEMA &quot;</span>,meta_schema[i,<span class="dv">1</span>],<span class="st">&quot; IS '&quot;</span>,meta_schema[i,<span class="dv">2</span>],<span class="st">&quot;'&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
 }</code></pre></div>
@@ -822,29 +763,9 @@ ogrinfo --format sqlite |<span class="st"> </span>grep <span class="st">'spatial
 </div>
 <div id="export-de-la-base-en-postgresqlpostgis" class="section level2">
 <h2><span class="header-section-number">10.2</span> Export de la base en PostgreSQL/PostGIS</h2>
-<p>La base de données est sauvegardée au format PostgreSQL/PostGIS avec la commande <code>pg_dump</code>. Cette commande permet de garder l’ensemble de la base de données mais pour être restaurer, l’utilisateur doit créer un serveur local Postgresql/PostGIS en suivant la procédure présentée dans le mode opératoire… Les commandes suivantes présentent les instructions données pour sauvegarder la base de données.</p>
+<p>La base de données est sauvegardée au format PostgreSQL/PostGIS avec la commande <code>pg_dump</code>. Cette commande permet de garder l’ensemble de la base de données mais pour être restaurer, l’utilisateur doit créer un serveur local Postgresql/PostGIS en suivant la procédure présentée dans ce <a href="https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Modes_operatoires/MO_bdd.html">mode opératoire</a>.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Export avec pg_dump</span>
-pg_dump sol_elevage &gt;<span class="st"> </span>sol_elevage.sql
-
-pg_dump -Ft -b mabase &gt;<span class="st"> </span>base.tar
-pg_restore -d nouvellebase base.tar
-
-pg_dump --inserts db_name -t table_name &gt;<span class="st"> </span>pg_dump.sql
-
-<span class="co"># http://sqlite.com/cvstrac/wiki?p=ConverterTools</span>
-
-<span class="co">#Export the data from your database as tab delimited text. Create one text file for every table in your database:</span>
-$<span class="st"> </span>pg_dump -a &lt;dbname&gt;<span class="st"> </span>-t &lt;tablename&gt;<span class="st"> </span><span class="er">&gt;</span><span class="st"> </span><span class="er">/</span>tmp/<span class="er">&lt;</span>dumpfile&gt;<span class="st"> </span>...and so on...
-
-<span class="co">#Trim off crap from header and footer from each file, eg:</span>
-
-$<span class="st"> </span>nano -w /tmp/<span class="er">&lt;</span>dumpfile&gt;
-
-<span class="co">#If required, create SQLite file and tables corresponding to tables in the original PostgreSQL database:</span>
-<span class="er">$</span><span class="st"> </span>sqlite3 &lt;dbname&gt;<span class="st"> </span>sqlite&gt;<span class="st"> </span>CREATE TABLE ...etc...
-
-<span class="co">#Finally, import the dump files into SQLite, remembering to change the default import separator to a &lt;tab&gt;:</span>
-$<span class="st"> </span>sqlite3 &lt;dbname&gt;<span class="st"> </span>sqlite&gt;<span class="st"> </span>.separator <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span> sqlite&gt;<span class="st"> </span>.import &lt;dumpfile&gt;<span class="st"> </span><span class="er">&lt;</span>tablename&gt;<span class="st"> </span></code></pre></div>
+pg_dump sol_elevage &gt;<span class="st"> </span>sol_elevage.sql</code></pre></div>
 </div>
 </div>
 
