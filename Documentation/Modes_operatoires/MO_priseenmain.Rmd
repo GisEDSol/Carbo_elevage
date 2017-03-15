@@ -19,9 +19,9 @@ raw_mo_url <- "https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Mo
 
 # Objectif et domaine d'application
 
-Ce document la démarche et l'organisation de travail du projet appelé par la suite (par facilité) `Carbo_elevage`. Le projet a pour objectif d'étudier l'évolution des teneurs en carbone organique en France sous le regard de l'évolution de l'occupation du sol en lien avec l'élevage. Le travail est basé sur les analyses de la [BDAT](https://www.gissol.fr/le-gis/programmes/base-de-donnees-danalyses-des-terres-bdat-62) et il se divise en deux grandes phases :
+Ce document présente la démarche et l'organisation du projet appelé par facilité `Carbo_elevage`. Le projet a pour objectif d'étudier l'évolution des teneurs en carbone organique en France sous le regard de l'évolution de l'occupation du sol en lien avec l'élevage. Le travail est basé sur les analyses de la [BDAT](https://www.gissol.fr/le-gis/programmes/base-de-donnees-danalyses-des-terres-bdat-62) et il se divise en deux grandes phases :
 
-- La construction d'une base de données regroupant des données sols (essentiellement la BDAT) et les facteurs potentiellement explicatifs des teneurs en carbone organique et des évolutions associées,
+- La construction d'une base de données regroupant des données sols (essentiellement la BDAT) et les facteurs potentiellement explicatifs de la distribution spatiale et temporelle des teneurs en carbone organique et des évolutions associées,
 - L'analyse statistique de la distribution des teneurs en carbone organique et de ces évolutions.
  
 L'objectif du document est de fournir l'ensemble des éléments pratiques pour reprendre le projet en 4 étapes :
@@ -32,6 +32,14 @@ L'objectif du document est de fournir l'ensemble des éléments pratiques pour r
 - **Etape 4** Exploitation des scripts
 
 # Démarche de travail
+
+## Le choix des scripts en R+markdown
+
+L'ensemble des scripts développés dans le projet est développé en `R+markdown` (ou **Rmd**). Il s'agit d'un langage en balisage léger qui offre une syntaxe facile à lire et à écrire (comme le langage wiki) et permet d'y inclure le code R. Pour plus d'informations, [voir](https://rstudio-pubs-static.s3.amazonaws.com/32239_0956f02cef24443abd9525551368ef12.html#1) cette présentation. 
+
+L'utilisation de ce type de langage permet de bien documenter les scripts et d'assurer la reproductibilité des différents scripts. Ainsi, la création de la base de données ainsi que l'ensemble des traitements associés (figures, résultats statistiques, cartographie) sont **reproductibles**.
+
+## L'organisation
 
 L'organisation des fichiers suit la chaine de traitement générale présentée dans la figure ci-dessous (ou en dynamique à cette [adresse](https://rawgit.com/Rosalien/GISEDSol/master/Documentation/Modes_operatoires/Figures/workflow.html)).
 
@@ -54,7 +62,7 @@ Pour faciliter la navigation dans l'arborescence et le contenu des fichiers, le 
 
 # Etape 1 : Accès aux scripts de travail
 
-L'ensemble du travail (création de la BDD et les analyses statistiques) est développé sous forme de scripts utilisant principalement le langage R, SQL et bash. Tous les rapports du projet sont écrits en `R+markdown` ce qui permet d'inclure dans le corps du texte du code `R` (les chunks). C'est un langage en balisage léger qui offre une syntaxe facile à lire et à écrire (comme le langage wiki).
+L'ensemble du travail (création de la BDD et les analyses statistiques) est développé sous forme de scripts utilisant principalement le langage Rmd, SQL et bash. 
 
 Tous les scripts sont centralisés et organisés dans un dépôt [GitHub](https://fr.wikipedia.org/wiki/GitHub). Il s'agit d'un service web d'hébergement et de gestion de développement de scripts utilisant le logiciel de gestion de versions **git**. Dans ce type de logiciel, le dépôt représente une copie du projet. Chaque ordinateur d’un développeur qui travaille sur le projet possède donc une copie du dépôt. Dans chaque dépôt, on trouve les fichiers du projet ainsi que leur historique.
 
@@ -92,7 +100,7 @@ git config --global color.branch auto
 git config --global user.name "GisEDSol"
 git config --global user.email giselevagesdemain.groupesol@gmail.com
 
-# Clonage du projet (se placer dans l'arborescence voulu)
+# Clonage du projet (se placer dans l'arborescence voulue)
 git clone https://github.com/GisEDSol/Carbo_elevage.git
 ```
 
@@ -103,7 +111,8 @@ L'organisation du dépôt est décrit dans le fichier [Readme.md](https://github
 ```{r,eval=FALSE,echo=TRUE}
 ├── Documentation
 │   ├── Metadonnees
-│   └── Modes_operatoires
+│   ├── Modes_operatoires
+│   └── Readme.md
 ├── Fichiers_suivis
 │   ├── BDD
 │   ├── Readme.md

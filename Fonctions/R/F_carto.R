@@ -8,6 +8,7 @@
 #' @param nclasse Nombre de classes de valeurs pour la classification des valeurs
 #' @param style_classe Nom du type de classification (quantile, fixed, pretty, jenks)
 #' @param couleur Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+#' @param title titre de la figure
 #' @param l_legend Nom pour la légende
 #' @param repsortie Répertoire de sortie du fichier (XXX/XXX/)
 #' @param nomfichier Nom du fichier en sortie (sans extension)
@@ -42,6 +43,7 @@ carto <- function(
        nclasse,
        style_classe,
        couleur,
+       title,
        l_legend,
        repsortie,
        nomfichier,
@@ -57,6 +59,39 @@ carto <- function(
 
 library(rgdal);library(ggplot2);library(maptools);library(reshape2);library(classInt);
 library(gridExtra);library(RPostgreSQL);library(stringr);library(rgeos)
+
+
+# Utilisation du thème développé par https://timogrossenbacher.ch/2016/12/beautiful-thematic-maps-with-ggplot2-only/
+
+theme_map <- function(...) {
+  theme_minimal() +
+  theme(
+    text = element_text(family = "Ubuntu Regular", color = "#22211d"),
+    axis.line = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    # panel.grid.minor = element_line(color = "#ebebe5", size = 0.2),
+    panel.grid.major = element_line(color = "#ebebe5", size = 0.2),
+    panel.grid.minor = element_blank(),
+    plot.background = element_rect(fill = "#f5f5f2", color = NA), 
+    panel.background = element_rect(fill = "#f5f5f2", color = NA), 
+    legend.background = element_rect(fill = "#f5f5f2", color = NA),
+    panel.border = element_blank(),
+    ...
+  )
+}
+
+theme_map2 <- function(...) {
+theme(plot.title = element_text(size=12,face="bold"),
+                            text = element_text(size=12),
+                            axis.text =element_blank(),# change the theme options
+                            axis.title =element_blank(),# remove axis titles
+                            axis.ticks =element_blank())
+}
+
 
 ##############################
 # Lecture du postgis selon plusieurs conditions
@@ -150,7 +185,7 @@ if(reg!=FALSE){# Sélection de la zone d'étude
 # Conversion des spatialdataframe pour la cartographie sous ggpplot2
 gpclibPermit()
 cartodep <- fortify(dep,region=id)
-cartofor <- fortify(map,region=id)
+cartofor <- fortify(map[complete.cases(map@data[variablecarto]),],region=id)
 
 # Représentation cartographique
 
@@ -158,31 +193,41 @@ if(length(variablecarto)==1){
   # Extraction de toutes les valeurs à cartographier pour établir des classes de valeurs à cartographier
   melt.map <- melt(map@data[,variablecarto])[,1]
 
-  if(style_classe=="fixed"){
-    # Jointure et changement de nom
-  	carto <- merge(cartofor, map@data[,c(id,variablecarto)], by.x="id", by.y=id)
-  	colnames(carto)[8] <- "fill"
-  	carto$fill <- as.factor(carto$fill)
+if(style_classe=="fixed"){
+    niveaux <- levels(factor(melt.map))
+    carto <- merge(cartofor, map@data[,c(id,variablecarto)], by.x="id", by.y=id)    
+    colnames(carto)[8] <- "fill"
+    carto$fill <- as.factor(carto$fill)
+
+    if(length(couleur)>1){myColors <- couleur}else{myColors <- brewer.pal(length(niveaux),couleur)}
+    names(myColors) <- levels(factor(melt.map))
+    colScale <- scale_fill_manual(name=l_legend,values = myColors)
+
     }else{
-      classe_valeur <- classIntervals(melt.map,n=nclasse,style=style_classe,digits=2,na.rm=TRUE)[[2]]
+      classe_valeur <- round(classIntervals(melt.map,n=nclasse,style=style_classe,digits=2,na.rm=TRUE)[[2]],1)
+  
       # Jointure et changement de nom
       carto <- merge(cartofor, map@data[,c(id,variablecarto)], by.x="id", by.y=id)
       colnames(carto)[8] <- "fill"
-      carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
-    }
+      carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)
 
+      if(length(couleur)>1){myColors <- couleur}else{myColors <- brewer.pal(length(niveaux),couleur)}
+      colScale <- scale_fill_manual(name=l_legend,values = myColors)
+
+    }
+     
 	tt <- ggplot(carto, aes(x=long, y=lat)) +
     	                geom_polygon(data=carto, aes(group=group, fill=fill),size=0.1) +
                      	geom_path(data=carto, aes(x=long,y=lat,group=group),color="white",size=0.1)+# Représenter les cantons
                      	geom_path(data=cartodep, aes(x=long,y=lat,group=group),color="black",size=0.1)+# Représenter les contours des départements
-                     	scale_fill_brewer(type=qual,palette = couleur,name=l_legend,guide = guide_legend(reverse=FALSE,nrow=2))+theme(legend.position="bottom")+
-                     	theme(plot.title = element_text(size=12,face="bold"),
-                           	text = element_text(size=12),
-                           	axis.text =element_blank(),# change the theme options
-                           	axis.title =element_blank(),# remove axis titles
-                           	axis.ticks =element_blank())+
+                      colScale +
+#temp                     	scale_fill_brewer(type=qual,palette = couleur,name=l_legend,guide = guide_legend(reverse=FALSE,nrow=2))
+                      theme(legend.position="bottom")+
+                     	theme_map() +
+                      theme(legend.position = "bottom") +
                      	#guides(fill=FALSE)+
-                     	coord_equal()
+                     	coord_equal() + 
+                      labs(title=title)
 	# Sortie du fichier
   ggsave(tt, file = paste(repsortie,nomfichier,".png",sep=""), width = 7, height = 7)  
 }else{}
@@ -190,7 +235,7 @@ if(length(variablecarto)==1){
 if(length(variablecarto)>1){
 
 # Extraction de toutes les valeurs à cartographier pour établir des classes de valeurs à cartographier
-melt.map <- melt(map@data[,variablecarto])[,2]
+melt.map <- melt(map@data[complete.cases(map@data[variablecarto]),variablecarto])[,2]
  
 cpt <- 0
 p <- list()
@@ -204,10 +249,10 @@ for(i in variablecarto){
   	colnames(carto)[8] <- "fill"
   	carto$fill <- as.factor(carto$fill)
 
-    # Définition de la couleur
-    myColors <- brewer.pal(length(niveaux),couleur)
+    if(length(couleur)>1){myColors <- couleur}else{myColors <- brewer.pal(length(niveaux),couleur)}
     names(myColors) <- levels(factor(melt.map))
     colScale <- scale_fill_manual(name=l_legend,values = myColors)
+
 
     }else{
       # Classement
@@ -218,8 +263,10 @@ for(i in variablecarto){
       colnames(carto)[8] <- "fill"
       carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)
 
+      if(length(couleur)>1){myColors <- couleur}else{myColors <- brewer.pal(length(niveaux),couleur)}
+      colScale <- scale_fill_manual(name=l_legend,values = myColors)
       # Définition de la couleur
-      colScale <- scale_fill_brewer(palette = couleur,name=l_legend)
+      # colScale <- scale_fill_brewer(palette = couleur,name=l_legend)
       }
 
     # Création de la carte
@@ -227,14 +274,11 @@ for(i in variablecarto){
               geom_polygon(data=carto, aes(group=group, fill=fill),size=0.1) +
               geom_path(data=carto, aes(x=long,y=lat,group=group),color="white",size=0.1)+# Représente les cantons
               geom_path(data=cartodep, aes(x=long,y=lat,group=group),color="black",size=0.1)+# Représente les contours des départements
-              colScale+
-              theme(plot.title = element_text(size=10,face="bold"),
-                    text = element_text(size=10),
-                    axis.text =element_blank(),# change the theme options
-                    axis.title =element_blank(),# remove axis titles
-                    axis.ticks =element_blank())+
+              colScale +
+              theme(legend.position = "bottom") +
+              theme_map() +
               coord_equal()+
-              labs(title=i)
+              labs(title=title[cpt])
 	}#fin boucle 
 
 tt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=nrowlayout,ncol=ncollayout,position=position)))

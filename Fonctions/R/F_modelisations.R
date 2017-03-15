@@ -131,7 +131,7 @@ if (model == "cubist"){
   R2<- mean(unlist(qualityindex$R2))
   MSE <- mean(unlist(qualityindex$MSE))
   RMSE <- mean(unlist(qualityindex$RMSE))
-  qualityindex <- cbind(R2,MSE,RMSE)
+  meanqualityindex <- cbind(R2,MSE,RMSE)
 
   if(model=="cubist" | model=="gbm"){
     # Calcul de l'importance de la variable pour les différentes itérations
@@ -155,9 +155,9 @@ if (model == "cubist"){
     p <- ggplot(varimport, aes(x = variable, y = importance,fill=type)) + 
     geom_bar(stat = "identity") + coord_flip()
 
-    return(list(mdata_miningbst=mdata_miningbst,varimport=varimport,p=p,qualityindex=qualityindex))
+    return(list(mdata_miningbst=mdata_miningbst,varimport=varimport,p=p,qualityindex=meanqualityindex,R2=qualityindex$R2,RMSE=qualityindex$RMSE,MSE=qualityindex$MSE))
   }else{
-  return(list(formulabstmodel=formulabstmodel,qualityindex=qualityindex))  
+  return(list(formulabstmodel=formulabstmodel,qualityindex=meanqualityindex,R2=qualityindex$R2,RMSE=qualityindex$RMSE,MSE=qualityindex$MSE))  
   }
 
 }#fin de la fonction

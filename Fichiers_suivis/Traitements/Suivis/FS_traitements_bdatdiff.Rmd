@@ -121,7 +121,7 @@ Les résultats de ces tests sont réalisés à l'échelle de la France de la man
 
 # Analyse de l'évolution des teneurs en carbone organique à l'échelle nationale
 
-A l'échelle nationale et pour toutes les périodes comparées, la proportion de canton ayant une évolution significative des teneurs en CO (augmentation ou diminution) est inférieure à 30%. Dans cette part, il y a quasiment autant de canton enregistrant une augmentation qu'une diminution des teneurs (`r table(melted.bdatdiff[,"diff_corgox"])[[1]` et `table(melted.bdatdiff[,"diff_corgox"])[[2]]` respectivement).
+A l'échelle nationale et pour toutes les périodes comparées, la proportion de canton ayant une évolution significative des teneurs en CO (augmentation ou diminution) est inférieure à 30%. Dans cette part, il y a quasiment autant de canton enregistrant une augmentation qu'une diminution des teneurs (`r table(melted.bdatdiff[,"diff_corgox"])[[1]]` et `table(melted.bdatdiff[,"diff_corgox"])[[2]]` respectivement).
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=10,fig.cap = fig$cap("histo_evolution",""),fig.align="center"}
 bdatdiff <- melted.bdatdiff
@@ -279,6 +279,123 @@ fichiers <- paste(repsortie,nomfichier,sep="")
 cat(paste("![](",fichiers,")",sep=""))
 ```
 
+
+# test
+
+
+```{r,eval=FALSE,echo=FALSE}
+melted.9014 <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdat_9014",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE))
+melted.9014$value <- as.numeric(melted.9014$value)
+melted.9014 <- melted.9014[complete.cases(melted.9014$value),]
+melted.9014$annees <- factor(melted.9014$annees,levels=c("9094","9599","0004","0509","1014"))
+
+reg_focus <- c("31","22")
+melted_focus <- melted.9014[melted.9014$code_reg %in% reg_focus,]
+#levels(melted_focus$annees) <- c("1979","1988","2000","2010")
+melted.ra_focus <- melted.ra[melted.ra$code_reg %in% reg_focus & melted.ra$variable %in% c("p_c","p_mf","p_prairie","p_sfp"),]
+
+#http://drawar.github.io/posts/dual-y-axis-ggplot2/
+
+p_bdat <- ggplot(melted_focus) + 
+          geom_smooth(aes(x=as.integer(annees),y=value),color="black",method=loess)+
+          #geom_smooth(method = "loess", se=FALSE, color="black", aes(group=1))+
+          scale_y_continuous("Teneur en carbone organique (g/kg)")+
+          theme(plot.title = element_text(size = 14, face = "bold"), 
+                text = element_text(size = 12),
+                axis.title = element_text(face="bold"),
+                axis.text.x=element_text(size = 11))
+
+melted.ra_focus <- melted.ra[melted.ra$code_reg %in% reg_focus  & melted.ra$annees %in% c("1979","1988","2000","2010") & melted.ra$variable %in% c("p_c","p_mf","p_prairie","p_sfp"),]
+melted.ra_focus$annees <- factor(melted.ra_focus$annees,levels=c("1979","1988","2000","2010"))
+
+colors <- brewer.pal(4,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
+p_ra <- ggplot(melted.ra_focus) +
+#            geom_boxplot(aes(x=annees,y=value,col=variable))+
+            geom_smooth(aes(x=as.integer(annees),y=value,color=variable),method=loess)+
+            scale_color_manual(values=colors,name="Occupation du sol")+
+            scale_y_continuous("% d'occupation du sol")+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+                  text = element_text(size = 12),
+                  axis.title = element_text(face="bold"),
+                  axis.text.x=element_text(size = 11),
+                  legend.position="bottom")
+
+tt <- grid.arrange(p_bdat,p_ra)
+
+
+# make gtable objects from ggplot objects
+# gtable object shows how grobs are put together to form a ggplot
+library(gtable)
+library(grid) # low-level grid functions are required
+g1 <- ggplotGrob(p1)
+g1 <- gtable_add_cols(g1, unit(0,"mm")) # add a column for missing legend
+g2 <- ggplotGrob(p2)
+g <- rbind(g1, g2, size="first") # stack the two plots
+g$widths <- unit.pmax(g1$widths, g2$widths) # use the largest widths
+# center the legend vertically
+g$layout[grepl("guide", g$layout$name),c("t","b")] <- c(1,nrow(g))
+grid.newpage()
+grid.draw(g)g1 <- ggplot_gtable(ggplot_build(p_bdat))
+g2 <- ggplot_gtable(ggplot_build(p_ra))
+
+# get the location of the panel of p1 
+# so that the panel of p2 is positioned correctly on top of it
+pp <- c(subset(g1$layout, name == "panel", se = t:r))
+
+# superimpose p2 (the panel) on p1
+g <- gtable_add_grob(g1,g2$grobs[[which(g2$layout$name == "panel")]], pp$t, 
+pp$l, pp$b, pp$l)
+grid.draw(g)
+
+
+# extract the y-axis of p2
+ia <- which(g2$layout$name == "axis-l")
+ga <- g2$grobs[[ia]]
+ax <- ga$children[[2]]
+
+# flip it horizontally
+ax$widths <- rev(ax$widths)
+ax$grobs <- rev(ax$grobs)
+
+# add the flipped y-axis to the right
+g <- gtable_add_cols(g, g2$widths[g2$layout[ia, ]$l], length(g$widths) - 1)
+g <- gtable_add_grob(g, ax, pp$t, length(g$widths) - 1, pp$b)
+grid.draw(g)
+
+
+
+library(gtable)
+library(grid) # low-level grid functions are required
+g1 <- ggplotGrob(p1)
+g1 <- gtable_add_cols(g1, unit(0,"mm")) # add a column for missing legend
+g2 <- ggplotGrob(p2)
+g <- rbind(g1, g2, size="first") # stack the two plots
+g$widths <- unit.pmax(g1$widths, g2$widths) # use the largest widths
+# center the legend vertically
+g$layout[grepl("guide", g$layout$name),c("t","b")] <- c(1,nrow(g))
+grid.newpage()
+grid.draw(g)
+
+
+
+
+
+
+
+
+
+
+#http://stackoverflow.com/questions/9916194/two-color-scales-for-geom-line-in-ggplot2
+
+ggplot(exShapedMayGroup, aes_string(x="Date", y="Score")) + 
+geom_line(aes_string(group=".id", linetype=".id")) +  
+geom_point() + 
+geom_line(aes_string(y="Lower", colour="Right")) + 
+geom_line(aes_string(y="Upper", colour="Right")) + 
+scale_linetype_discrete(name="Group") + scale_color_discrete(name="Limits")
+```
+
+
 # Evolution globale des teneurs en CO par rapport aux teneurs initiales
 
 ## A l'échelle de la France
@@ -319,8 +436,6 @@ for(i in periodetud){
         r2[[i]] <- summary(lm(dd[,y]~dd[,x]))$r.squared
 }
 pcplt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=3,position="bottom")))
-
-
 stats_r2 <- as.data.frame(melt(r2))
 colnames(stats_r2) <- c("R2","Period")
 save(stats_r2,file=paste(repsortie,"diff_initial_frR2.RData",sep=""))
@@ -383,9 +498,20 @@ for(s in strates){
 save(rest,file=paste(repsortie,"diff_initial_climR2.RData",sep=""))
 ```
 
+Figure à commenter 
 
+```{r,eval=FALSE,echo=FALSE}
+load(paste(repsortie,"diff_initial_climR2.RData",sep=""))
+test2 <- melt(rest)
 
+ggplot(test2, aes(x=Period,y=value)) + facet_wrap(~L1) + geom_boxplot() +
+  scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone organique (g/kg)")+
+  theme(plot.title = element_text(size = 14, face = "bold"), 
+        text = element_text(size = 12),
+        axis.title = element_text(face="bold"),
+        axis.text.x=element_text(size = 11))
 
+```
 
 ### Région d'élevage
 
@@ -439,8 +565,18 @@ for(s in strates){
 save(rest,file=paste(repsortie,"diff_initial_regR2.RData",sep=""))
 ```
 
+```{r,eval=FALSE,echo=FALSE}
+load(paste(repsortie,"diff_initial_regR2.RData",sep=""))
+test2 <- melt(rest)
 
+ggplot(test2, aes(x=Period,y=value)) + facet_wrap(~L1) + geom_boxplot() +
+  scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone organique (g/kg)")+
+  theme(plot.title = element_text(size = 14, face = "bold"), 
+        text = element_text(size = 12),
+        axis.title = element_text(face="bold"),
+        axis.text.x=element_text(size = 11))
 
+```
 
 
 
@@ -483,6 +619,10 @@ nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""
 coname <- "corgox"
 
 drest <- list()
+dimpvar <- list()
+dRMSE <- list()
+dR2 <- list()
+
 for(x in periodetud){
 
     diffname <- paste("reladiff",x,sep="")
@@ -496,6 +636,8 @@ for(x in periodetud){
     impvar <- list()
     p_regelevage <- list()
     rest <- array(NA, dim = c(length(reg_elevage), 3),list(strates = reg_elevage, mod = c("r2","MSE","RMSE")))
+    R2 <- list()
+    RMSE <- list()
     cpt <- 0
     for(i in reg_elevage){
        cpt <- cpt + 1
@@ -516,32 +658,75 @@ for(x in periodetud){
         rest[cpt,"r2"] <- mcubistbst$qualityindex[,"R2"][[1]]
         rest[cpt,"MSE"] <- mcubistbst$qualityindex[,"MSE"][[1]]
         rest[cpt,"RMSE"] <- mcubistbst$qualityindex[,"RMSE"][[1]]
-  
-        p_regelevage[[cpt]] <- mcubistbst$p + labs(title=i)
+        
+        # Pour récupérer l'ensemble des R2 et RMSE
+        R2[[i]] <- as.data.frame(unlist(mcubistbst$R2))[[1]]
+        RMSE[[i]] <- as.data.frame(unlist(mcubistbst$RMSE))[[1]]
+
+        #p_regelevage[[cpt]] <- mcubistbst$p + labs(title=i)
         impvar[[i]] <- mcubistbst$varimport
     }
 
-    drest[[x]] <- list(p_regelevage,impvar,rest)
+    dimpvar[[x]] <- impvar
+    drest[[x]] <- rest
+    dR2[[x]] <- R2
+    dRMSE[[x]] <- RMSE
 }
 save(drest,file=paste(repsortie,"drestcubistdiff_typoclim.RData",sep=""))
-
-
-do.call(grid_arrange_shared_legend,c(p,list(nrow=3,ncol=3,position="bottom")))
-save(p,file=paste(repsortie,"pcubist_typoclim.RData",sep=""))
-save(rest,file=paste(repsortie,"restcubist_typoclim.RData",sep=""))
-
+save(dimpvar,file=paste(repsortie,"dimpvarcubistdiff_typoclim.RData",sep=""))
+save(dR2,file=paste(repsortie,"dR2varcubistdiff_typoclim.RData",sep=""))
+save(dRMSE,file=paste(repsortie,"dRMSEpvarcubistdiff_typoclim.RData",sep=""))
 ```
 
 ```{r,eval=TRUE,echo=FALSE}
 # Chargement
-load(paste(repsortie,"drestcubistdiff_typoclim.RData",sep=""))
+#load(paste(repsortie,"pcubist_typoclim.RData",sep=""))
+#do.call(grid_arrange_shared_legend,c(p,list(nrow=3,ncol=3,position="bottom")))
 
-# Mise en forme
-rest_cubistlmregelevage <- melt(drest)
-colnames(rest_lmregelevage)[5] <- "Period"
+load(paste(repsortie,"drestcubistdiff_typoclim.RData",sep=""))
+periodetud <- c("14","24","15","25","13","35")
+
+# Mise en forme des résultats
+load(paste(repsortie,"dR2varcubistdiff_typoclim.RData",sep=""))
+test <- melt(dR2)
+str(test)
+ggplot(test, aes(x=L2,y=value)) + facet_wrap(~L1) + geom_boxplot() +
+  scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone organique (g/kg)")+
+  theme(plot.title = element_text(size = 14, face = "bold"), 
+        text = element_text(size = 12),
+        axis.title = element_text(face="bold"),
+        axis.text.x=element_text(size = 11))
+
+
+
+
+
+
+drest[1:10][[2]]
+
+    rest_cubistlmregelevage <- melt(drest[[i]][[3]])
+    colnames(rest_lmregelevage)[5] <- "Period"
+
+
+
 rest_lmregelevage <- rest_lmregelevage[,c("strates","Period","mod","value")]
 
 pander(rest_lmclim,caption="Résultats des régressions linéaires pour les différentes régions d'élevage et les différentes périodes de temps comparées")
+
+
+
+
+
+#####
+load(paste(repsortie,"drest_lm_regelevage.RData",sep=""))
+
+# Mise en forme
+rest_lmregelevage <- melt(drest)
+colnames(rest_lmregelevage)[5] <- "Period"
+rest_lmregelevage <- rest_lmregelevage[,c("strates","Period","mod","value")]
+
+
+
 ```
 
 

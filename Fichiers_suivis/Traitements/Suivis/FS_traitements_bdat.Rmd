@@ -860,15 +860,15 @@ for(i in Variay){
   
   mcubist_fr <- cv_datamining(datax,datay,nbr=nbr,prob,model,select=1:15,tuneGrid,trControl,repsortie)
 
-  # Compte tenu du poid de ces objets, on recueille uniquement les sorties graphiques et on supprime le modèle
+  # Compte tenu du poid de ces objets, on recueille uniquement qualityindex et varimport
   mcubist_fr <- mcubist_fr[c("qualityindex","varimport")]
 
   saveRDS(mcubist_fr,file=paste(repsortie,"mcubist_fr_",i,".rds",sep=""))
 }
 ```
+
 ```{r,eval=TRUE,echo=FALSE}
 Variay <- c("corgox9599","corgox0004","corgox0509","corgox1014")
-
 impvar <- list()
 p <- list()
 rest <- array(NA, dim = c(length(Variay), 3),list(Period_co = Variay, mod = c("r2","MSE","RMSE")))
@@ -876,14 +876,13 @@ cpt <- 0
 for(i in Variay){
   cpt <- cpt + 1
   namemodel <- paste("mcubist_fr_",i,sep="")
-  #assign(namemodel,readRDS(paste(repsortie,namemodel,".rds",sep="")))
   modelcubistrds <- readRDS(paste(repsortie,namemodel,".rds",sep=""))
   p[[cpt]] <- ggplot(modelcubistrds$varimport, aes(x = variable, y = importance,fill=type)) + 
               geom_bar(stat = "identity") + coord_flip() + labs(title=i)
-  rest[cpt,"r2"] <- get(namemodel)$qualityindex[,"R2"][[1]]
-  rest[cpt,"MSE"] <- get(namemodel)$qualityindex[,"MSE"][[1]]
-  rest[cpt,"RMSE"] <- get(namemodel)$qualityindex[,"RMSE"][[1]]
-  impvar[[i]] <- get(namemodel)$varimport
+  rest[cpt,"r2"] <- modelcubistrds$qualityindex[,"R2"][[1]]
+  rest[cpt,"MSE"] <- modelcubistrds$qualityindex[,"MSE"][[1]]
+  rest[cpt,"RMSE"] <- modelcubistrds$qualityindex[,"RMSE"][[1]]
+  impvar[[i]] <-modelcubistrds$varimport
 }
 ```
 Les résultats de la validation croisée de la modélisation des teneurs en CO pour les différentes périodes sont présentés dans le tableau ci-dessous. Sur les 100 répétitions, l'application du modèle sur les 20% du jeu d'apprentissage montre une capacité de prédiction des teneurs en CO équivalente entre les périodes et de bonne qualité. La modélisation des teneurs en CO pour la période 2010-2014 montrent la capacité de prédiction la plus mauvaise avec un coefficient de détermination (R2) de 0.78 et un erreur moyenne (Root Mean Square Error) de 2.4 g/kg. La période 2000-2004 affiche les meilleurs avec un R2 de 0.83 et une erreur moyenne de 2.2 g/kg. En moyenne la modélisation des teneurs en CO toute période confondues affiche donc une capacité d'explication de la variance de plus de 80%.
@@ -901,7 +900,7 @@ L'ordre d'importance des variables explicatives des 4 périodes des teneurs en C
 do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
 ```
 
-> **En conclusion** Ces résultats montrent que la répartition des teneurs en CO de la BDAT à l'échelle de la France est principalement expliquée par des variable d'origine naturelle (pédologique, climatique, et topographique). L'effet de l'occupation du sol apparaît secondaire. Ces résultats concordent avec les premières conclusions du travail de la modélisation avec des régressions linéaires multiples effectuées avec des co-variables naturelles ou d'origine anthropiques. A la suite de ce premier travail, la modélisation des teneurs en CO doit être reconduite à l'échelle d'un zonage où le contexte climatique, pédologique et topographique est homogène afin d'identifier les variables d'occupation du sol susceptibles d'agir sur les teneurs en CO.
+> **En conclusion** Ces résultats montrent que la répartition des teneurs en CO de la BDAT à l'échelle de la France est principalement expliquée par des variable d'origine naturelle (pédologique, climatique, et topographique). L'effet de l'occupation du sol apparaît secondaire. Ces résultats concordent avec les premières conclusions du travail de la modélisation avec des régressions linéaires multiples effectuées avec des co-variables naturelles ou d'origines anthropiques. 
 
 ```{r,eval=FALSE,echo=FALSE}
 # Construction de la grille 
@@ -914,6 +913,10 @@ autre <- vNames[!(vNames %in% c("argi_med","pluie_ecart_janv","p_sfp1979","altim
 
 variaeffect(grille = grille,vNames = autre,data = d,model = mcubist,nameModel = "cubist",neighbors=tuneGrid,nomsortie="test",sortie=repsortie)
 ```
+## Conclusion
+
+A la suite de ce premier travail, la modélisation des teneurs en CO doit être reconduite à l'échelle d'un zonage où le contexte climatique, pédologique et topographique est homogène afin d'identifier les variables d'occupation du sol susceptibles d'agir sur les teneurs en CO.
+
 
 # Analyse par stratification
 
@@ -1074,8 +1077,6 @@ for(i in strates){
   p[[cpt]] <- mcubistbst$p + labs(title=i)
   impvar[[i]] <- mcubistbst$varimport
 }
-
-
 
 do.call(grid_arrange_shared_legend,c(p,list(nrow=1,ncol=3,position="bottom")))
 
