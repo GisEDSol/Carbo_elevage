@@ -58,10 +58,33 @@ carto <- function(
 {
 
 library(rgdal);library(ggplot2);library(maptools);library(reshape2);library(classInt);
-library(gridExtra);library(RPostgreSQL);library(stringr);library(rgeos)
+library(gridExtra);library(RPostgreSQL);library(stringr);library(rgeos);
 
 
 # Utilisation du thème développé par https://timogrossenbacher.ch/2016/12/beautiful-thematic-maps-with-ggplot2-only/
+scale_map <- function(...){
+scale_fill_manual(
+  name=l_legend,
+  values = myColors,  
+  guide = guide_legend(
+  direction = "horizontal",
+  keyheight = unit(3, units = "mm"),
+  keywidth = unit(30 / length(labels), units = "mm"),
+  title.position = 'top',
+  # I shift the labels around, the should be placed 
+  # exactly at the right end of each legend key
+  title.hjust = 1,
+  label.hjust = 1,
+  nrow = 1,
+  byrow = T,
+  # also the guide needs to be reversed
+  reverse = F,
+  label.position = "bottom"
+  )
+  )
+}
+
+
 
 theme_map <- function(...) {
   theme_minimal() +
@@ -84,6 +107,32 @@ theme_map <- function(...) {
   )
 }
 
+theme_map3 <- function(...) {
+    theme(
+      legend.position = c(0.5, 0.03),
+      legend.text.align = 0,
+      legend.background = element_rect(fill = alpha('white', 0.0)),
+      legend.text = element_text(size = 8, hjust = 0, color = "#4e4d47"),
+      plot.title = element_text(hjust = 0.5, color = "#4e4d47"),
+      plot.subtitle = element_text(hjust = 0.5, color = "#4e4d47", 
+                                   margin = margin(b = -0.1, 
+                                                   t = -0.1, 
+                                                   l = 2, 
+                                                   unit = "cm"), 
+                                   debug = F),
+      legend.title = element_text(size = 8),
+      plot.margin = unit(c(.5,.5,.2,.5), "cm"),
+      panel.spacing = unit(c(-.1,0.2,.2,0.2), "cm"),
+      panel.border = element_blank(),
+      plot.caption = element_text(size = 6, 
+                                  hjust = 0.92, 
+                                  margin = margin(t = 0.2, 
+                                                  b = 0, 
+                                                  unit = "cm"), 
+                                  color = "#939184")
+      )
+}
+
 theme_map2 <- function(...) {
 theme(plot.title = element_text(size=12,face="bold"),
                             text = element_text(size=12),
@@ -92,6 +141,56 @@ theme(plot.title = element_text(size=12,face="bold"),
                             axis.ticks =element_blank())
 }
 
+extendLegendWithExtremes <- function(p){
+  library(gtable)
+  p_grob <- ggplotGrob(p)
+  legend <- gtable_filter(p_grob, "guide-box")
+  legend_grobs <- legend$grobs[[1]]$grobs[[1]]
+  # grab the first key of legend
+  legend_first_key <- gtable_filter(legend_grobs, "key-3-1-1")
+  legend_first_key$widths <- unit(2, units = "cm")
+  # modify its width and x properties to make it longer
+  legend_first_key$grobs[[1]]$width <- unit(2, units = "cm")
+  legend_first_key$grobs[[1]]$x <- unit(0.15, units = "cm")
+
+  # last key of legend
+  legend_last_key <- gtable_filter(legend_grobs, "key-3-6-1")
+  legend_last_key$widths <- unit(2, units = "cm")
+  # analogous
+  legend_last_key$grobs[[1]]$width <- unit(2, units = "cm")
+  legend_last_key$grobs[[1]]$x <- unit(1.02, units = "cm")
+
+  # grab the last label so we can also shift its position
+  legend_last_label <- gtable_filter(legend_grobs, "label-5-6")
+  legend_last_label$grobs[[1]]$x <- unit(2, units = "cm")
+
+  # Insert new color legend back into the combined legend
+  legend_grobs$grobs[legend_grobs$layout$name == "key-3-1-1"][[1]] <- 
+    legend_first_key$grobs[[1]]
+  legend_grobs$grobs[legend_grobs$layout$name == "key-3-6-1"][[1]] <- 
+    legend_last_key$grobs[[1]]
+  legend_grobs$grobs[legend_grobs$layout$name == "label-5-6"][[1]] <- 
+    legend_last_label$grobs[[1]]
+
+  # finally, I need to create a new label for the minimum value 
+  new_first_label <- legend_last_label$grobs[[1]]
+  new_first_label$label <- round(min(map_data$avg_age_15, na.rm = T), 2)
+  new_first_label$x <- unit(-0.15, units = "cm")
+  new_first_label$hjust <- 1
+
+  legend_grobs <- gtable_add_grob(legend_grobs, 
+                                  new_first_label, 
+                                  t = 6, 
+                                  l = 2, 
+                                  name = "label-5-0", 
+                                  clip = "off")
+  legend$grobs[[1]]$grobs[1][[1]] <- legend_grobs
+  p_grob$grobs[p_grob$layout$name == "guide-box"][[1]] <- legend
+
+  # the plot is now drawn using this grid function
+  grid.newpage()
+  grid.draw(p_grob)
+}
 
 ##############################
 # Lecture du postgis selon plusieurs conditions
@@ -201,8 +300,7 @@ if(style_classe=="fixed"){
 
     if(length(couleur)>1){myColors <- couleur}else{myColors <- brewer.pal(length(niveaux),couleur)}
     names(myColors) <- levels(factor(melt.map))
-    colScale <- scale_fill_manual(name=l_legend,values = myColors)
-
+    
     }else{
       classe_valeur <- round(classIntervals(melt.map,n=nclasse,style=style_classe,digits=2,na.rm=TRUE)[[2]],1)
   
@@ -212,10 +310,9 @@ if(style_classe=="fixed"){
       carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)
 
       if(length(couleur)>1){myColors <- couleur}else{myColors <- brewer.pal(length(niveaux),couleur)}
-      colScale <- scale_fill_manual(name=l_legend,values = myColors)
-
-    }
-     
+       }
+  
+  colScale <- scale_map(l_legend,myColors)
 	tt <- ggplot(carto, aes(x=long, y=lat)) +
     	                geom_polygon(data=carto, aes(group=group, fill=fill),size=0.1) +
                      	geom_path(data=carto, aes(x=long,y=lat,group=group),color="white",size=0.1)+# Représenter les cantons
@@ -224,11 +321,12 @@ if(style_classe=="fixed"){
 #temp                     	scale_fill_brewer(type=qual,palette = couleur,name=l_legend,guide = guide_legend(reverse=FALSE,nrow=2))
                       theme(legend.position="bottom")+
                      	theme_map() +
-                      theme(legend.position = "bottom") +
-                     	#guides(fill=FALSE)+
+                      theme_map3() +
+                      #guides(fill=FALSE)+
                      	coord_equal() + 
                       labs(title=title)
 	# Sortie du fichier
+  #tt <- extendLegendWithExtremes(tt)
   ggsave(tt, file = paste(repsortie,nomfichier,".png",sep=""), width = 7, height = 7)  
 }else{}
 
@@ -251,8 +349,6 @@ for(i in variablecarto){
 
     if(length(couleur)>1){myColors <- couleur}else{myColors <- brewer.pal(length(niveaux),couleur)}
     names(myColors) <- levels(factor(melt.map))
-    colScale <- scale_fill_manual(name=l_legend,values = myColors)
-
 
     }else{
       # Classement
@@ -264,11 +360,9 @@ for(i in variablecarto){
       carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)
 
       if(length(couleur)>1){myColors <- couleur}else{myColors <- brewer.pal(length(niveaux),couleur)}
-      colScale <- scale_fill_manual(name=l_legend,values = myColors)
-      # Définition de la couleur
-      # colScale <- scale_fill_brewer(palette = couleur,name=l_legend)
       }
 
+    colScale <- scale_map(l_legend,myColors)
     # Création de la carte
     p[[i]] <- ggplot(carto, aes(x=long, y=lat)) +
               geom_polygon(data=carto, aes(group=group, fill=fill),size=0.1) +
@@ -277,10 +371,11 @@ for(i in variablecarto){
               colScale +
               theme(legend.position = "bottom") +
               theme_map() +
+              theme_map3() +
               coord_equal()+
               labs(title=title[cpt])
+   # p[[i]] <- extendLegendWithExtremes(p)
 	}#fin boucle 
-
 tt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=nrowlayout,ncol=ncollayout,position=position)))
 #save(tt,file="tt.RData")
 
