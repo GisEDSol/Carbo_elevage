@@ -9,6 +9,7 @@
 #' @param style_classe Nom du type de classification (quantile, fixed, pretty, jenks)
 #' @param couleur Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
 #' @param title titre de la figure
+#' @param caption sous titre de la figure (en bas de la légende)
 #' @param l_legend Nom pour la légende
 #' @param repsortie Répertoire de sortie du fichier (XXX/XXX/)
 #' @param nomfichier Nom du fichier en sortie (sans extension)
@@ -44,6 +45,7 @@ carto <- function(
        style_classe,
        couleur,
        title,
+       caption,
        l_legend,
        repsortie,
        nomfichier,
@@ -59,33 +61,47 @@ carto <- function(
 
 library(rgdal);library(ggplot2);library(maptools);library(reshape2);library(classInt);
 library(gridExtra);library(RPostgreSQL);library(stringr);library(rgeos);
+#options(scipen=999)
 
+###############################################################
+# Ensembles des fonctions utiles à la construction des cartes. 
+# Développé en partie par https://timogrossenbacher.ch/2016/12/beautiful-thematic-maps-with-ggplot2-only/
+###############################################################
 
-# Utilisation du thème développé par https://timogrossenbacher.ch/2016/12/beautiful-thematic-maps-with-ggplot2-only/
+# Fonction pour l'échelle
 scale_map <- function(...){
 scale_fill_manual(
   name=l_legend,
-  values = myColors,  
+  values = myColors,
+  #na.value="black",  
   guide = guide_legend(
   direction = "horizontal",
-  keyheight = unit(3, units = "mm"),
-  keywidth = unit(30 / length(labels), units = "mm"),
-  title.position = 'top',
+  keyheight = unit(4, units = "mm"),
+  keywidth = unit(10 / length(labels), units = "mm"),
+  #title.position = 'top',
   # I shift the labels around, the should be placed 
   # exactly at the right end of each legend key
-  title.hjust = 1,
-  label.hjust = 1,
-  nrow = 1,
+  title.hjust = 0.5, # 0.5 pour centrer
+  label.hjust = 0.5, # 0.5 pour centrer
+  nrow = nombrerow,
   byrow = T,
   # also the guide needs to be reversed
   reverse = F,
   label.position = "bottom"
-  )
+   )
   )
 }
 
+# Fonction pour les titres
+labs_map <- function(...){
+  labs(x = NULL, 
+       y = NULL, 
+       title = title, 
+       #subtitle = subtitle, 
+       caption = caption)  
+}
 
-
+# Fonction pour le thème général
 theme_map <- function(...) {
   theme_minimal() +
   theme(
@@ -107,6 +123,7 @@ theme_map <- function(...) {
   )
 }
 
+# Fonction complémentaire sur la position de la légende
 theme_map3 <- function(...) {
     theme(
       legend.position = c(0.5, 0.03),
@@ -115,16 +132,16 @@ theme_map3 <- function(...) {
       legend.text = element_text(size = 8, hjust = 0, color = "#4e4d47"),
       plot.title = element_text(hjust = 0.5, color = "#4e4d47"),
       plot.subtitle = element_text(hjust = 0.5, color = "#4e4d47", 
-                                   margin = margin(b = -0.1, 
+                                   margin = margin(b = 0, #-0.1
                                                    t = -0.1, 
-                                                   l = 2, 
+                                                   l = 0,#2 
                                                    unit = "cm"), 
                                    debug = F),
-      legend.title = element_text(size = 8),
-      plot.margin = unit(c(.5,.5,.2,.5), "cm"),
-      panel.spacing = unit(c(-.1,0.2,.2,0.2), "cm"),
+      legend.title = element_text(size = 9),
+      #plot.margin = unit(c(0,0,0,0), "cm"),#margin around entire plot (unit with the sizes of the top, right, bottom, and left margins) 
+      #panel.spacing = unit(c(-.1,0.2,.2,0.2), "cm"),
       panel.border = element_blank(),
-      plot.caption = element_text(size = 6, 
+      plot.caption = element_text(size = 7, 
                                   hjust = 0.92, 
                                   margin = margin(t = 0.2, 
                                                   b = 0, 
@@ -133,14 +150,7 @@ theme_map3 <- function(...) {
       )
 }
 
-theme_map2 <- function(...) {
-theme(plot.title = element_text(size=12,face="bold"),
-                            text = element_text(size=12),
-                            axis.text =element_blank(),# change the theme options
-                            axis.title =element_blank(),# remove axis titles
-                            axis.ticks =element_blank())
-}
-
+# Fonction en cours...
 extendLegendWithExtremes <- function(p){
   library(gtable)
   p_grob <- ggplotGrob(p)
@@ -191,8 +201,8 @@ extendLegendWithExtremes <- function(p){
   grid.newpage()
   grid.draw(p_grob)
 }
-
 ##############################
+
 # Lecture du postgis selon plusieurs conditions
 id <- "id_geofla"
 
@@ -284,53 +294,63 @@ if(reg!=FALSE){# Sélection de la zone d'étude
 # Conversion des spatialdataframe pour la cartographie sous ggpplot2
 gpclibPermit()
 cartodep <- fortify(dep,region=id)
-cartofor <- fortify(map[complete.cases(map@data[variablecarto]),],region=id)
 
 # Représentation cartographique
-
 if(length(variablecarto)==1){
+  cartofor <- fortify(map[complete.cases(map@data[variablecarto]),],region=id)
+
   # Extraction de toutes les valeurs à cartographier pour établir des classes de valeurs à cartographier
   melt.map <- melt(map@data[,variablecarto])[,1]
 
 if(style_classe=="fixed"){
-    niveaux <- levels(factor(melt.map))
+    classe_valeur <- levels(factor(melt.map))
     carto <- merge(cartofor, map@data[,c(id,variablecarto)], by.x="id", by.y=id)    
     colnames(carto)[8] <- "fill"
     carto$fill <- as.factor(carto$fill)
 
-    if(length(couleur)>1){myColors <- couleur}else{myColors <- brewer.pal(length(niveaux),couleur)}
+    myColors <- couleur
     names(myColors) <- levels(factor(melt.map))
     
     }else{
       classe_valeur <- round(classIntervals(melt.map,n=nclasse,style=style_classe,digits=2,na.rm=TRUE)[[2]],1)
-  
+      #classe_valeur <- format(classe_valeur, scientific=FALSE)
+
       # Jointure et changement de nom
       carto <- merge(cartofor, map@data[,c(id,variablecarto)], by.x="id", by.y=id)
       colnames(carto)[8] <- "fill"
-      carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)
+      carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T,dig.lab=10)#dig.lab pour supprimer l'annotation scientifique
 
-      if(length(couleur)>1){myColors <- couleur}else{myColors <- brewer.pal(length(niveaux),couleur)}
+      myColors <- couleur
        }
   
-  colScale <- scale_map(l_legend,myColors)
+  if(length(classe_valeur)<=6){
+      nombrerow=1
+      }else if(length(classe_valeur)>6 & length(classe_valeur)<10){
+        nombrerow=2
+        }else if(length(classe_valeur)>=10){
+          nombrerow=3
+        }
+
+  colScale <- scale_map(l_legend,myColors,nombrerow)
+  applilabs <- labs_map(title,caption)
 	tt <- ggplot(carto, aes(x=long, y=lat)) +
-    	                geom_polygon(data=carto, aes(group=group, fill=fill),size=0.1) +
+    	                geom_polygon(data=carto, aes(group=group, fill=fill),size=0.1,na.rm=TRUE) +
                      	geom_path(data=carto, aes(x=long,y=lat,group=group),color="white",size=0.1)+# Représenter les cantons
                      	geom_path(data=cartodep, aes(x=long,y=lat,group=group),color="black",size=0.1)+# Représenter les contours des départements
                       colScale +
-#temp                     	scale_fill_brewer(type=qual,palette = couleur,name=l_legend,guide = guide_legend(reverse=FALSE,nrow=2))
                       theme(legend.position="bottom")+
                      	theme_map() +
                       theme_map3() +
-                      #guides(fill=FALSE)+
-                     	coord_equal() + 
-                      labs(title=title)
+                      coord_equal() + 
+                      applilabs
+
 	# Sortie du fichier
   #tt <- extendLegendWithExtremes(tt)
   ggsave(tt, file = paste(repsortie,nomfichier,".png",sep=""), width = 7, height = 7)  
 }else{}
 
 if(length(variablecarto)>1){
+cartofor <- fortify(map,region=id)
 
 # Extraction de toutes les valeurs à cartographier pour établir des classes de valeurs à cartographier
 melt.map <- melt(map@data[complete.cases(map@data[variablecarto]),variablecarto])[,2]
@@ -342,30 +362,40 @@ for(i in variablecarto){
   cpt <- cpt + 1
  
   if(style_classe=="fixed"){
-    niveaux <- levels(factor(melt.map))
+    classe_valeur <- levels(factor(melt.map))
     carto <- merge(cartofor, map@data[,c("id_geofla",i)], by.x="id", by.y="id_geofla")
   	colnames(carto)[8] <- "fill"
   	carto$fill <- as.factor(carto$fill)
 
-    if(length(couleur)>1){myColors <- couleur}else{myColors <- brewer.pal(length(niveaux),couleur)}
+    myColors <- couleur
     names(myColors) <- levels(factor(melt.map))
 
     }else{
       # Classement
       classe_valeur <- round(classIntervals(melt.map,n=nclasse,style=style_classe,digits=2,na.rm=TRUE)[[2]],1)
-  
+     # classe_valeur <- format(classe_valeur, scientific=FALSE)
+
       # Jointure et changement de nom
       carto <- merge(cartofor, map@data[,c("id_geofla",i)], by.x="id", by.y="id_geofla")
       colnames(carto)[8] <- "fill"
-      carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T)
-
-      if(length(couleur)>1){myColors <- couleur}else{myColors <- brewer.pal(length(niveaux),couleur)}
+      carto[,"fill"] <- cut(carto[,"fill"] ,breaks = data.frame(classe_valeur)[,1],include.lowest=T,dig.lab=10)
       }
+      myColors <- couleur
 
-    colScale <- scale_map(l_legend,myColors)
+    if(length(classe_valeur)<=6){
+      nombrerow=1
+      }else if(length(classe_valeur)>6 & length(classe_valeur)<10){
+        nombrerow=2
+        }else if(length(classe_valeur)>=10){
+          nombrerow=3
+    }
+
+    colScale <- scale_map(l_legend,myColors,nombrerow)
+    applilabs <- labs_map(title[cpt],caption)
+    applilabs$title <- title[cpt]
     # Création de la carte
-    p[[i]] <- ggplot(carto, aes(x=long, y=lat)) +
-              geom_polygon(data=carto, aes(group=group, fill=fill),size=0.1) +
+    p[[i]] <- ggplot(carto[complete.cases(carto$fill),], aes(x=long, y=lat)) +
+              geom_polygon(data=carto[complete.cases(carto$fill),], aes(group=group, fill=fill),size=0.1,na.rm = TRUE) +
               geom_path(data=carto, aes(x=long,y=lat,group=group),color="white",size=0.1)+# Représente les cantons
               geom_path(data=cartodep, aes(x=long,y=lat,group=group),color="black",size=0.1)+# Représente les contours des départements
               colScale +
@@ -373,7 +403,7 @@ for(i in variablecarto){
               theme_map() +
               theme_map3() +
               coord_equal()+
-              labs(title=title[cpt])
+              applilabs
    # p[[i]] <- extendLegendWithExtremes(p)
 	}#fin boucle 
 tt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=nrowlayout,ncol=ncollayout,position=position)))

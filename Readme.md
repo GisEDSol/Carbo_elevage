@@ -1,10 +1,10 @@
 # Le projet "Carbo_elevage"
 
-> Ce dépôt rassemble l'ensemble des scripts développés pour analyser les évolutions des teneurs en carbone organique dans les sols en lien avec les changements d'occupation du sol l'élevage. Le dépôt rassemble les scripts associés à la création d'une base de données composée de données sur les sols et l'élevage et les différents traitements statistiques associés. Il est organisé selon l'arborescence suivante :
+> Ce dépôt rassemble l'ensemble des scripts développés pour analyser les évolutions des teneurs en carbone organique dans les sols en lien avec les changements d'occupation du sol liés à l'élevage. Le dépôt rassemble les scripts associés à la création d'une base de données composée de données sur les sols et l'élevage et les différents traitements statistiques associés. Il est organisé selon l'arborescence suivante :
 
 * **[Fichiers_suivis](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis)** Répertoire de stockage des fichiers de suivis associés à la création de la base de données et aux traitements statistiques des données. Ce répertoire est constitué des sous-répertoires suivants :
-      * [BDD](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/BDD) Répertoire de stockage des fichiers de suivis liés à la création de la base de données. Le répertoire est constitué du [script](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/BDD/FS_bdd_brute.Rmd) de création de la bdd brute et de plusieurs fichiers décrivant la création de données élaborées, directement exploitables pour les traitements, les analyses et la cartographie.
-      * [Traitements](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/Traitements) Répertoire regroupant l'ensemble des traitements de données des analyses de sol et des facteurs explicatifs potentiels.
+	* [BDD](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/BDD) Répertoire de stockage des fichiers de suivis liés à la création de la base de données. Le répertoire est constitué du [script](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/BDD/FS_bdd_brute.Rmd) de création de la bdd brute et de plusieurs fichiers décrivant la création de données élaborées, directement exploitables pour les traitements, les analyses et la cartographie.
+    * [Traitements](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/Traitements) Répertoire regroupant l'ensemble des traitements de données des analyses de sol et des facteurs explicatifs potentiels.
 
 * **[Fonctions](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fonctions)** Regroupe des fonctions communes, utilisées dans plusieurs traitements. 
 

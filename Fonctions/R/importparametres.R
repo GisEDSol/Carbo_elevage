@@ -29,7 +29,7 @@ ipak <- function(pkg){
 
 # Chargement des librairies
 listpaquets <- c("RODBC","gdata","fields","stringr","ggplot2","rgdal","maptools","RColorBrewer","classInt","devtools","reshape2","Hmisc","gridExtra","mapproj","wesanderson","FactoMineR",
-	"knitr","pander","GGally","factoextra","caret","plyr","doMC","sp","raster","RPostgreSQL","corrplot","MASS","foreign","doParallel","scales","viridis") 
+	"knitr","pander","GGally","factoextra","caret","plyr","doMC","sp","raster","RPostgreSQL","corrplot","MASS","foreign","doParallel","scales","viridis","mgcv","dplyr") 
 ipak(listpaquets)
 #new.packages <- listpaquets[!(listpaquets %in% installed.packages()[,"Package"])]
 #if(length(new.packages)) install.packages(new.packages)
@@ -172,7 +172,23 @@ grid_arrange_shared_legend <- function(..., nrow = 1, ncol = length(list(...)), 
 
 assign("grid_arrange_shared_legend",grid_arrange_shared_legend,.GlobalEnv)
 
-#from https://gist.github.com/ottadini/6882677
+# Fonction pour ajouter un thème perso sur ggplot2
+theme_perso <- function(...){
+theme_classic()+
+theme(
+      axis.text.x = element_text(size = 11, colour = "black"),#,face = "bold"),
+      axis.text.y = element_text(size = 11, colour = "black"),#,face = "bold"),face = "bold"),
+      axis.line.x = element_line(colour = "black", size = 0.7),
+      axis.line.y = element_line(colour = "black", size = 0.7),
+      plot.title = element_text(size = 14, face = "bold"), 
+      text = element_text(size = 12),
+      axis.title = element_text(face="bold"),
+      legend.position = "bottom")
+}
+assign("theme_perso",theme_perso,.GlobalEnv)
+
+# Pour afficher la droite de regression + l'équation et le R2
+# from https://gist.github.com/ottadini/6882677
 # Source: http://stackoverflow.com/q/7549694/857416
 lm_eqn = function(m) {
   # Displays regression line equation and R^2 value on plot

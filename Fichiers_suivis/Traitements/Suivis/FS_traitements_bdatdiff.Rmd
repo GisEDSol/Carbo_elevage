@@ -108,70 +108,90 @@ melted.bdat <- melted.9514
 
 # Objectifs
 
-Dans ce fichier, la différence des teneurs en carbone organique à l'échelle du canton est étudiée pour un ensemble de périodes comparé. Ces résultats ont été fournis par InfoSol et résultent d'un ré-échantillonnage des analyses de la bdat communales réalisées 100 fois. Au cours de ces répétitions, les teneurs en CO sont comparées pour 2 périodes données et un test statistique est réalisé pour connaître la significacité des différences à l'échelle du canton. Pour une description de la méthode utilisée, le lecteur intéressé peut consulter les articles suivants :
+L'objectif de ce travail est d'analyser les différences l'évolution des teneurs en carbone organique enregistrée à l'échelle du canton. Ces résultats ont été fournis par InfoSol et résultent d'un ré-échantillonnage des analyses de la bdat communale réalisée 100 fois. Au cours de ces répétitions, les teneurs en CO sont comparées pour 2 périodes données et un test statistique est réalisé pour connaître la significacité des différences à l'échelle du canton. Pour une description de la méthode utilisée, le lecteur intéressé peut consulter les articles suivants :
 
 - [Lemercier et al.,2006](https://www.google.fr/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&ved=0ahUKEwj9uNzhwNPSAhXKfRoKHVxVBtIQFggcMAA&url=http%3A%2F%2Fwww.afes.fr%2Fafes%2Fegs%2FEGS_13_3_lemercier.pdf&usg=AFQjCNHmQCmyJgF7DgYTWGYn3XDTPIHSlA)
 - [Saby et al.,2008](http://onlinelibrary.wiley.com/doi/10.1111/j.1475-2743.2008.00159.x/abstract)
 - [Swiderski et al.,2012](https://www.google.fr/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0ahUKEwjXi4-DwdPSAhVIbBoKHYalCcwQFggcMAA&url=http%3A%2F%2Fwww.afes.fr%2Fafes%2Fegs%2FEGS_19_3_swideski_web.pdf&usg=AFQjCNEKtp34NnAEJ6_BEZURnh_DC-Lf3A)
 
-Les résultats de ces tests sont réalisés à l'échelle de la France de la manière suivante :
+Les résultats sont analysés à l'échelle de la France et à l'échelle de plusieurs strates géographiques selon le plan suivant :
 
-- Identifier la distribution spatiale de l'évolution à l'échelle de la france : Cartographie, boxplot du nombre de canton qui évolue par différents niveaux de stratification
+1. Etat des lieux de l'évolution des teneurs en CO à l'échelle nationale.
 - Analyse de la distribution. Quelle sont les principaux facteurs qui expliquent ces évolutions ?
 
 # Analyse de l'évolution des teneurs en carbone organique à l'échelle nationale
 
-A l'échelle nationale et pour toutes les périodes comparées, la proportion de canton ayant une évolution significative des teneurs en CO (augmentation ou diminution) est inférieure à 30%. Dans cette part, il y a quasiment autant de canton enregistrant une augmentation qu'une diminution des teneurs (`r table(melted.bdatdiff[,"diff_corgox"])[[1]]` et `table(melted.bdatdiff[,"diff_corgox"])[[2]]` respectivement).
+Dans cette section, les évolutions des teneurs en CO à l'échelle nationale sont présentées globalement sous forme d'état des lieux. 
+
+
+## Etat des lieux général
+
+
+La figure ci-dessous présente pour toutes les périodes comparées, la proportion du type d'évolution des teneurs en CO par canton.
+Sur toutes les périodes comparées, la proportion de canton ayant une évolution significative des teneurs en CO (augmentation ou diminution) est inférieure à 30%. Dans cette part, il y a quasiment autant de canton enregistrant une augmentation qu'une diminution des teneurs (`r table(melted.bdatdiff[,"diff_corgox"])[[1]]` et `table(melted.bdatdiff[,"diff_corgox"])[[2]]` respectivement). **Une large part des cantons (plus de 70%) n'a donc pas enregistrés d'évolution significative des teneurs en CO.**
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=10,fig.cap = fig$cap("histo_evolution",""),fig.align="center"}
 bdatdiff <- melted.bdatdiff
 
-p_fr <- ggplot(bdatdiff,aes(x=factor(1),fill=diff_corgox)) + geom_bar(aes(y = (..count..)/sum(..count..))) + scale_y_continuous(labels=percent) + scale_fill_brewer(palette = 'Paired',name="Evolution des teneurs en C")+
-                    xlab("Type d'évolution")+ylab("Nombre de canton")+                
-                    theme(plot.title = element_text(size = 14, face = "bold"), 
-                    text = element_text(size = 12),
-                    axis.title = element_text(face="bold"),
-                    axis.text.x=element_text(size = 11))
+p_fr <- bdatdiff %>% 
+          group_by(diff_corgox) %>% 
+          summarise(count=n()) %>% 
+          mutate(perc=round((count/sum(count)),2)) %>%
+          ggplot(aes(x = factor(1), y = perc, fill = factor(diff_corgox),label=paste(perc*100,"%",sep=""))) +
+          scale_fill_brewer(palette = 'Paired',name="Evolution des teneurs en CO")+
+          geom_bar(stat="identity", width = 0.7) +
+          geom_text(size = 3, position = position_stack(vjust = 0.5))+
+          xlab("")+ylab("Pourcentage de canton")+
+          theme_perso()+
+          scale_y_continuous(labels=percent)
 p_fr
 ```
 
 ## Analyse du nombre d'évolution significative par canton
 
-La figure `r fig$ref("histo_evolution_elevage_climat",link=TRUE)` présente un histogramme du nombre de canton ayant connu une augmentation ou une diminution significative des teneurs en carbone organique. L'histogramme est appliqué sur toutes les périodes et stratifié par zones d'élevage.
-La figure montre un équilibre entre le nombre de canton ayant eu une augmentation et le nombre de canton ayant eu une diminution de la teneur en carbone organique. La proportion des zones d'élevage entre les classes d'augmentation et de diminution est relativement équilibrée mais quelques zones se distinguent :
+La figure `r fig$ref("histo_evolution_elevage_climat",link=TRUE)` présente un histogramme du nombre de canton ayant connu une augmentation ou une diminution significative des teneurs en carbone organique. L'histogramme est appliqué sur toutes les périodes et stratifié par zones d'élevage et par type de climat.
+
+La figure présente les mêmes proportion générales observée à l'échelle nationale précédemment. La part de canon aux évolutions des teneurs en CO non significative est toujours très importante. Globalement, le nombre de canton ayant eu une augmentation ou une diminution de la teneur en CO est équilibré à l'échelle des strates géographiques. Quelques zones se distinguent toutefois :
 
 - Les régions B1, C2 et D sont davantage affectées par la diminution des teneurs en C
-- Les région A et C1 sont plus affectées par des augmentations que des diminutions. 
+- Les région A et C1 sont plus affectées par des augmentations que des diminutions. A noter que cette zone est davantage affectées par évolutions significatives que les autres strates.
+- La région climatique 5 (climat océanique franc) est également plus exposée aux évolutions significatives et notamment aux diminutions.
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=10,fig.cap = fig$cap("histo_evolution_elevage_climat",""),fig.align="center"}
-# Histogramme des valeurs 
+# Histogramme des valeurs (ajouter les valeurs en %)
 p <- list()
 
-p[[1]] <- ggplot(bdatdiff,aes(zonage_cplt,fill=diff_corgox)) + geom_bar(position="fill") + #scale_y_continuous(labels = percent_format())+
- #geom_bar()+
-#                    facet_grid(~period) +
-                    scale_fill_brewer(palette = 'Paired',name="Evolution des teneurs en C")+
-                    xlab("Zones d'élevage")+ylab("Pourcentage de canton")+ scale_y_continuous(labels=percent)+
-                    theme(plot.title = element_text(size = 14, face = "bold"), 
-                    text = element_text(size = 12),
-                    axis.title = element_text(face="bold"),
-                    axis.text.x=element_text(size = 11))
+p[[1]] <- bdatdiff %>% 
+          group_by(zonage_cplt,diff_corgox) %>% 
+          summarise(count=n()) %>% 
+          mutate(perc=round((count/sum(count)),2)) %>%
 
-p[[2]] <- ggplot(bdatdiff,aes(typo_clim,fill=diff_corgox)) + geom_bar(position="fill") + #scale_y_continuous(labels = percent_format())+
- #geom_bar()+
-#                    facet_grid(~period) +
-                    scale_fill_brewer(palette = 'Paired',name="Evolution des teneurs en C")+
-                    xlab("Type de climat")+ylab("Pourcentage de canton")+scale_y_continuous(labels=percent)+
-                    theme(plot.title = element_text(size = 14, face = "bold"), 
-                    text = element_text(size = 12),
-                    axis.title = element_text(face="bold"),
-                    axis.text.x=element_text(size = 11))    
-                    #geom_bar(position="dodge")
+          ggplot(aes(x = factor(zonage_cplt), y = perc, fill = factor(diff_corgox),label=paste(perc*100,"%",sep=""))) +
+          scale_fill_brewer(palette = 'Paired',name="Evolution des teneurs en CO")+
+          geom_bar(stat="identity", width = 0.7) +
+          geom_text(size = 3, position = position_stack(vjust = 0.5))+
+          xlab("Zones d'élevage")+ylab("Pourcentage de canton")+
+          theme_perso()+
+          scale_y_continuous(labels=percent)
+#ggsave(p,file = paste(repsortie,"histo_regelevage.png",sep=""), width = 7, height = 6)  
+
+p[[2]] <- bdatdiff %>% 
+          group_by(typo_clim,diff_corgox) %>% 
+          summarise(count=n()) %>% 
+          mutate(perc=round((count/sum(count)),2)) %>%
+
+          ggplot(aes(x = factor(typo_clim), y = perc, fill = factor(diff_corgox),label=paste(perc*100,"%",sep=""))) +
+          scale_fill_brewer(palette = 'Paired',name="Evolution des teneurs en CO")+
+          geom_bar(stat="identity", width = 0.7) +
+          geom_text(size = 3, position = position_stack(vjust = 0.5))+
+          xlab("Type de climat")+ylab("Pourcentage de canton")+
+          theme_perso()+
+          scale_y_continuous(labels=percent)
 
 tt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=1,ncol=2,position="bottom")))
 ```
 
-Dans la figure `r fig$ref("histo_evolution_period_elevage",link=TRUE)`, les histogrammes sont analysés pour des écarts entre les périodes étudiées d'au moins 10 ans. La figure montre des différences importantes entre les périodes analysées :
+Dans la figure `r fig$ref("histo_evolution_period_elevage",link=TRUE)`, les histogrammes sont analysés par périodes comparées et classés par l'évolution du pourcentage de prairies entre 1970 et 2010. La figure montre des différences importantes entre les périodes analysées :
 
 - L'évolution des teneurs est équilibrée entre les périodes [1994-1999]-[2010-2014] et les périodes [1990-1994]-[2010-2014],
 - Les différences entre les périodes [1990-1994]-[2000-2004] et [1994-1999]-[2005-2009] montrent une part importante pour la diminution des teneurs en CO. Dans une moindre mesure, la différence entre les périodes [1990-1994]-[2005-2009] présente une part de diminution des teneurs en CO plus importante que l'augmentation.
@@ -187,9 +207,11 @@ periodetud <- c(periodetud,enplus)
 
 bdatdiff <- bdatdiff[bdatdiff$period %in% periodetud, ]
 bdatdiff$diff_corgox <- as.factor(bdatdiff$diff_corgox)
+bdatdiff$classe_var_prairie1970_2010 <- ordered(bdatdiff$classe_var_prairie1970_2010, levels = c("[-97.8,-21.4]","(-21.4,-11.8]","(-11.8,-4.19]","(-4.19,4.5]","(4.5,73]"))
+
 
 histo_varprairie <- ggplot(bdatdiff,aes(diff_corgox,fill=classe_var_prairie1970_2010)) + geom_bar() + facet_wrap(~ period)+
-                    scale_fill_brewer(palette = 'Paired',name="Evolution des prairies % (1970-2010")+
+                    scale_fill_brewer(palette = 'Paired',name="Evolution des prairies % (1970-2010)")+
                     xlab("Type d'évolution des teneurs en carbone organique")+ylab("Nombre de canton")+
                     theme(plot.title = element_text(size = 14, face = "bold"), 
                     text = element_text(size = 12),
@@ -211,12 +233,16 @@ Dans la suite, on s'intéressera uniquement aux périodes concernées par les ch
 - 35 [2000-2004]-[2010-2014],
 - 13 [1990-1994]-[2000-2004],
 - 24 [1995-1999]-[2005-2009],
-- 14 [1990-1994]-[2005-2009].
+- 14 [1990-1994]-[2005-2009],
+- 23 [1995-1999]-[2000-2004],
+- 45 [2005-2009]-[2010-2014],
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=5, fig.width=14,fig.cap = fig$cap("bar_prairie","Histogramme à commenter"),fig.align="center"}
 # Sélection des cantons aux diminutions significatives
 bdatdiff_classe <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff_corgox) & melted.bdatdiff$diff_corgox !="Non significatif",]
-periodetud <- c("13","24","35","14")
+
+periodetud <- c("13", "23", "35", "45")
+#periodetud <- c("13","24","35","14")
 zone_elevage <- c("A","B1","C1","C2","D")
 
 bdatdiff_classe <- bdatdiff_classe[(bdatdiff_classe$period %in% periodetud) & (bdatdiff_classe$zonage_cplt %in% zone_elevage),]
@@ -237,6 +263,7 @@ De la figure ci-dessus, les 10 principales régions touchées par des évolution
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,results='asis'}
 # Sélection
+count <- plyr::count # Pour sélectionner la fonction du paquet plyr
 histo_table <- count(bdatdiff_classe,c("diff","nom_region","period"))
 histo <- histo_table[order(-histo_table[,"freq"]),][1:10,]
 pander(histo,style = "rmarkdown",caption = "Principales régions touchées par des évolutions significatives")
@@ -247,29 +274,42 @@ Le Nord-pas-de-Calais, la Bretagne, la Picardie et la région Poitou-Charentes s
 
 ## Cartographie des évolutions
 
-On retrouve ces observations sur les cartes d'évolution des teneurs. Dans le détail, c'est le morbihan qui est surtout affecté par des chutes de teneurs en carbone organique et en région Centre, on observe une augmentation des teneurs concentrée dans le Perche.
+On retrouve ces observations sur les cartes d'évolution des teneurs. Dans le détail, c'est le morbihan qui est surtout affecté par des chutes de teneurs en carbone organique et en région Centre, on observe une augmentation des teneurs en CO concentrée dans le Perche.
 Ces résultats très ciblés font penser à un effet de bord (différences liés aux laboratoires?), surtout pour les régions Picardie, Nord-Pas-De-Calais et le département du Morbihan. **La suite des analyses se concentrera sur ces zones.**
+
+- 35 [2000-2004]-[2010-2014],
+- 13 [1990-1994]-[2000-2004],
+- 24 [1995-1999]-[2005-2009],
+- 14 [1990-1994]-[2005-2009],
+- 23 [1995-1999]-[2000-2004],
+- 45 [2005-2009]-[2010-2014],
 
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,message=FALSE}
 # Cartographie des résultats des tests statistiques
 tablecarto <- "dm_vecteurs.canton" 
-variablecarto <- c("diffmedian_corgox13","diffmedian_corgox24","diffmedian_corgox35","diffmedian_corgox14") #variable à spatialiser
-l_legend <- "Evolution des teneurs en C"#label de la variable
+variablecarto <- c("diffmedian_corgox13","diffmedian_corgox23","diffmedian_corgox35","diffmedian_corgox54") #variable à spatialiser
+#variablecarto <- c("diffmedian_corgox13","diffmedian_corgox23","diffmedian_corgox35","diffmedian_corgox14") #variable à spatialiser
+l_legend <- "Evolution des teneurs en CO"#label de la variable
 nclasse <- 4 #Nombre de classes de valeurs pour la cartographie
 style_classe <- "quantile" #"pretty"#"jenks","fixed"
-couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+couleur <- viridis(nclasse)#("#04B404","#FE2E2E","#045FB4")#nom de la palette couleur (pour connaître les différentes palettes
 nomfichier <- "Median_evolu_corgox"
+caption <- ""
 
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=10,ggsavewidth=10)
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,title=c("1990-1994 et 2000-2004","1995-1999 et 2000-2004","2000-2004 et 2010-2014","2005-2009 et 2010-2014"),caption=caption,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=7,ggsavewidth=6.27)  
+##
+##
 
 variablecarto <- c("diff_corgox13","diff_corgox24","diff_corgox35","diff_corgox14") #variable à spatialiser
-l_legend <- "Evolution des teneurs en C"#label de la variable
-nclasse <- 4 #Nombre de classes de valeurs pour la cartographie
+l_legend <- "Evolution des teneurs en CO"#label de la variable
+nclasse <- 3 #Nombre de classes de valeurs pour la cartographie
 style_classe <- "fixed" #"pretty"#"jenks","fixed"
-couleur <- "Set1"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+couleur <- viridis(nclasse)#("#04B404","#FE2E2E","#045FB4")#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
 nomfichier <- "Median_diff_corgox"
+caption <- ""
+#title <- c("1990-1994 et 2000-2004","1995-1999 et 2005-2009","2000-2004 et 2010-2014","1990-1994 et 2005-2009")
 
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=10,ggsavewidth=10)
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,title=c("1990-1994 et 2000-2004","1995-1999 et 2000-2004","2000-2004 et 2010-2014","2005-2009 et 2010-2014"),caption=caption,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=7,ggsavewidth=6.27)  
 ```
 
 ```{r map_evol_fr, echo = FALSE, eval=TRUE,results = 'asis'}
@@ -280,120 +320,10 @@ cat(paste("![](",fichiers,")",sep=""))
 ```
 
 
-# test
 
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,title=c("1990-1994","1995-1999","2000-2004","2005-2009","2010-2014"),caption="",dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=7,ggsavewidth=9.2)
+## Conclusion 
 
-```{r,eval=FALSE,echo=FALSE}
-melted.9014 <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdat_9014",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE))
-melted.9014$value <- as.numeric(melted.9014$value)
-melted.9014 <- melted.9014[complete.cases(melted.9014$value),]
-melted.9014$annees <- factor(melted.9014$annees,levels=c("9094","9599","0004","0509","1014"))
-
-reg_focus <- c("31","22")
-melted_focus <- melted.9014[melted.9014$code_reg %in% reg_focus,]
-#levels(melted_focus$annees) <- c("1979","1988","2000","2010")
-melted.ra_focus <- melted.ra[melted.ra$code_reg %in% reg_focus & melted.ra$variable %in% c("p_c","p_mf","p_prairie","p_sfp"),]
-
-#http://drawar.github.io/posts/dual-y-axis-ggplot2/
-
-p_bdat <- ggplot(melted_focus) + 
-          geom_smooth(aes(x=as.integer(annees),y=value),color="black",method=loess)+
-          #geom_smooth(method = "loess", se=FALSE, color="black", aes(group=1))+
-          scale_y_continuous("Teneur en carbone organique (g/kg)")+
-          theme(plot.title = element_text(size = 14, face = "bold"), 
-                text = element_text(size = 12),
-                axis.title = element_text(face="bold"),
-                axis.text.x=element_text(size = 11))
-
-melted.ra_focus <- melted.ra[melted.ra$code_reg %in% reg_focus  & melted.ra$annees %in% c("1979","1988","2000","2010") & melted.ra$variable %in% c("p_c","p_mf","p_prairie","p_sfp"),]
-melted.ra_focus$annees <- factor(melted.ra_focus$annees,levels=c("1979","1988","2000","2010"))
-
-colors <- brewer.pal(4,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
-p_ra <- ggplot(melted.ra_focus) +
-#            geom_boxplot(aes(x=annees,y=value,col=variable))+
-            geom_smooth(aes(x=as.integer(annees),y=value,color=variable),method=loess)+
-            scale_color_manual(values=colors,name="Occupation du sol")+
-            scale_y_continuous("% d'occupation du sol")+
-            theme(plot.title = element_text(size = 14, face = "bold"), 
-                  text = element_text(size = 12),
-                  axis.title = element_text(face="bold"),
-                  axis.text.x=element_text(size = 11),
-                  legend.position="bottom")
-
-tt <- grid.arrange(p_bdat,p_ra)
-
-
-# make gtable objects from ggplot objects
-# gtable object shows how grobs are put together to form a ggplot
-library(gtable)
-library(grid) # low-level grid functions are required
-g1 <- ggplotGrob(p1)
-g1 <- gtable_add_cols(g1, unit(0,"mm")) # add a column for missing legend
-g2 <- ggplotGrob(p2)
-g <- rbind(g1, g2, size="first") # stack the two plots
-g$widths <- unit.pmax(g1$widths, g2$widths) # use the largest widths
-# center the legend vertically
-g$layout[grepl("guide", g$layout$name),c("t","b")] <- c(1,nrow(g))
-grid.newpage()
-grid.draw(g)g1 <- ggplot_gtable(ggplot_build(p_bdat))
-g2 <- ggplot_gtable(ggplot_build(p_ra))
-
-# get the location of the panel of p1 
-# so that the panel of p2 is positioned correctly on top of it
-pp <- c(subset(g1$layout, name == "panel", se = t:r))
-
-# superimpose p2 (the panel) on p1
-g <- gtable_add_grob(g1,g2$grobs[[which(g2$layout$name == "panel")]], pp$t, 
-pp$l, pp$b, pp$l)
-grid.draw(g)
-
-
-# extract the y-axis of p2
-ia <- which(g2$layout$name == "axis-l")
-ga <- g2$grobs[[ia]]
-ax <- ga$children[[2]]
-
-# flip it horizontally
-ax$widths <- rev(ax$widths)
-ax$grobs <- rev(ax$grobs)
-
-# add the flipped y-axis to the right
-g <- gtable_add_cols(g, g2$widths[g2$layout[ia, ]$l], length(g$widths) - 1)
-g <- gtable_add_grob(g, ax, pp$t, length(g$widths) - 1, pp$b)
-grid.draw(g)
-
-
-
-library(gtable)
-library(grid) # low-level grid functions are required
-g1 <- ggplotGrob(p1)
-g1 <- gtable_add_cols(g1, unit(0,"mm")) # add a column for missing legend
-g2 <- ggplotGrob(p2)
-g <- rbind(g1, g2, size="first") # stack the two plots
-g$widths <- unit.pmax(g1$widths, g2$widths) # use the largest widths
-# center the legend vertically
-g$layout[grepl("guide", g$layout$name),c("t","b")] <- c(1,nrow(g))
-grid.newpage()
-grid.draw(g)
-
-
-
-
-
-
-
-
-
-
-#http://stackoverflow.com/questions/9916194/two-color-scales-for-geom-line-in-ggplot2
-
-ggplot(exShapedMayGroup, aes_string(x="Date", y="Score")) + 
-geom_line(aes_string(group=".id", linetype=".id")) +  
-geom_point() + 
-geom_line(aes_string(y="Lower", colour="Right")) + 
-geom_line(aes_string(y="Upper", colour="Right")) + 
-scale_linetype_discrete(name="Group") + scale_color_discrete(name="Limits")
-```
 
 
 # Evolution globale des teneurs en CO par rapport aux teneurs initiales
@@ -689,55 +619,29 @@ periodetud <- c("14","24","15","25","13","35")
 # Mise en forme des résultats
 load(paste(repsortie,"dR2varcubistdiff_typoclim.RData",sep=""))
 test <- melt(dR2)
-str(test)
-ggplot(test, aes(x=L2,y=value)) + facet_wrap(~L1) + geom_boxplot() +
+
+p <- ggplot(test, aes(x=L2,y=value)) + facet_wrap(~L1) + geom_boxplot() +
   scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone organique (g/kg)")+
   theme(plot.title = element_text(size = 14, face = "bold"), 
         text = element_text(size = 12),
         axis.title = element_text(face="bold"),
         axis.text.x=element_text(size = 11))
 
+p
 
+#rest_cubistlmregelevage <- melt(drest[["14"]][[3]])
+#colnames(rest_lmregelevage)[5] <- "Period"
+#rest_lmregelevage <- rest_lmregelevage[,c("strates","Period","mod","value")]
 
-
-
-
-drest[1:10][[2]]
-
-    rest_cubistlmregelevage <- melt(drest[[i]][[3]])
-    colnames(rest_lmregelevage)[5] <- "Period"
-
-
-
-rest_lmregelevage <- rest_lmregelevage[,c("strates","Period","mod","value")]
-
-pander(rest_lmclim,caption="Résultats des régressions linéaires pour les différentes régions d'élevage et les différentes périodes de temps comparées")
-
-
-
-
-
+#pander(rest_lmclim,caption="Résultats des régressions linéaires pour les différentes régions d'élevage et les différentes périodes de temps comparées")
 #####
-load(paste(repsortie,"drest_lm_regelevage.RData",sep=""))
+#load(paste(repsortie,"drest_lm_regelevage.RData",sep=""))
 
 # Mise en forme
-rest_lmregelevage <- melt(drest)
-colnames(rest_lmregelevage)[5] <- "Period"
-rest_lmregelevage <- rest_lmregelevage[,c("strates","Period","mod","value")]
-
-
-
+#rest_lmregelevage <- melt(drest)
+#colnames(rest_lmregelevage)[5] <- "Period"
+#rest_lmregelevage <- rest_lmregelevage[,c("strates","Period","mod","value")]
 ```
-
-
-
-
-
-
-
-
-
-
 ### Régression linéaire multiple
 
 
@@ -816,7 +720,7 @@ save(drest,file=paste(repsortie,"drest_lm_regelevage.RData",sep=""))
 
 ```
 
-```{r,eval=TRUE,echo=FALSE}
+```{r,eval=FALSE,echo=FALSE}
 # Chargement
 load(paste(repsortie,"drest_lm_regelevage.RData",sep=""))
 
@@ -825,7 +729,7 @@ rest_lmregelevage <- melt(drest)
 colnames(rest_lmregelevage)[5] <- "Period"
 rest_lmregelevage <- rest_lmregelevage[,c("strates","Period","mod","value")]
 
-pander(rest_lmclim,caption="Résultats des régressions linéaires pour les différentes régions d'élevage et les différentes périodes de temps comparées")
+pander(rest_lmregelevage,caption="Résultats des régressions linéaires pour les différentes régions d'élevage et les différentes périodes de temps comparées")
 ```
 
 
@@ -907,7 +811,7 @@ save(drest,file=paste(repsortie,"drest_lm_typoclim.RData",sep=""))
 
 ```
 
-```{r,eval=TRUE,echo=FALSE}
+```{r,eval=FALSE,echo=FALSE}
 # Chargement
 load(paste(repsortie,"drest_lm_typoclim.RData",sep=""))
 

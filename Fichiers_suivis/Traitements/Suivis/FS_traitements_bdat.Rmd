@@ -1,7 +1,7 @@
 ---
 title: "Analyse des teneurs en carbone organique de la BDAT"
 author: "Jean-Baptiste Paroissien"
-date: "07/03/2017"
+date: "20/03/2017"
 output:
   html_document:
     toc: yes
@@ -117,9 +117,9 @@ Cette première étape a pour but d'analyser les teneurs en CO de la BDAT pour c
 
 La cartographie du nombre d'analyse de la BDAT par canton pour les teneurs en CO est présentée dans la figure ci-dessous. Cette figure met en évidence une importante variabilité spatio-temporelle du nombre d'analyse. De façon générale (toutes périodes confondues), le nombre d'effectif est plus important sur la partie nord et ouest du pays. Le Massif Central et le Sud-Est sont faiblement concentrés en effectifs.
 
-Les variabilité sont également marquées dans le temps. La période 9094 est entachée par l'abscence d'analyses dans de nombreuses régions dont la Normandie. Les autres périodes présentes une distribution des analyses plus stables.
+Les variabilité sont également marquées dans le temps. La période 9094 ne comporte pas d'analyse dans plusieurs régions comme la Normandie. Les autres périodes présentent une distribution des analyses plus stables.
 
-> **Compte-tenu du manque de données dans la première période 9094, celle-ci ne sera pas prise en compte dans les analyses des teneurs en CO à l'échelle de la France.** 
+> **Compte-tenu du manque de données observée dans la première période 9094, celle-ci ne sera pas prise en compte dans les analyses des teneurs en CO à l'échelle de la France.** 
 
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE}
 # Paramètres #################
@@ -129,11 +129,11 @@ period <- c("9094","9599","0004","0509","1014") #
 variablecarto <- paste(variable,period,sep="")#variables à cartographier
 nclasse <- 5 
 style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
-couleur <- "YlOrRd" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+couleur <- brewer.pal(5,"YlOrRd") #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
 l_variable <- "Nombre d'échantillon par canton" #label de la variable
 nomfichier <- "effectif_bdat_corgox" #Nom du fichier
 
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=7,ggsavewidth=9.2)
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,title=c("1990-1994","1995-1999","2000-2004","2005-2009","2010-2014"),caption="",dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=7,ggsavewidth=9.2)
 ```
 
 ```{r carto_effectif_fr, echo = F, results = 'asis'}
@@ -155,11 +155,11 @@ variable <- "corgox"
 variablecarto <- paste(variable,period,sep="")#variables à cartographier
 nclasse <- 5 
 style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
-couleur <- "YlOrRd" #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+couleur <- brewer.pal(nclasse,"YlOrRd") #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
 l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
 nomfichier <- "corgox_period_fr" #Nom du fichier
 
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=7,ggsavewidth=7)
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,title=c("1995-1999","2000-2004","2005-2009","2010-2014"),caption="",dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=7,ggsavewidth=6.27)
 ```
 ```{r carto_c_fr, echo = F, results = 'asis'}
 # Pour insérer l'image
@@ -188,10 +188,7 @@ p[[1]] <- ggplot(melted.bdat, aes(x=value))+
        scale_color_manual(values=colors, 
                           name="Périodes")+
        scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
-       theme(plot.title = element_text(size = 14, face = "bold"), 
-             text = element_text(size = 12),
-             axis.title = element_text(face="bold"),
-             axis.text.x=element_text(size = 11))
+       theme_perso()
 
 #ggsave(p[[1]],file = paste(repsortie,"cdf_fr1.png",sep=""), width = 9, height = 7)  
 p[[2]] <- ggplot(melted.bdat[(melted.bdat$value > 17) & (melted.bdat$value < 45) ,], aes(x=value))+
@@ -199,10 +196,7 @@ p[[2]] <- ggplot(melted.bdat[(melted.bdat$value > 17) & (melted.bdat$value < 45)
        scale_color_manual(values=colors, 
                           name="Périodes")+
        scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
-       theme(plot.title = element_text(size = 14, face = "bold"), 
-             text = element_text(size = 12),
-             axis.title = element_text(face="bold"),
-             axis.text.x=element_text(size = 11))
+       theme_perso()
 
 #ggsave(p[[2]],file = paste(repsortie,"cdf_fr2.png",sep=""), width = 9, height = 7)  
 
@@ -214,8 +208,11 @@ tt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=1,ncol=2,position="bottom
 # Résumé des statistiques 
 bdatsummary <- apply(melted.bdat["value"],2, function(x) tapply(x, melted.bdat[,"annees"],summary))
 bdatsummary <- lapply(bdatsummary, do.call, what = rbind)
+
+tx_baisse_fr <- round(((bdatsummary$value["9599","Median"]-bdatsummary$value["0004","Median"])/bdatsummary$value["9599","Median"])*100,1)
+tx_augmentation_fr <- round(((bdatsummary$value["1014","Median"]-bdatsummary$value["0004","Median"])/bdatsummary$value["1014","Median"])*100,1)
 ```
-La distribution des teneurs en carbone organique par période est présentée figure `r fig$ref("boxplot_fr",link=TRUE)` et statistiques associées le tableau ci-dessous. La tendance de diminution des teneurs observée dans la figure `r fig$ref("cdf_fr",link=TRUE)` est également constatée dans ces deux éléments. La période 2000-2004 montre la valeur médiane la plus faible avec une valeur de `r bdatsummary$value["0004","Median"]` g/kg. Les valeurs les plus importantes sont observées pour les périodes 1995-1999 et 1014 avec des médianes de teneurs en carbone organique équivalente, à `r bdatsummary$value["9599","Median"]` g/kg. Ces évolutions sont très légèrement marquées sur la figure `r fig$ref("boxplot_fr",link=TRUE)` où l'évolution moyenne des teneurs en carbone organique baisse légèrement après la période 1995-1999.
+La distribution des teneurs en carbone organique par période est présentée figure `r fig$ref("boxplot_fr",link=TRUE)` et les statistiques associées dans le tableau ci-dessous. La tendance de diminution des teneurs observée dans la figure `r fig$ref("cdf_fr",link=TRUE)` est également constatée dans ces deux éléments. La période 2000-2004 montre la valeur médiane la plus faible avec une valeur de `r bdatsummary$value["0004","Median"]` g/kg. Les valeurs les plus importantes sont observées pour les périodes 1995-1999 et 2010-2014 avec des médianes de teneurs en carbone organique équivalente, à `r bdatsummary$value["9599","Median"]` g/kg. Ces évolutions sont très légèrement marquées sur la figure `r fig$ref("boxplot_fr",link=TRUE)` où l'évolution moyenne des teneurs en carbone organique baisse légèrement après la période 1995-1999.
 
 ```{r summarybdatfrancetable,highlight=TRUE,echo=FALSE,eval=TRUE,results = 'asis',warning=FALSE,message=FALSE}
 pander(bdatsummary[[1]],caption = "Statistiques descriptives des teneurs en carbone organique pour les différentes périodes")
@@ -230,14 +227,11 @@ p <- ggplot(melted.bdat, aes(x=annees,y=value)) +
   #scale_color_manual(values=colors,name="Années")+
   geom_smooth(method = "loess", se=FALSE, color="black", aes(group=1))+
   scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone organique (g/kg)")+
-  theme(plot.title = element_text(size = 14, face = "bold"), 
-        text = element_text(size = 12),
-        axis.title = element_text(face="bold"),
-        axis.text.x=element_text(size = 11))
+  theme_perso()
 p
 #ggsave(p,file = paste(repsortie,"boxplotbdat.png",sep=""), width = 5, height = 6)  
 ```
-Les résultats du test de Wilcoxon présentés ci-dessous montrent que **les différences à l'échelle de la France entre les périodes sont significatives pour les baisses de [1995-1999 et 2000-2004], [1995-1999 et 2005-2009] et l'augmentation des teneurs entre les périodes [2000-2004 et 2010-2014]**. Ces résulats confirment les tendances observées sur les courbes de fréquences cumulées (voir figure `r fig$ref("cdf_fr",link=TRUE)`).
+Les résultats du test de Wilcoxon présentés ci-dessous montrent que **les différences des médianes cantonales à l'échelle de la France entre les périodes sont significatives pour la baisse observée entre les périodes 1995-1999 et 2000-2004, 1995-1999 et 2005-2009 et l'augmentation des teneurs entre les périodes [2000-2004 et 2010-2014]**. Ces résulats confirment les tendances observées sur les courbes de fréquences cumulées (voir figure `r fig$ref("cdf_fr",link=TRUE)`).
 
 ```{r,highlight=TRUE,eval=TRUE,echo=TRUE}
 pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"])
@@ -245,15 +239,15 @@ pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"])
 
 ## Conclusion
 
-La médiane cantonale des teneurs en CO des analyses de la BDAT a évolué significativement entre les périodes de temps étudiées (de 1995 à 2014). De 1995 à 2005-2009, la médiane des médianes des teneurs a diminué, passant de 14 g/kg à 13.70 g/kg. Cette tendance s'est inversée significativement entre les périodes 2000-2000 et 2010-2014 pour finalement revenir aux teneurs initiales de 1995-1999, à 14 g/kg.
+La médiane cantonale des teneurs en CO des analyses de la BDAT a évolué significativement entre les périodes étudiées (de 1995 à 2014). De 1995 à 2005-2009, la médiane des médianes des teneurs a diminué, passant de 14 g/kg à 13.70 g/kg. Cette tendance s'est inversée significativement entre les périodes 2000-2000 et 2010-2014 pour finalement revenir aux teneurs initiales de 1995-1999, à 14 g/kg. Au plus fort de ces évolutions,  la baisse médiane des médianes des teneurs en CO entre 1995-1999 et 2000-2004 est de `r tx_baisse_fr`%, soit environ une baisse annuelle de **`r round(tx_baisse_fr/5,1)`% par an**. A l'inverse, on retrouve un taux d'augmentation plus faible entre les périodes 2000-2004 et 2010-2014 avec **`r round(tx_augmentation_fr/10,1)`% par an**.
 
-**Rajouter une discussion sur les résultats de Bellamy et al., 2005**
+Ces résultats sont comparables avec les travaux de [Bellamy et al., 2005](https://core.ac.uk/download/pdf/141023.pdf?repositoryId=23). Ces auteurs ont mis en évidence sur un ensemble d'analyses de sol réalisé en Angleterre et au Pays-de-Galles de 1978 à 2003 une baisse moyenne de teneurs en CO de **0.6% par an** (relatif par rapport aux teneurs initiales).
 
 Ce travail d'analyse sur l'ensemble du territoire est reconduit sur plusieurs strates géographiques afin d'étudier les évolutions sur des compartiments environnementaux homogènes, du point de vue du climat et de l'occupation du sol.
 
-# Analyse des teneurs en carbone organique par période (Strates)
+# Analyse des teneurs en carbone organique par période et par différentes strates géographiques
 
-L'analyse des teneurs en CO est appliquée à l'échelle de plusieurs de strates. Ces strates représentent des entités géographiques homogènes d'un point de vue climatique, de type d'élevage ou encore géologique.
+L'analyse des teneurs en CO est appliquée à l'échelle de plusieurs de strates. Ces strates représentent des entités géographiques homogènes d'un point de vue climatique, du type d'élevage.
 L'analyse par strate peut permettre d'observer des tendances régionales à l'intérieur desquelles les mécanismes d'évolution des teneurs en CO sont supposés homogènes.
 
 ## Analyse par type de climat
@@ -262,8 +256,8 @@ Compte tenu de l'importance des variables climatiques dans le contrôle de la di
 
 *La construction des données climatiques est consultable sur ce fichier [FS_bdd_elab_climat.Rmd](https://github.com/GisEDSol/Carbo_elevage/blob/master/Fichiers_suivis/BDD/Suivis/FS_bdd_elab_climat.Rmd)*
 
-Le tableau ci-dessus présente le nombre de canton pourvu en analyse de la BDAT par type de climat. Les types de climats **6, 7 et 8** englobent moins de 100 cantons. Ils seront écartés de l'analyse.
-Parmi les strates restantes, la variabilité dans le nombre d'analyse est importante, passant de 163 pour le type 1 à 722 pour le type 3.
+Le tableau ci-dessus présente le nombre de canton pourvu en analyse de la BDAT par type de climat. Les types de climats **6, 7 et 8** englobent moins de 100 cantons. Ils seront écartés de l'analyse pour des raisons 
+Parmi les strates restantes, la variabilité dans le nombre d'analyse est importante, passant de 163 pour le type 1 à 722 pour le type 3. Ces différences seront à prendre en compte dans l'analyse des résultats.
 
 ```{r,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
 #melted.bdat$typo_climsple <- melted.bdat$typo_clim
@@ -275,7 +269,7 @@ for(i in levels(as.factor(melted.bdat$typo_clim))){
 }
 clim_nbranalyses <- as.data.frame(melt(p))
 colnames(clim_nbranalyses) <- c("Nbr","Type_climat")
-pander(clim_nbranalyses[,c("Type_climat","Nbr")],caption="Nombre de canton possédant des analyses par type de climat")
+pander(clim_nbranalyses[,c("Type_climat","Nbr")],caption="Nombre d'analyse par type de climat")
 ```
 
 ### Cartographie des types de climat
@@ -289,10 +283,10 @@ variablecarto <- "typo_clim" #variable à spatialiser
 l_legend <- "Type de climat"#label de la variable
 nclasse <- 8 #Nombre de classes de valeurs pour la cartographie
 style_classe <- "fixed" #"pretty"#"jenks","fixed"
-couleur <- "Paired"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+couleur <- brewer.pal(nclasse,"Paired")#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
 nomfichier <- "typo_clim"
 
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=1,position="bottom",ggsaveheight=7,ggsavewidth=10)  
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,title="",caption="",dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=7,ggsavewidth=10)
 ```
 
 ```{r, echo = F, results = 'asis'}
@@ -301,10 +295,14 @@ fichiers <- paste(repsortie,"typo_clim.png",sep="")
 cat(paste("![](",fichiers,")",sep=""))
 ```
 
-### Courbes de fréquences cumulées
+### Statistiques descriptives
 
-```{r cdf_clim,highlight=TRUE,echo=FALSE,eval=TRUE,fig.height=10, fig.width=12,fig.cap = fig$cap("cdf_clim",""),fig.align="center"}
-#pROBLÈME
+On commence par analyser les teneurs par strates géographiques...
+Ci-dessous, la figure présente la répartition des teneurs en C pour les différentes périodes et pour les principales régions d'élevage. Rajouter les différences significatives
+
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=12,fig.cap = fig$cap("boxplot_regclim",""),fig.align="center"}
+
 xlabel <- "Carbone organique (g/kg)"
 ylabel <- "Fréquence"
 colour <- brewer.pal(5,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
@@ -313,6 +311,21 @@ typo_clim <- 1:5
 
 melted.bdat_clim <- melted.bdat[(melted.bdat$typo_clim %in% typo_clim),]
 
+p <- ggplot(melted.bdat_clim) +
+            geom_boxplot(aes(x=typo_clim,y=value))+
+            #geom_smooth(aes(x=as.integer(annees),y=value,color=zonage_simple,fill=zonage_simple),method=loess)+
+            #scale_color_manual(values=colors,name="Années")
+            scale_x_discrete("Type de climat")+scale_y_continuous("Teneur en carbone (g/kg)")+
+            theme_perso()
+            
+p  
+#ggsave(p,file = paste(repsortie,"boxplotbdat_zonage_cplt.png",sep=""), width = 12, height = 6)  
+```
+
+```{r, eval=TRUE,echo=FALSE}
+pairwise.wilcox.test(melted.bdat_clim[,"value"], melted.bdat_clim[,"typo_clim"])
+```
+```{r cdf_clim,highlight=TRUE,echo=FALSE,eval=TRUE,fig.height=10, fig.width=12,fig.cap = fig$cap("cdf_clim",""),fig.align="center"}
 cdf_clim <- ggplot(melted.bdat_clim, aes(x=value))+
        facet_wrap(~typo_clim)+
        stat_ecdf(aes(colour=annees))+
@@ -326,11 +339,11 @@ cdf_clim <- ggplot(melted.bdat_clim, aes(x=value))+
 cdf_clim
 #ggsave(cdf_clim,file = paste(repsortie,"cdf_clim.png",sep=""), width = 12, height = 10)  
 ```
-La figure `r fig$ref("cdf_clim",link=TRUE)` présente les courbes de fréquence cumulées pour les différents types de climats. Les courbes de fréquences cumulées pour les 3 types de climats sélectionnés présentent une forme similaire. Les courbes des différentes périodes tendent vers des valeurs de teneurs en CO plus faible sur une large gamme de teneur pour les types de climat 3 et 4. Dans ces 2 cas, les périodes 0004 et 0509 présentent des valeurs plus faibles que les teneurs 9599 et 1014. Dans le type de climat 4, l'évolution des teneurs s'accentue sur la gamme 17-30 g/gk. Sur cette gamme, la période 1014 est particulièrement contributrice de la baisse des teneurs. A l'inverse, la période 0509 montrent des teneurs en CO plus forte pour cette gamme de valeur.
+La figure `r fig$ref("cdf_clim",link=TRUE)` présente les courbes de fréquence cumulées pour les différents types de climats. Les courbes de fréquences cumulées pour les 5 types de climats sélectionnés présentent une forme similaire. Les courbes des différentes périodes tendent vers des valeurs de teneurs en CO plus faible sur une large gamme de teneur pour les types de climat 1, 2, 3 et 4. Dans ces 2 cas, les périodes 0004 et 0509 présentent des valeurs plus faibles que les teneurs 9599 et 1014. Dans le type de climat 4, l'évolution des teneurs s'accentue sur la gamme 17-30 g/kg. Sur cette gamme, la période 1014 est particulièrement contributrice de la baisse des teneurs. A l'inverse, la période 0509 montrent des teneurs en CO plus forte pour cette gamme de valeur. Dans la zone climatique 2, les périodes 0004 et 0509 présentent des teneurs en CO plus faible que les teneurs initiales et celles de la période 2010-2014. Ces évolutions impliquent l'ensemble de la gamme des teneurs en CO.
 
 La courbe de fréquence cumulée pour le type de climat 5 présente une dynamique similaire avec des changements important pour les teneurs en CO de 20-30 g/kg. Dans cette situation, la période 1014 présente également une courbe avec des teneurs en CO plus faible que la période 9599 et des teneurs en CO plus forte pour 0509 et 0004.
 
-**Cette figure montre des tendances comparables entre les types de climats. L'évolution des teneurs en CO est différente en fonction des gammes des teneurs en CO : la période 1014 présente de forte diminution sur les teneurs 17-30 g/kg et une augmentation sur les teneurs inférieures. Les périodes 0004 et 0509 affichent une tendance inverse**
+**Cette figure montre des tendances comparables entre les types de climats. L'évolution des teneurs en CO est différente en fonction des gammes des teneurs en CO : la période 1014 présente une forte diminution sur les teneurs 17-30 g/kg et une augmentation sur les teneurs inférieures. Les périodes 0004 et 0509 affichent une tendance inverse.**
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=7,fig.cap = fig$cap("boxplot_clim",""),fig.align="center",warning=FALSE,message=FALSE}
 
@@ -364,8 +377,7 @@ for(i in levels(as.factor(melted.bdat_clim$typo_clim))){
 }
 ```
 
-
-La figure `r fig$ref("boxplot_clim",link=TRUE)` représente la distribution des teneurs en carbone organique sous forme de boxplot pour les différentes périodes et les différentes zones climatiques. Les tableaux ci-dessus présentent les statistiques descriptives des teneurs en CO pour les différentes périodes et les différents types de climat. De ces tableaux et des boxplots, les zones 3 et 4 présentent une dynamique similaire avec une baisse puis une augmentation des teneurs. Ces évolutions se rapprochent des tendances nationales précédemment observées. Entre ces deux zones, seul les résultats pour le type de climat 3 sont significatifs. **La baisse des teneurs entre 9599 et 0004 et l'augmentation des teneurs en CO entre 0004 et 1014 et 0509-1014 sont significatives.** 
+La figure `r fig$ref("boxplot_clim",link=TRUE)` représente la distribution des teneurs en carbone organique sous forme de boxplot pour les différentes périodes et les différentes zones climatiques. Les tableaux ci-dessus présentent les statistiques descriptives des teneurs en CO pour les différentes périodes et les différents types de climat. De ces tableaux et de ces boxplots, les zones 1, 2, 3 et 4 présentent une dynamique similaire avec une baisse puis une augmentation des teneurs. Ces évolutions se rapprochent des tendances nationales précédemment observées. Entre ces zones, seul les résultats pour le type de climat 3 sont significatifs. **La baisse des teneurs entre 9599 et 0004 et l'augmentation des teneurs en CO entre 0004 et 1014 et 0509-1014 sont significatives.** 
 
 La zone 5 présente une évolution en dent de scie, avec une augmentation, une diminution et une augmentation. Ces évolutions ne sont pas significatives d'après le test de Wilcoxon.
 
@@ -379,7 +391,7 @@ for(i in levels(as.factor(melted.bdat_clim$typo_clim))){
 print(p)
 ```
 
-## Région d'élevage
+## Analyse par région d'élevage
 
 Les grandes régions d'élevage représentent un zonage des principaux systèmes d'élevage en France. Le zonage a été construit sur la base de critères pédo-climatiques et d'un regroupement des petites régions agricoles. Par construction, ce zonage propose donc un regroupement de zones où les conditions d'apport, de stockage et d'évolution de carbone dans le sol peuvent être homogène.
 
@@ -407,7 +419,6 @@ Le tableau ci-dessus présente le nombre de canton ayant des analyses en teneurs
 - E1 : Zone herbagère du Nord-Est (de tradition laitière)
 - E2 : Zone herbagère du Nord Massif-Central (de tradition allaitante)
 
-
 Parmi les strates restantes, la variabilité dans le nombre d'analyse est importante, passant de 163 pour le type 1 à 722 pour le type 3. 
 
 ### Cartographie
@@ -415,14 +426,14 @@ Parmi les strates restantes, la variabilité dans le nombre d'analyse est import
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE}
 tablecarto <- "dm_vecteurs.canton" 
 dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
-variablecarto <- "zonage_cplt" #variable à spatialiser
+variablecarto <- "zonage_simple" #variable à spatialiser
 l_legend <- "Principales régions d'élevage"#label de la variable
 nclasse <- 8 #Nombre de classes de valeurs pour la cartographie
 style_classe <- "fixed" #"pretty"#"jenks","fixed"
-couleur <- "Paired"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
-nomfichier <- "reg_elevage_cplt"
+couleur <- c(brewer.pal(nclasse,"Paired"),"#000010") #nom de la palette couleur (selon RColorBrewer)
+nomfichier <- "reg_elevage_simple"
 
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=1,position="bottom",ggsaveheight=7,ggsavewidth=10)  
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,title="",caption="",dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=7,ggsavewidth=10)
 ```
 
 ```{r, echo = F, results = 'asis',warning=FALSE,error=FALSE,message=FALSE}
@@ -431,12 +442,12 @@ fichiers <- paste(repsortie,"reg_elevage_cplt.png",sep="")
 cat(paste("![](",fichiers,")",sep=""))
 ```
 
-La figure `r fig$ref("cdf_regelevage",link=TRUE)` présente les courbes de fréquences cumulées pour les différentes régions d'élevage. Sur cette figure, on remarque l'effet les différences de la densité d'analyse par région. Les régions C2, G1 et G2 présentent des courbes en marche d'escalier, illustrant un nombre insuffisant de données.
-Mise à part ces différences, la forme des courbes est globalement similaire pour les différentes strates des régions d'élevage. En revanche, les tendances d'évolution des teneurs en CO sont différentes. Par exemple, dans la région C2, la fréquences des teneurs fortes en CO augmente pour les périodes 0004-0509 tandis que ces mêmes périodes affichent des diminutions importantes sur les zones D et E1 notamment.
+### Statistiques descriptives
 
-A ce niveau, il est difficile de rentrer dans le détail. D'autres figures sont produites ci-dessous pour améliorer l'analyse de l'évolution des teneurs au niveau des différentes régions d'élevage.
+On commence par analyser les teneurs par strates géographiques...
+Ci-dessous, la figure présente la répartition des teneurs en C pour les différentes périodes et pour les principales régions d'élevage. Rajouter les différences significatives
 
-```{r cdf_regelevage,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=10, fig.width=12,fig.cap = fig$cap("cdf_regelevage",""),fig.align="center"}
+```{r boxplot_reg_elevagezoom,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=12,fig.cap = fig$cap("boxplot_regelevage",""),fig.align="center"}
 
 period <- c("9599","0004","0509","1014")
 xlabel <- "Carbone organique (g/kg)"
@@ -446,6 +457,36 @@ reg_elevage <- c("A","B1","B2","C1","D","E1","E2")
 
 melted.bdat_regelevage <- melted.bdat[complete.cases(melted.bdat$zonage_cplt) & (melted.bdat$zonage_cplt %in% reg_elevage),]
 
+p <- ggplot(melted.bdat_regelevage) +
+            geom_boxplot(aes(x=zonage_cplt,y=value))+
+            #geom_smooth(aes(x=as.integer(annees),y=value,color=zonage_simple,fill=zonage_simple),method=loess)+
+            #scale_color_manual(values=colors,name="Années")
+            scale_x_discrete("Région d'élevage")+scale_y_continuous("Teneur en carbone (g/kg)")+
+            theme_perso()
+            
+p  
+
+#ggsave(p,file = paste(repsortie,"boxplotbdat_zonage_cplt.png",sep=""), width = 12, height = 6)  
+```
+
+```{r, eval=TRUE,echo=FALSE}
+pairwise.wilcox.test(melted.bdat_regelevage[,"value"], melted.bdat_regelevage[,"zonage_cplt"])
+```
+
+```{r,highlight=TRUE,eval=FALSE,message=FALSE,echo=FALSE}
+# Ici, voir pour rajouter année+zonage_simple ou année+climato ou année+région
+bdatsummary_regelevage <- apply(melted.bdat["value"],2, function(x) tapply(x, list(melted.bdat[,"zonage_simple"],melted.bdat[,"annees"]),summary))
+bdatsummary_regelevage <- data.frame(bdatsummary_regelevage[[1]])
+bdatsummary_regelevage <- lapply(bdatsummary_regelevage, do.call, what = rbind)
+names(bdatsummary_regelevage) <- period
+```
+
+La figure `r fig$ref("cdf_regelevage",link=TRUE)` présente les courbes de fréquences cumulées pour les différentes régions d'élevage. Sur cette figure, on remarque l'effet les différences de la densité d'analyse par région. Les régions C2, G1 et G2 présentent des courbes en marche d'escalier, illustrant un nombre insuffisant de données.
+Mise à part ces différences, la forme des courbes est globalement similaire pour les différentes strates des régions d'élevage. En revanche, les tendances d'évolution des teneurs en CO sont différentes. Par exemple, dans la région C2, la fréquences des teneurs fortes en CO augmente pour les périodes 0004-0509 tandis que ces mêmes périodes affichent des diminutions importantes sur les zones D et E1 notamment.
+
+A ce niveau, il est difficile de rentrer dans le détail. D'autres figures sont produites ci-dessous pour améliorer l'analyse de l'évolution des teneurs au niveau des différentes régions d'élevage.
+
+```{r cdf_regelevage,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=10, fig.width=12,fig.cap = fig$cap("cdf_regelevage",""),fig.align="center"}
 cdf_regelevage <- ggplot(melted.bdat_regelevage, aes(x=value))+
        facet_wrap(~zonage_cplt)+
        stat_ecdf(aes(colour=annees))+
@@ -461,7 +502,7 @@ cdf_regelevage
 ```
 Avant tout, les tables ci-dessous présentent les résultats des tests de Wilcoxon. Mis à part les zones d'élevage A et dans une moindre mesure B1, l'ensemble des régions d'élevage ne présente pas de différences significatives. **Attention, il s'agit d'analyse à l'échelle de la région d'élevage et non du canton**.
 
-Ces résultats atténuent les observations visibles sur les figures ci-dessous (voir figure `r fig$ref("boxplot_regelevage2",link=TRUE)`). Celles-ci présentent des évolutions frappantes et différentes selon les régions, mais elles ne sont pas significatives.
+Ces résultats atténuent les observations visibles sur les figures ci-dessous (voir figure `r fig$ref("boxplot_regelevage2",link=TRUE)`). Celles-ci présentent des évolutions frappantes et différentes selon les régions, **mais elles ne sont pas significatives.**
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE}
 p <- list()
@@ -495,35 +536,12 @@ boxplot_reg_elevage
 ggsave(boxplot_reg_elevage,file = paste(repsortie,"boxplot_reg_elevage.png",sep=""), width = 12, height = 8)  
 ```
 
-Ci-dessous, la figure présente la répartition des teneurs en C pour les différentes périodes et pour les principales régions d'élevage .
-
-```{r boxplot_reg_elevagezoom,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=12,fig.cap = fig$cap("boxplot_regelevage",""),fig.align="center"}
-
-p <- ggplot(melted.bdat_regelevage) +
-            geom_boxplot(aes(x=annees,y=value,col=zonage_cplt),notch=TRUE)+
-            #geom_smooth(aes(x=as.integer(annees),y=value,color=zonage_simple,fill=zonage_simple),method=loess)+
-            #scale_color_manual(values=colors,name="Années")
-            scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone (g/kg)")+
-            theme(plot.title = element_text(size = 14, face = "bold"), 
-                  text = element_text(size = 12),
-                  axis.title = element_text(face="bold"),
-                  axis.text.x=element_text(size = 11))
-p  
-#ggsave(p,file = paste(repsortie,"boxplotbdat_zonage_cplt.png",sep=""), width = 12, height = 6)  
-```
-
-```{r,highlight=TRUE,eval=FALSE,message=FALSE,echo=FALSE}
-# Ici, voir pour rajouter année+zonage_simple ou année+climato ou année+région
-bdatsummary_regelevage <- apply(melted.bdat["value"],2, function(x) tapply(x, list(melted.bdat[,"zonage_simple"],melted.bdat[,"annees"]),summary))
-bdatsummary_regelevage <- data.frame(bdatsummary_regelevage[[1]])
-bdatsummary_regelevage <- lapply(bdatsummary_regelevage, do.call, what = rbind)
-names(bdatsummary_regelevage) <- period
-```
 
 ## Conclusion 
 
-Ici, établir une première conclusion sur les statistiques descriptives des analyses de la BDAT.
+L'étude des teneurs en CO au niveau des différentes strates géographiques de type climatique et d'élevage a revélé des difficultés d'analyse en raison d'un nombre limité de données par strates. Les tendances observées à l'échelle des strates ne sont pas significatives et le faible nombre d'analyse dans les strates peut expliquer ces résultats.
 
+Toutefois, sur l'ensemble des périodes analysées, les différences des teneurs entre les différentes strates géographiques sont systématiquement différentes. Ce qui démonter l'intérêt de travailler sur ce niveau d'échelle.? 
 
 # Analyse des facteurs contrôlant la distribution spatiale
 
@@ -709,13 +727,139 @@ p3 <- as.data.frame(p3)
 pander(p3,caption="Contribution (en %) des variables anthropiques dans la modélisation des teneurs en carbone organique pour les différentes périodes")
 ```
 
+## Régressions linéaires
+
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=10,fig.cap = fig$cap("altitude","Graphiques de correlation"),fig.align="center"}
+period <- c("9599","0004","0509","1014")
+xlabel <- "Altitude moyenne (m)"
+ylabel <- "Teneur en CO (g/kg)"
+colors <- brewer.pal(5,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
+
+p <- list()
+for(i in period){
+  c_period <- paste("corgox",i,sep="")
+  
+  dataplot <- dcast.bdat[complete.cases(dcast.bdat$classe_p_sfp1988) & complete.cases(dcast.bdat$altimean) & complete.cases(dcast.bdat[,c_period]),]
+    
+  p[[i]] <- ggplot(dataplot, aes_string("altimean",c_period)) +
+            geom_point(aes(colour = factor(classe_p_sfp1988)),alpha = 0.8, size = 1) +
+            #geom_point(colour="grey10", alpha = 0.1,size = 1)+
+            scale_color_manual(values=colors,name="% de sfp (1988)")+
+            scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+            text = element_text(size = 12),
+            axis.title = element_text(face="bold"),
+            axis.text.x=element_text(size = 11))+ labs(title=i)+
+            annotate("text", x=650, y=70, label=lm_eqn(lm(dataplot[,c_period]~dataplot[,"altimean"], dataplot)), parse=TRUE)+
+            geom_smooth(method = "lm", se = FALSE,color="black")        
+}
+   
+do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
+```
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=10,fig.cap = fig$cap("cor_prairie1988","Graphique de correlation"),fig.align="center"}
+ylabel <- "Teneur en CO (g/kg)"
+colors <- brewer.pal(5,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
+xlabel <- "Pourcentage de prairie en 1988"
+covariable <- "p_prairie1988"
+
+p <- list()
+for(i in period){
+  c_period <- paste("corgox",i,sep="")
+  
+  dataplot <- dcast.bdat[complete.cases(dcast.bdat$classe_altimean) & complete.cases(dcast.bdat[,covariable]) & complete.cases(dcast.bdat[,c_period]),]
+  
+  p[[i]] <- ggplot(dataplot, aes_string(covariable,c_period)) +
+            geom_point(aes(colour = factor(classe_altimean)),alpha = 0.8, size = 1) +
+            #geom_point(colour="grey10", alpha = 0.1,size = 1)+
+            scale_color_manual(values=colors,name="Altitude moyenne (m)")+
+            scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+            text = element_text(size = 12),
+            axis.title = element_text(face="bold"),
+            axis.text.x=element_text(size = 11))+ labs(title=i)+
+            annotate("text", x=20, y=70, label=lm_eqn(lm(dataplot[,c_period]~dataplot[,covariable], dataplot)), parse=TRUE)+
+            geom_smooth(method = "lm", se = FALSE,color="black")    
+}
+
+do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
+```
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=10,fig.cap = fig$cap("correlation","Graphiques de correlation"),fig.align="center"}
+
+period <- c("9599","0004","0509","1014")
+xlabel <- "Pluie annuelle (mm)"
+ylabel <- "Carbone organique (g/kg)"
+colors <- brewer.pal(5,"Set1")
+
+p <- list()
+for(i in period){
+  c_period <- paste("corgox",i,sep="")
+  
+  dataplot <- dcast.bdat[complete.cases(dcast.bdat$classe_p_sfp1988) & complete.cases(dcast.bdat$hpluie_an) & complete.cases(dcast.bdat[,c_period]),]
+#  dataplot[,c_period] <- log(dataplot[,c_period])
+  
+  p[[i]] <- ggplot(dataplot, aes_string("hpluie_an",c_period)) +
+            geom_point(aes(colour = factor(classe_p_sfp1988)),alpha = 0.8, size = 1) +
+            #geom_point(colour="grey10", alpha = 0.1,size = 1)+
+            scale_color_manual(values=colors,name="% de sfp (1988)")+
+            scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+            text = element_text(size = 12),
+            axis.title = element_text(face="bold"),
+            axis.text.x=element_text(size = 11))+ labs(title=i)+
+            annotate("text", x=800, y=70, label=lm_eqn(lm(dataplot[,c_period]~dataplot[,"hpluie_an"], dataplot)), parse=TRUE)+
+            geom_smooth(method = "lm", se = FALSE,color="black")    
+}
+  
+do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
+```
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=10,fig.cap = fig$cap("correlation2","Graphiques de correlation"),fig.align="center"}
+
+period <- c("9599","0004","0509","1014")
+xlabel <- "SFP/SAU(%)"
+ylabel <- "Carbone organique (g/kg)"
+colors <- brewer.pal(5,"Set1")
+
+p <- list()
+for(i in period){
+  c_period <- paste("corgox",i,sep="")
+  
+  dataplot <- dcast.bdat[complete.cases(dcast.bdat$classe_p_sfp1988) & complete.cases(dcast.bdat$classe_altimean) & complete.cases(dcast.bdat[,c_period]),]
+#  dataplot[,c_period] <- log(dataplot[,c_period])
+  
+  p[[i]] <- ggplot(dataplot, aes_string("p_sfp1988",c_period)) +
+            geom_point(aes(colour = factor(classe_altimean)),alpha = 0.8, size = 1) +
+            #geom_point(colour="grey10", alpha = 0.1,size = 1)+
+            scale_color_manual(values=colors,name="Altitude moyenne (m)")+
+            scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+            text = element_text(size = 12),
+            axis.title = element_text(face="bold"),
+            axis.text.x=element_text(size = 11))+ labs(title=i)+
+            annotate("text", x=40, y=70, label=lm_eqn(lm(dataplot[,c_period]~dataplot[,"p_sfp1988"], dataplot)), parse=TRUE)+
+            geom_smooth(method = "lm", se = FALSE,color="black")    
+}
+  
+do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
+```
+
+
+
+
+
+
+
+
 ## Modèle de fouille de données
 
 Dans cette partie, on testera rapidement deux modèles de fouille de données utilisés dans plusieurs travaux sur les sols (voir [Murciano et al., 2015](http://www.afes.fr/afes/egs/EGS_22_1_2201_09_18murciano_final.pdf) pour une description des modèles)
 
 - GBM : Le principe de cet algorithme est de construire une séquence de modèles afin qu’à chaque
 étape, chaque modèle ajouté à la combinaison apparaisse comme un pas vers une meilleure solution.
-- Cubist : Cubist est un modèle de régression axé prédiction qui combine les idées de modèle à base de règles, décrites dans Quinlan (1992) avec des corrélations supplémentaires basées sur les voisins les plus proches dans l'ensemble d’apprentissage (voir Quinlan (1993) pour plus de détails).
+- Cubist : Cubist est un modèle de régression axé prédiction qui combine les idées de modèle à base de règles, décrites dans Quinlan (1992) avec des corrélations supplémentaires basées sur les voisins les plus proches dans l'ensemble d’apprentissage (voir Quinlan (1993) pour plus de détails).L’algorithme de Cubist est basé sur des règles permettant l’accumulation de modèles prédictifs basée sur des partitions du jeu de données.
 
 ### Comparaison des modèles (GBM et Cubist)
 
