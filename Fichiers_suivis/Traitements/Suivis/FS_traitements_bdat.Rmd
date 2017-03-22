@@ -79,13 +79,6 @@ raw_mo_url <- "https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Mo
 ```
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE}
-# Lecture des tables de travail
-#melted.bdat <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdat",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE))
-#period <- c("9094","9599","0004","0509","1014")
-#melted.bdat$value <- as.numeric(melted.bdat$value)
-#melted.bdat <- melted.bdat[complete.cases(melted.bdat$value),]
-#melted.bdat$annees <- factor(melted.bdat$annees,levels=period)
-
 # Jeu de données sur 4 périodes de temps
 bdat9514 <- sqlQuery(loc,paste("select * from dm_vecteurs.canton_9514",sep=""))
 melted.9514 <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdat_9514",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE))
@@ -601,54 +594,56 @@ pca
 ```
 ## Test d'endogénéité des variables d'occupation du sol
 
-L'objectif de cette partie est d'évaluer l'ensemble l'endogénéité des variables d'occupation du sol.
+L'objectif de cette partie est d'évaluer l'endogénéité des différentes variables d'occupation du sol. La notion d'endogénéité provient de l'économétrie et résulte de la corrélation entre un paramètre étudié et son résidu. Dans notre situation, l'hypothèse d'endogénéité est suspectée sur les variables d'occupation du sol car celle-ci influencent les teneurs en carbonique mais peuvent également dépendre de la teneur en CO du sol.
 
-- p_prairie1970
-- p_sfp1970
-- p_sth1979
-- p_sth1988
-- p_cop1979
-- p_c1979
+Le code ci-dessous présente l'application du test de Wu-Hausman. L'application de ce test demande l'utilisation d'instrument pour tester l'endogénéité. Les teneurs en CO pour des périodes postérieures aux périodes de l'occupation du sol ont été utilisées. 
 
-```{r,highlight=TRUE,eval=FALSE,echo=FALSE}
+Le tableau ci-dessous présente les résultats du test appliqué pour toutes les variables d'occupation du sol. Le test de Sargan permet de tester la validité des instruments utilisés et les p_value du test d'Hausman permettent d'identifier les variables endogènes.
+
+Les p-value sont supérieures à 0.05 et l'hypothèse null ne peut être rejeté. L'ensemble des variables testées ne sont pas endogènes. Les intruments utilisés sont tous valides à l'exception du test appliquée sur l'OTEX grandes cultures en 1988.
+
+```{r,highlight=TRUE,eval=TRUE,echo=TRUE,results = 'asis',warning=FALSE}
 # selon http://eclr.humanities.manchester.ac.uk/index.php/IV_in_R
-
 library(AER)
-#endo <- c("p_prairie1970","p_sfp1970","p_sth1979","p_sth1988","p_cop1979","p_c1979")
+
+# Ensemble des variables d'occupation du sol suspectées d'être endogène
 endo <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
+
+# Ensemble des variables exogènes (climat+topo+pédo)
 exo <- c("altimean","hpluie_an","jchauds_an","jfroids_an","pluie_ecart_janv","std_pluie_juil","std_temp_janv","std_temp_juil","argi_med","sabt_med")
 exoplus <- paste(exo,collapse="+")
 variamodel <- c(endo,exo)
 
+# Instrument (teneur en carbone sur deux périodes postérieur aux occupations du sol(>2000))
 instru <- c("corgox1014","corgox0509")
 instruplus <- paste(instru,collapse="+")
 
 vNames <- unique(c("corgox9599",instru,variamodel))
 d <- dcast.bdat[complete.cases(dcast.bdat[vNames]),vNames]
 
-# Test des instruments
-
-first_stage <- lm(educ~age+exper+expersq+fatheduc+motheduc,data=mydata)
-instrFtest <- waldtest(first_stage,.~.-fatheduc-motheduc)
-print(instrFtest)
-
-
-# Test de l'endogénéité
+# Test des instruments et de l'endogénéité
 intrutest <- list()
 HausWu <- list()
 for(i in endo){
   varia <- variamodel[!variamodel %in% i]
+  
+  # Régression linéaire entre la variable endogène et les instrus et les variables exogènes
   first_stage <- lm(paste(i, " ~ ", paste(c(exoplus,instruplus),collapse="+"),sep=""),data=d)
-  #instrHausWutest <- waldtest(first_stage,.~.-paste(instru,collapse="-"))
+  
   instrHausWutest <- waldtest(first_stage,.~.-corgox1014-corgox0509)
-  intrutest[[i]] <- instrHausWutest[2,4]
+  intrutest[[i]] <- instrHausWutest[2,4]#Sargan
 
-  Hausman_reg <- lm(paste(vNames[1], " ~ ", paste(varia,collapse="+"),"+first_stage$residuals",sep=""),data=d)
+  # Régression linéaire du carbone (1995-1999) avec les variables exogène et le résidus de la première régression linéaire
+  Hausman_reg <- lm(paste(vNames[1], " ~ ", paste(exo,collapse="+"),"+first_stage$residuals",sep=""),data=d)#Ajout des résidus au modèle de base
+  
+  # Comparaison des deux modèles 
   HausWutest <- waldtest(Hausman_reg,.~.-first_stage$residuals)
- HausWu[[i]] <- HausWutest[2,4]
+  HausWu[[i]] <- HausWutest[2,4]
 }
 
-cbind.data.frame(melt(intrutest),melt(HausWu))
+rest <- cbind.data.frame(melt(intrutest),melt(HausWu))[,1:3]
+colnames(rest) <- c("Sargan_test","Variables","Hausman_test")
+pander(rest,caption="Résutlats des tests d'endogénéité (test de Wu-Hausman)")
 ```
 
 ## Sélection des variables d'intérêt
@@ -711,7 +706,7 @@ save(p,file=paste(repsortie,"p_lm_variatype.RData",sep=""))
 #plot(ev)
 
 ```
-Les résultats de ces tests sont présentés dans le tableau ci-dessous. Pour l'ensemble des teneurs en CO modélisé, la part des variables de types anthropiques est toujours la plus faible. Elle se situe entre 5 et 7% pour les (voir deuxième tableaux ci-dessous). La part des variables naturelle (topographie, pédologie et climat) est bien plus importante. 
+Les résultats de ces tests sont présentés dans le tableau ci-dessous. Pour l'ensemble des teneurs en CO modélisées, la part des variables de types anthropiques est toujours la plus faible. Elle se situe entre 5 et 7% pour les (voir deuxième tableaux ci-dessous). La part des variables naturelle (topographie, pédologie et climat) est bien plus importante. 
 
 ```{r summaryR2ml_fr,highlight=TRUE,echo=FALSE,eval=TRUE,results = 'asis',message=FALSE,warning=FALSE}
 load(paste(repsortie,"p_lm_variatype.RData",sep=""))
@@ -845,14 +840,6 @@ for(i in period){
   
 do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
 ```
-
-
-
-
-
-
-
-
 ## Modèle de fouille de données
 
 Dans cette partie, on testera rapidement deux modèles de fouille de données utilisés dans plusieurs travaux sur les sols (voir [Murciano et al., 2015](http://www.afes.fr/afes/egs/EGS_22_1_2201_09_18murciano_final.pdf) pour une description des modèles)
@@ -1029,11 +1016,13 @@ for(i in Variay){
   impvar[[i]] <-modelcubistrds$varimport
 }
 ```
+
 Les résultats de la validation croisée de la modélisation des teneurs en CO pour les différentes périodes sont présentés dans le tableau ci-dessous. Sur les 100 répétitions, l'application du modèle sur les 20% du jeu d'apprentissage montre une capacité de prédiction des teneurs en CO équivalente entre les périodes et de bonne qualité. La modélisation des teneurs en CO pour la période 2010-2014 montrent la capacité de prédiction la plus mauvaise avec un coefficient de détermination (R2) de 0.78 et un erreur moyenne (Root Mean Square Error) de 2.4 g/kg. La période 2000-2004 affiche les meilleurs avec un R2 de 0.83 et une erreur moyenne de 2.2 g/kg. En moyenne la modélisation des teneurs en CO toute période confondues affiche donc une capacité d'explication de la variance de plus de 80%.
 
-```{r,eval=TRUE,echo=FALSE}
+```{r,eval=TRUE,echo=FALSE,results='asis'}
 pander(as.data.frame(rest),caption="Moyenne des indicateurs de la validation croisée pour les différents modèles")
 ```
+
 Les 15 variables explicatives de ces modélisations sont présentées dans la figure ci-dessous. Le taux d'argile (`argi_med`) et l'écart de pluie à la moyenne en janvier (`pluie_ecart_janv`) sont les deux premières variables explicatives des 4 modèles. Elles présentent toutes deux un pourcentage d'importance supérieur à 50%. L'altitude moyenne (`altimean`) par canton et le pourcentage de surface fourragère principale (pour différentes périodes) (`p_sfp`) sont également des variables explicatives d'importance. 
 
 Cette dernière variable est quasiment présente sous toutes ces déclinaisons temporelles (1970, 1979, 1988, 2000, 2010). Dans une moindre mesure, le pourcentage de prairie dans la SAU et le pourcentage de maïs fourrage sont les autres variables de type occupation du sol qui ressortent régulièrement dans ce classement des 15 variables explicatives les plus importantes.
