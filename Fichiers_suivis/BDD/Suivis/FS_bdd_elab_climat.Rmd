@@ -92,7 +92,7 @@ for(i in variable){
   sqlQuery(loc,paste("alter table ",table_dm,"
                       drop column if exists ",i,sep=""))
   
-  #Création de la colonne, aggrégation par canton (valeur majoritaire, fonctio mode()) et jointure vers la table canton 
+  #Création de la colonne, aggrégation par canton (valeur majoritaire, fonction mode()) et jointure vers la table canton 
   sqlQuery(loc,paste("alter table ",table_dm,"
                       add column ",i," numeric;
                       update ",table_dm,"

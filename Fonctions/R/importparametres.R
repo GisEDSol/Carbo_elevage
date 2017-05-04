@@ -29,7 +29,8 @@ ipak <- function(pkg){
 
 # Chargement des librairies
 listpaquets <- c("RODBC","gdata","fields","stringr","ggplot2","rgdal","maptools","RColorBrewer","classInt","devtools","reshape2","Hmisc","gridExtra","mapproj","wesanderson","FactoMineR",
-	"knitr","pander","GGally","factoextra","caret","plyr","doMC","sp","raster","RPostgreSQL","corrplot","MASS","foreign","doParallel","scales","viridis","mgcv","dplyr") 
+	"knitr","pander","GGally","factoextra","caret","plyr","doMC","sp","raster","RPostgreSQL","corrplot","MASS","foreign","doParallel","scales","viridis","mgcv","dplyr","car","fmsb"
+  ,"multcompView","outliers") 
 ipak(listpaquets)
 #new.packages <- listpaquets[!(listpaquets %in% installed.packages()[,"Package"])]
 #if(length(new.packages)) install.packages(new.packages)
@@ -135,6 +136,8 @@ source(paste(repfonctions,"R/F_carto.R",sep=""))
 source(paste(repfonctions,"R/Rpostgis.R",sep=""))
 source(paste(repfonctions,"R/F_variaeffect.R",sep=""))
 source(paste(repfonctions,"R/F_modelisations.R",sep=""))
+source(paste(repfonctions,"R/F_labelplot.R",sep=""))
+
 
 # Fonction très pratique pour remplacer une suite de charact?res par une autre
 gsub2 <- function(pattern, replacement, x, ...) {
@@ -143,72 +146,6 @@ gsub2 <- function(pattern, replacement, x, ...) {
   x
 }
 assign("gsub2",gsub2,.GlobalEnv)
-
-# From http://stackoverflow.com/questions/13649473/add-a-common-legend-for-combined-ggplots
-grid_arrange_shared_legend <- function(..., nrow = 1, ncol = length(list(...)), position = c("bottom", "right")) {
-
-  plots <- list(...)
-  position <- match.arg(position)
-  g <- ggplotGrob(plots[[1]] + theme(legend.position = position))$grobs
-  legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
-  lheight <- sum(legend$height)
-  lwidth <- sum(legend$width)
-  gl <- lapply(plots, function(x) x + theme(legend.position = "none"))
-  gl <- c(gl, nrow = nrow, ncol = ncol)
-
-  combined <- switch(position,
-                     "bottom" = arrangeGrob(do.call(arrangeGrob, gl),
-                                            legend,
-                                            ncol = 1,
-                                            heights = unit.c(unit(1, "npc") - lheight, lheight)),
-                     "right" = arrangeGrob(do.call(arrangeGrob, gl),
-                                           legend,
-                                           ncol = 2,
-                                           widths = unit.c(unit(1, "npc") - lwidth, lwidth)))
-  grid.newpage()
-  grid.draw(combined)
-  return(combined)
-}
-
-assign("grid_arrange_shared_legend",grid_arrange_shared_legend,.GlobalEnv)
-
-# Fonction pour ajouter un thème perso sur ggplot2
-theme_perso <- function(...){
-theme_classic()+
-theme(
-      axis.text.x = element_text(size = 11, colour = "black"),#,face = "bold"),
-      axis.text.y = element_text(size = 11, colour = "black"),#,face = "bold"),face = "bold"),
-      axis.line.x = element_line(colour = "black", size = 0.7),
-      axis.line.y = element_line(colour = "black", size = 0.7),
-      plot.title = element_text(size = 14, face = "bold"), 
-      text = element_text(size = 12),
-      axis.title = element_text(face="bold"),
-      legend.position = "bottom")
-}
-assign("theme_perso",theme_perso,.GlobalEnv)
-
-# Pour afficher la droite de regression + l'équation et le R2
-# from https://gist.github.com/ottadini/6882677
-# Source: http://stackoverflow.com/q/7549694/857416
-lm_eqn = function(m) {
-  # Displays regression line equation and R^2 value on plot
-  # Usage:
-  # p + annotate("text", x=25, y=300, label=lm_eqn(lm(y ~ x, df)), parse=TRUE)
-  
-  l <- list(a = format(coef(m)[1], digits = 2),
-            b = format(abs(coef(m)[2]), digits = 2),
-            r2 = format(summary(m)$r.squared, digits = 3));
-  
-  if (coef(m)[2] >= 0)  {
-    eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2,l)
-  } else {
-    eq <- substitute(italic(y) == a - b %.% italic(x)*","~~italic(r)^2~"="~r2,l)    
-  }
-  
-  as.character(as.expression(eq));                 
-}
-
-assign("lm_eqn",lm_eqn,.GlobalEnv)
 
 # Fonction pour effectuer une requête sql avant d'importer un postgis (selon https://geospatial.commons.gc.cuny.edu/2013/12/31/subsetting-in-readogr/)
 readOgrSql = function (dsn, sql, ...) {
@@ -254,6 +191,4 @@ assign("readOgrSql",readOgrSql,.GlobalEnv)
 
 #return(list(grid_arrange_shared_legend,gsub2,fig=fig))
 }#Fin fonction
-
-
 

@@ -33,6 +33,41 @@ Pour une description des champs créés, consultez les métadonnées de la table
 
 # Calcul de différentes statistiques et jointures vers la table `dm_vecteurs.canton`
 
+## Création des champs SAU par date au sein de chaque canton
+
+Pour des raisons pratiques, la SAU de chaque canton est ajouté dans la base de données 
+
+```{r,highlight=TRUE,eval=FALSE}
+schema <- "ra" # Nom du schéma où est présent la table 'type_RA'
+table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)(table postGIS)
+period <- c("1970","1979","1988","2000","2010") #périodes de temps analysées 
+SAU <- "(COALESCE(superficieagricoleutilisée1,superficieagricoleutiliséehorsarbresdenoël))"#Champs de la SAU : ici, l'un des deux champs est utilisé si l'un deux a une valeur nulle
+type_RA <- "S_cultures_canton" # Nom de la table brute où les données seront piochées pour être jointe vers 
+
+for(i in period){
+    SAUperiod <- paste("SAU_",i,sep="")
+    print(SAUperiod)
+    tableRA <- paste(type_RA,i,sep="")
+
+    # Suppression de la colonne si déjà existante
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        drop column if exists ",SAUperiod,sep=""))
+  
+    # Création de la colonne et calcul du ratio occup/SAU
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        add column ",SAUperiod," numeric;
+                        update ",table_dm,"
+                        SET ",SAUperiod," = s1.",SAUperiod," from(
+                        select ",SAU," as ",SAUperiod,",num_canton
+                        from ",schema,".",tableRA,") as s1
+                        where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
+    
+      # Ajout d'un commentaire sur la nouvelle colonne créée
+        print(sqlQuery(loc,paste("
+        COMMENT ON COLUMN ",table_dm,".",SAUperiod," IS \'Surface agricole utile (ha) pour l\''année ",i,".\';",sep="")))
+}
+```
+
 ## Calcul de la proportion d'occupation du sol par SAU
 
 Le code suivant détermine la proportion de la surface d'occupation du sol par rapport à la surface agricole utile pour les différentes périodes de temps étudiées (1970,1979,1988,2000,2010). Les occupations du sol prises en compte sont les suivantes :

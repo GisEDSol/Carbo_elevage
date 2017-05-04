@@ -106,7 +106,6 @@ bdat9014 <- sqlQuery(loc,paste("select * from dm_vecteurs.canton",sep=""))
 # Changement du nom des tables pour l'exploitation rapide dans le fichier de suivi
 dcast.bdat <- bdat9014
 #melted.bdat <- melted.9514 
-
 ```
 
 # Objectifs
@@ -300,7 +299,7 @@ plotcubist
 
 **En conclusion** de ce travail exploratoire, l'ordre d'importance des variables explicatives varie en fonction des variations étudiées. Dans plusieurs cas, la distinction de l'importance entre les variables est délicat.
 
-## Analyses des variables sélectionnées pour les différences entre 1990-1994 et 2005-2009)
+## Analyses des variables sélectionnées pour les différences entre 1990-1994 et 2005-2009
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("boxplot_occup","Boxplot des teneurs en C et de l'occupation du sol"),fig.align="center"}
 melted_focus <- melted.bdat[melted.bdat$code_reg %in% reg_focus,]
@@ -377,6 +376,48 @@ p <- ggplot(d, aes_string(i,vNames[1])) +
                 theme_perso()
 
 p                
+
+# test 
+
+reg_focus <- c("31","22")
+dcast.bdat$reladiff14 <- ((dcast.bdat[,"corgox1014"]-dcast.bdat[,"corgox9094"])/dcast.bdat[,"corgox9094"])*100
+d <- dcast.bdat[(dcast.bdat$code_reg %in% reg_focus),]
+Rcovar <- c("var_mf1988_2010","p_mf1988_2010")
+vNames <- "corgox9094"
+colors <- brewer.pal(3,"Set1")
+
+i <- "p_mf1988_2010"
+p <- ggplot(d, aes_string(i,vNames[1])) +
+                geom_point(aes(colour = factor(diff_corgox14)),alpha = 0.8, size = 1) +
+                scale_color_manual(values=colors,name="Test statistique")+
+                scale_x_continuous(i)+scale_y_continuous("Différence teneur en carbone organique (14)")+
+                theme(plot.title = element_text(size = 14, face = "bold"), 
+                text = element_text(size = 12),
+                axis.title = element_text(face="bold"),
+                axis.text.x=element_text(size = 11))+ labs(title=i)+
+                annotate("text", x=0, y=5, label=lm_eqn(lm(d[,vNames[1]]~d[,i], d)), parse=TRUE)+
+                geom_smooth(method = "lm", se = FALSE,color="black") +
+                theme_perso()
+
+p                
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ```
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("Correl_cinitiale",""),fig.align="center",warning=FALSE,error=FALSE}

@@ -85,6 +85,11 @@ rownames(tt) <- 1:nrow(tt)
 pander(tt,caption = "Liste des tables brutes de la BDAT",justify = c('left', 'left'),split.cells = c("35%", "65%"),use.hyphening = TRUE)
 ```
 
+```{r,evaL=TRUE,echo=FALSE}
+metatable <- read.csv(paste(repmetadonnees,"Nomenclature_variables_bdat.csv",sep=""),sep=",")
+pander(metatable,caption = "Description des champs des tables de la BDAT",justify = c('left', 'left'),split.cells = c("35%", "65%"),use.hyphening = TRUE)
+```
+
 ## Les tables de la Base de données Géographique des Sols de France (BDGSF)
 
 La Base de données Géographique des Sols de France (BDGSF) représente la partie française de la Base de Données Géographique des Sols d'Europe (European Soil Data Base) à l'échelle du 1/1000000. La construction est basée sur le principe des Unité Cartographique de Sol (UCS ou SMU) et des Unités Typologique de Sol (UTS ou STU).

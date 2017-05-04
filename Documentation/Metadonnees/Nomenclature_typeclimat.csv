@@ -1,9 +1,9 @@
-Code,Description
-1,Climats de montagne
-2,Climat semi-continental et climat des marges montagnard
-3,Climat océanique dégradé des plaines du Centre et du Nord
-4,Climat océanique altéré
-5,Climat océanique franc
-6,Climat méditerrannéen altéré
-7,Climat du Bassin du Sud-Ouest
-8,Climat méditerranéen franc
+Code,Description,Code_couleur
+1,Climats de montagne,#314a97
+2,Climat semi-continental et climat des marges montagnard,#53c2ec
+3,Climat océanique dégradé des plaines du Centre et du Nord,#a8dae5
+4,Climat océanique altéré,#3fb18f
+5,Climat océanique franc,#33982c
+6,Climat méditerrannéen altéré,#c4d11a
+7,Climat du Bassin du Sud-Ouest,#f29514
+8,Climat méditerranéen franc,#e31a22

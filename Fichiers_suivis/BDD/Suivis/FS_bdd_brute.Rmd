@@ -105,7 +105,7 @@ system(paste("wget -P ",repBase," ",URL_pra,sep=""))
 system(paste("7z e ",repBase,"comm-ra-pra2007.zip -o",repBase," -y",sep=""))
 
 # Intégration dans la BDD (suppression si le vecteur existe déjà)
-pra <- read.table(file=paste(repBase,"comm-ra-pra2007.txt",sep=""), header=TRUE,sep='\t',fileEncoding="latin1",quote="Na",fill=TRUE)
+pra <- read.table(file=paste(repBase,"comm-ra-pra2007.txt",sep=""), header=TRUE,sep="\t",fileEncoding="latin1",quote="",fill=TRUE)
 pra <- pra[,1:10]
 
 sqlQuery(loc,paste("drop table if exists public.pra",sep=""))
@@ -116,10 +116,34 @@ system(paste("rm -d ",repBase,"*.txt",sep=""))
 
 # Jointure de la table pra vers la table commune (ici, on ajoute le code pra à la couche commune)
 sqlQuery(loc,"alter table commune add column pra text")
-sqlQuery(loc,"update commune
+sqlQuery(loc,"update dm_vecteur.commune
               set pra = petiterégionagricole from(
               select pra.petiterégionagricole, pra.codecommune
               from pra) as s1 where commune.INSEE_com=s1.codecommune")
+
+table_dm <- "dm_vecteurs.canton"
+variablepra <- c("ra","pra")
+nompra <- c("régionagricole","petiterégionagricole")
+cpt <- 0
+for(i in variablepra){
+  cpt <- cpt + 1
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                      drop column if exists ",i,sep=""))
+  
+  sqlQuery(loc,paste("alter table ",table_dm,"
+                      add column ",i," varchar(6);
+                      update ",table_dm,"
+                      set ",i,"= s1.",nompra[cpt]," from(
+                      select ",nompra[cpt],",(code_dept || code_cant) as num_canton
+                      from dm_vecteurs.commune as c
+                      inner join public.pra as pra on pra.codecommune=c.INSEE_com) as s1
+                      where ",table_dm,".code_canton=s1.num_canton::text",sep=""))
+
+  # Ajout d'un commentaire sur la nouvelle colonne créée
+  print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",table_dm,".",i," IS \'",nompra[cpt]," du canton.\';",sep="")))
+}
+
 ```
 
 # Les données sols
@@ -203,6 +227,42 @@ for(r in repmethodo){
   }
 }
 ```
+### Importation des résultats pour le 3ème quartile
+
+```{r importBDAT_harmomethodes, eval=FALSE}
+#Attention, changer la valeur de la virgule avant d'importer le fichier...
+ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/tables_3emequartile/",sep=""),pattern="\\.csv$"))
+  for(i in ListBDAT){
+    print(i)
+    # Extraction de la valeur numérique
+    comp <- unlist(regmatches(i,gregexpr('[0-9]+',i)))
+
+    # Lecture du fichier
+    txtBDAT <- read.csv(paste(repBDAT,"BDAT_harmonisee/tables_3emequartile/",i,".csv",sep=""),sep=";",header=TRUE,colClasses=c("Canton"="character"))
+
+    colnames(txtBDAT)[1] <- "canton"
+    colnames(txtBDAT)[c(1,4,5,6,7,9,10)] <- c("canton","dqua","dqua2",paste("diffdqua",comp,sep=""),"diff","eff","effp2")
+    txtBDAT <- txtBDAT[,c(1,4,5,6,7,9,10)]
+    head(txtBDAT)
+
+    str(txtBDAT)
+    # Intégration dans la bdd
+    #sqlQuery(loc,paste("drop table if exists bdat.",i,sep=""))
+    #sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
+  }
+```
+corgox_dqua
+  canton character 
+  diff character varying(255),
+  eff integer,
+  effp2 integer,
+  med double precision,
+  med2 double precision,
+  diffmedian12 double precision
+
+
+
+
 ## Les données de l'European Soil Data Centre (ESDAC)
 
 
@@ -306,7 +366,7 @@ for(i in feuilles ){
 
 ## Les données du recensement agricole (RA)
 
-Les données du recensement agricole ont été extraites de requêtes lancées sur [Disard](https://stats.agriculture.gouv.fr/disar/). 
+Les données du recensement agricole ont été extraites de requêtes lancées sur [Disar](https://stats.agriculture.gouv.fr/disar/). 
 Dans les tables de sorties de Disard, le numéro de canton et le nom du chef lieu sont enregistrés dans le même champ. Dans les commandes suivantes, le numéro de canton et le nom du chef lieu sont dissociés dans un champ qui leur est propre pour faciliter les futures jointures.  
 
 ```{r importagreste,eval=FALSE}

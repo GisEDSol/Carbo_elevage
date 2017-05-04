@@ -48,21 +48,21 @@ if (model == "cubist"){
 
   # Modélisation Cubist (calcul parallèle)
   mdata_miningbst <- parLapply(cl,fold,function(x){
-    require(Cubist)
-    # Modélisation sur jeu de données d'apprentissage
-    mdata_mining <- cubist(datax[x,],datay[x],
+  require(Cubist)
+  # Modélisation sur jeu de données d'apprentissage
+  mdata_mining <- cubist(datax[x,],datay[x],
                committees=tuneGrid$.committees,neighbors=tuneGrid$.neighbors)
   
-    # Prédiction sur le jeu de validation
-    #predtrain <- predict(mdata_mining,datax[x,],committees=tuneGrid$.committees,neighbors=tuneGrid$.neighbors)
-    predind <- predict(mdata_mining,datax[-x,],committees=tuneGrid$.committees,neighbors=tuneGrid$.neighbors)
+  # Prédiction sur le jeu de validation
+  #predtrain <- predict(mdata_mining,datax[x,],committees=tuneGrid$.committees,neighbors=tuneGrid$.neighbors)
+  predind <- predict(mdata_mining,datax[-x,],committees=tuneGrid$.committees,neighbors=tuneGrid$.neighbors)
 
-    # Calcul des indicateurs 
-    R2 <- round(cor(predind,datay[-x],use="na.or.complete")^2,4)
-    MSE <- mean((predind-datay[-x])^2,na.rm=TRUE)
-    RMSE <- mean((predind-datay[-x])^2,na.rm=TRUE)^0.5  
+  # Calcul des indicateurs 
+  R2 <- round(cor(predind,datay[-x],use="na.or.complete")^2,4)
+  MSE <- mean((predind-datay[-x])^2,na.rm=TRUE)
+  RMSE <- mean((predind-datay[-x])^2,na.rm=TRUE)^0.5  
 
-    list(mdata_mining=mdata_mining,predind=predind,R2=R2,MSE=MSE,RMSE=RMSE)
+  list(mdata_mining=mdata_mining,predind=predind,R2=R2,MSE=MSE,RMSE=RMSE)
   })
 
   }else if (model == "gbm"){
@@ -152,10 +152,7 @@ if (model == "cubist"){
     varimport$variable <- reorder(varimport$variable, varimport$importance)
     varimport$type <- gsub2(as.character(Rcovar),type,as.character(varimport$variable))
 
-    p <- ggplot(varimport, aes(x = variable, y = importance,fill=type)) + 
-    geom_bar(stat = "identity") + coord_flip()
-
-    return(list(mdata_miningbst=mdata_miningbst,varimport=varimport,p=p,qualityindex=meanqualityindex,R2=qualityindex$R2,RMSE=qualityindex$RMSE,MSE=qualityindex$MSE))
+    return(list(varimp=varimp,meanvarimport=varimport,qualityindex=meanqualityindex,R2=qualityindex$R2,RMSE=qualityindex$RMSE,MSE=qualityindex$MSE))
   }else{
   return(list(formulabstmodel=formulabstmodel,qualityindex=meanqualityindex,R2=qualityindex$R2,RMSE=qualityindex$RMSE,MSE=qualityindex$MSE))  
   }
@@ -272,6 +269,72 @@ if(stepwise==TRUE){
 
 }#fin de la fonction
 
+# Sélection des variables avec le vif (selon https://gist.github.com/fawda123/4717702#file-vif_fun-r)
+vif_func<-function(in_frame,thresh=10,trace=T,...){
+
+  require(fmsb)
+  
+  if(class(in_frame) != 'data.frame') in_frame<-data.frame(in_frame)
+  
+  #get initial vif value for all comparisons of variables
+  vif_init<-NULL
+  var_names <- names(in_frame)
+  for(val in var_names){
+      regressors <- var_names[-which(var_names == val)]
+      form <- paste(regressors, collapse = '+')
+      form_in <- formula(paste(val, '~', form))
+      vif_init<-rbind(vif_init, c(val, VIF(lm(form_in, data = in_frame, ...))))
+      }
+  vif_max<-max(as.numeric(vif_init[,2]), na.rm = TRUE)
+
+  if(vif_max < thresh){
+    if(trace==T){ #print output of each iteration
+        prmatrix(vif_init,collab=c('var','vif'),rowlab=rep('',nrow(vif_init)),quote=F)
+        cat('\n')
+        cat(paste('All variables have VIF < ', thresh,', max VIF ',round(vif_max,2), sep=''),'\n\n')
+        }
+    return(var_names)
+    }
+  else{
+
+    in_dat<-in_frame
+
+    #backwards selection of explanatory variables, stops when all VIF values are below 'thresh'
+    while(vif_max >= thresh){
+      
+      vif_vals<-NULL
+      var_names <- names(in_dat)
+        
+      for(val in var_names){
+        regressors <- var_names[-which(var_names == val)]
+        form <- paste(regressors, collapse = '+')
+        form_in <- formula(paste(val, '~', form))
+        vif_add<-VIF(lm(form_in, data = in_dat, ...))
+        vif_vals<-rbind(vif_vals,c(val,vif_add))
+        }
+      max_row<-which(vif_vals[,2] == max(as.numeric(vif_vals[,2]), na.rm = TRUE))[1]
+
+      vif_max<-as.numeric(vif_vals[max_row,2])
+
+      if(vif_max<thresh) break
+      
+      if(trace==T){ #print output of each iteration
+        prmatrix(vif_vals,collab=c('var','vif'),rowlab=rep('',nrow(vif_vals)),quote=F)
+        cat('\n')
+        cat('removed: ',vif_vals[max_row,1],vif_max,'\n\n')
+        flush.console()
+        }
+
+      in_dat<-in_dat[,!names(in_dat) %in% vif_vals[max_row,1]]
+
+      }
+
+    return(names(in_dat))
+    
+    }
+  
+}
+
 #' @title lm_variatype
 #'
 #' @description Revoir...
@@ -307,11 +370,14 @@ for(i in typevariable){
   vNames <- c(Variay,as.character(Rnames[[i]]))
   vNames <- vNames[!is.na(vNames)]
 
-  d1 <- dcast.bdat[complete.cases(dcast.bdat[vNames]),vNames]
+  d1 <- d[complete.cases(d[vNames]),vNames]
   datax <- d1[, vNames[-1]]
   datay <- d1[, vNames[1]]
+  
+  # test en cours
+  keep.data <- vif_func(in_frame=datax,thresh=5,trace=T)
 
-  formule <- as.formula(paste(vNames[1], " ~ ", paste(as.character(vNames[-1]),collapse=" + ")))
+  formule <- as.formula(paste(vNames[1], " ~ ", paste(as.character(keep.data),collapse=" + ")))
   step[[i]] <- stepAIC(lm(formule,data=d1),direction="both",data=d1,verbose = FALSE)
 }
 
@@ -326,7 +392,6 @@ bestmodelanthrop <- paste(bestmodelanthrop,collapse="+")
 modelcplt <- paste(c(bestmodelclimat,bestmodelanthrop),collapse="+")
 vNamescplt <- c(Variay,str_split(modelcplt,"\\+")[[1]])
 
-# Revoir ici
 d2 <- d[complete.cases(d[vNamescplt]),vNamescplt]
 
 # Application du modèle sur les variables sélectionnées
@@ -339,15 +404,15 @@ vNamesnaturel <- c(Variay,str_split(bestmodelclimat,"\\+")[[1]])
 lmnaturel <- lm(formulenaturel,data=d2)
 
 # Construction d'un modèle complet (variables anthropiques + naturelles)
-
 formulecplt <- as.formula(paste(vNamescplt[1], " ~ ", modelcplt,sep=""))
 lmcplt <- lm(formulecplt,data=d2)
 
 # Sortie
 formule <- rbind(bestmodelanthrop,bestmodelclimat,modelcplt)[1:3]
 R2 <- rbind(summary(lmanthrop)$r.squared,summary(lmnaturel)$r.squared,summary(lmcplt)$r.squared)
+dwtest <- rbind(durbinWatsonTest(lmanthrop)$p,durbinWatsonTest(lmnaturel)$p,durbinWatsonTest(lmcplt)$p)
 nom <- c("Anthropique","Naturelle","Complet")
-df <- cbind.data.frame(nom,R2,formule)
+df <- cbind.data.frame(nom,R2,dwtest,formule)
 
 return(list(df=df,lmcplt=lmcplt,d2=d2))
 

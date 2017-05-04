@@ -146,16 +146,17 @@ Deux formats de système de gestion de base de données sont proposées :
 L'imporation de la base de données sous le format PostgreSQL/PostGIS nécessite la création d'un serveur dédié. Celui-ci peut être créé en local ou être déposé sur un serveur à distance.
 Les commandes suivantes permettent d'installer un serveur postgreSQL et de le configurer pour importer la base de données :
 
-- Installation des paquets postgreSQL/postGIS, du logiciel pgadmin3 ainsi que des librairies ODBC :
+- Copier/coller ces commandes pour l'installation des paquets postgreSQL/postGIS, du logiciel pgadmin3 ainsi que des librairies ODBC :
 
 ```{r, engine='bash',highlight=TRUE,eval=FALSE}
 sudo su -
 apt-add-repository ppa:flexiondotorg/postgres
 apt-get update
-apt-get install -y pgadmin3 pgadmin3-data postgresql-contrib postgresql-9.5-plr pgadmin3 unixodbc odbc-postgresql unixodbc-dev postgis
+apt-get install -y pgadmin3 pgadmin3-data postgresql-contrib postgresql-9.5-plr pgadmin3 unixodbc odbc-postgresql unixodbc-dev postgis #Ensemble des paquets pour les bases de données
+apt-get install build-essential cmake  libgdal1-dev libproj-dev #paquets pour utiliser les librairies de traitements de données spatiales de gdal/ogr 
 ```
 
-- Ci-dessous, les commandes permettent de créer un utilisateur et d'installer les extensions postgis. L'utilisateur devra définir son nom d'utilisateur ainsi que le mot de passe. Ces paramètres de connexion seront par la suite utilisés pour la connexion entre R et la base de données (avec ODBC)
+- Ci-dessous, les commandes permettent de créer un utilisateur et d'installer les extensions postgis. L'utilisateur devra définir son nom d'utilisateur ainsi que le mot de passe. Ces paramètres de connexion seront par la suite utilisés pour la connexion entre R et la base de données (avec ODBC). Lancer les lignes suivantes une à une dans un terminal et modifier *nomutilisateur* pour le nom d'utilisateur de la base et "******" pour le mot de passe :
 
 ```{r, engine='bash',highlight=TRUE,eval=FALSE}
 sudo -i -u postgres
@@ -176,7 +177,7 @@ CREATE EXTENSION postgis_topology;
 
 *Pour plus d'informations sur la sauvegarde et la restauration d'une base de données postgresql, voir la [documentation officielle](http://doc.postgresql.fr/9.5/backup.html)*
 
-Pour l'importation de la base, il est nécessaire de lancer d'abord ces commandes pour intégrer les rasters (selon cette [discussion](http://postgis.17.x6.nabble.com/Error-on-a-raster-table-restore-td5009569.html)).
+Pour l'importation de la base, copier/coller les commandes ci-dessous dans un terminal pour intégrer les rasters (selon cette [discussion](http://postgis.17.x6.nabble.com/Error-on-a-raster-table-restore-td5009569.html)) :
 
 ```{r, engine='bash',highlight=TRUE,eval=FALSE}
 psql sol_elevage
@@ -186,7 +187,7 @@ Alter Function _raster_constraint_pixel_types(raster) SET Search_path="$user", p
 Alter Function _overview_constraint(raster, integer, name, name, name)  SET Search_path="$user", pg_catalog,public;
 ```
 
-L'importation de la base est ensuite réalisée simplement avec la commande suivante dans l'arborescence contenant le fichier `sol_elevage.sql`. La commande donne de nombreux messages d'erreurs, c'est normal.
+L'importation de la base est ensuite réalisée simplement avec la commande suivante. Pour la lancer, vous devez vous placer dans l'arborescence contenant le fichier `sol_elevage.sql`. **La commande donne de nombreux messages d'erreur, c'est normal.**
 
 ```{r, engine='bash',highlight=TRUE,eval=FALSE}
 psql -U nomutilisateur sol_elevage < sol_elevage.sql
@@ -199,7 +200,7 @@ psql -U nomutilisateur sol_elevage < sol_elevage.sql
 L'accès à la base de données peut être réalisé avec :
 
 - Un client PostgreSQL à jour ([PgAdminIII](https://www.pgadmin.org/) par exemple),
-- Le logiciel R avec une connexion ODBC,
+- Le logiciel R avec une connexion [ODBC](https://fr.wikipedia.org/wiki/Open_Database_Connectivity)
 - Un client PostGis (comme par exemple QGIS)
 
 Quoi qu'il en soit, les paramètres de connexion à retenir pour se connecter à la base sont les suivants :
@@ -233,7 +234,7 @@ Protocol = 8.1
 ReadOnly = 0
 ```
 Les connexions ODBC dans R sont possibles avec le paquet `RODBC`. Pour l'installer, tapez la commande suivante dans un terminal R : `install.packages("RODBC")`. **Pour l'installation de R, voir l'étape 4**.
-Ensuite, vous pouvez utiliser l'alias des paramètres de connexions du fichier `odbc.ini` dans la fonction décrivant les paramètres de connexion `odbcConnect`. Pour vérifier les modifications apportées au fichier de configuration `odbc.ini`, vous pouvez lancer les lignes de commandes suivantes dans le logiciel R. La liste des paramètres de connexion doit alors s'afficher comme ci-dessous:
+Ensuite, vous pouvez utiliser l'alias des paramètres de connexion du fichier `odbc.ini` dans la fonction décrivant les paramètres de connexion `odbcConnect`. Pour vérifier les modifications apportées au fichier de configuration `odbc.ini`, vous pouvez lancer les lignes de commandes suivantes dans le logiciel R. La liste des paramètres de connexion doit alors s'afficher comme ci-dessous:
 
 ```{r, tidy=FALSE,eval=TRUE}
 library(RODBC)
@@ -249,7 +250,7 @@ Sur linux, il est nécessaire d'installer certaines dépendances avant d'install
 sudo apt-get install libgdal1-dev
 ```
 
-Voici les commandes utiles pour charger les paramètres dans une session R :
+Voici les commandes utiles pour charger les paramètres dans une session R. **Attention, dans le cas d'une première utilisation, l'installation des paquets peut être longue (entre 30 minutes et 1 heure)**
 
 ```{r chargement, echo=TRUE,eval=FALSE}
 repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/" #Chemin du dépôt GitHub en local (A changer pour l'utilisateur)

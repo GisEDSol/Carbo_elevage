@@ -81,17 +81,24 @@ raw_mo_url <- "https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Mo
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE}
 # Jeu de données sur 4 périodes de temps
 bdat9514 <- sqlQuery(loc,paste("select * from dm_vecteurs.canton_9514",sep=""))
-melted.9514 <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdat_9514",sep=""),as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE))
+
+melted.9514 <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdat_9514"),stringsAsFactors=TRUE,as.is=TRUE)
 melted.9514$value <- as.numeric(melted.9514$value)
 melted.9514 <- melted.9514[complete.cases(melted.9514$value),]
 melted.9514$annees <- factor(melted.9514$annees,levels=c("9599","0004","0509","1014"))
 
-# Sélection des teneurs mesurées avec la méthode OX
-melted.9514 <- melted.9514[melted.9514$variable %in% "corgox",]
-
+# Sélection des teneurs mesurées avec la méthode OX (médiane)
+melted.9514 <- melted.9514[melted.9514$variable %in% c("corgox","corgox_ddec","corgox_dqua","corgox_pdec","corgox_pqua"),]#,eff_corgox 
 # Changement du nom des tables pour l'exploitation rapide dans le fichier de suivi
 dcast.bdat <- bdat9514
 melted.bdat <- melted.9514 
+
+# Sélection uniquement des médianes et du 90 centile
+melted.bdat <- melted.bdat[melted.bdat$variable %in% c("corgox","corgox_ddec"),]
+melted.bdat$variable <- ordered(melted.bdat$variable, levels = c("corgox","corgox_ddec"))
+levels(melted.bdat$variable) <- c("Médiane","75% centile")
+#melted.bdat$variable <- ordered(melted.bdat$variable, levels = c("corgox_pdec","corgox_pqua","corgox","corgox_dqua","corgox_ddec"))
+#levels(melted.bdat$variable) <- c("10% centile","25% centile","Médiane","75% centile","90% centile")
 ```
 
 # Objectifs
@@ -112,12 +119,12 @@ La cartographie du nombre d'analyse de la BDAT par canton pour les teneurs en CO
 
 Les variabilité sont également marquées dans le temps. La période 9094 ne comporte pas d'analyse dans plusieurs régions comme la Normandie. Les autres périodes présentent une distribution des analyses plus stables.
 
-> **Compte-tenu du manque de données observée dans la première période 9094, celle-ci ne sera pas prise en compte dans les analyses des teneurs en CO à l'échelle de la France.** 
+> **Compte-tenu du manque de donnée observée dans la première période 9094, celle-ci ne sera pas prise en compte dans les analyses des teneurs en CO à l'échelle de la France.** 
 
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE}
 # Paramètres #################
 tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
-variable <- "eff_corgox"
+variable <- "eff_corgox  "
 period <- c("9094","9599","0004","0509","1014") #
 variablecarto <- paste(variable,period,sep="")#variables à cartographier
 nclasse <- 5 
@@ -142,17 +149,24 @@ La cartographie des teneurs en CO de la BDAT est présentée dans les figures ci
 La cartographie montre une distribution spatiale organisée et globalement similaire pour les différentes périodes analysées. De façon générale, cette organisation suit la lithologie du pays avec de fortes teneurs en carbone organique présentes dans les zones de socles et de piemonds et des valeurs plus faibles dans les principaux bassins sédimentaires (parisien et aquitain).
 
 ```{r ,highlight=TRUE,eval=FALSE,echo=FALSE}
+
 tablecarto <- "dm_vecteurs.canton_9514" #Nom de la table utilisée pour la cartographie (table postgis)
 period <- c("9599","0004","0509","1014") #
-variable <- "corgox"
-variablecarto <- paste(variable,period,sep="")#variables à cartographier
-nclasse <- 5 
-style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
-couleur <- brewer.pal(nclasse,"YlOrRd") #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
-l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
-nomfichier <- "corgox_period_fr" #Nom du fichier
+stats <- c("pdec","pqua","med","dqua","ddec")
+for(i in stats){
+  if(i=="med"){variablecarto <- paste("corgox",period,sep="")}else{variablecarto <- paste("corgox_",i,period,sep="")}
+  #variables à cartographier
+  nclasse <- 5 
+  style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
+  couleur <- brewer.pal(nclasse,"YlOrRd") #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+  l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
+  nomfichier <- paste("corgox_period_",i,sep="") #Nom du fichier
+  titleperiod <- c("1995-1999","2000-2004","2005-2009","2010-2014")
+  title <- paste(i,"_",titleperiod,sep="")
+  
+  carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,title=title,caption="",dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=7,ggsavewidth=6.27)
+}
 
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,title=c("1995-1999","2000-2004","2005-2009","2010-2014"),caption="",dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=7,ggsavewidth=6.27)
 ```
 ```{r carto_c_fr, echo = F, results = 'asis'}
 # Pour insérer l'image
@@ -160,11 +174,98 @@ fichiers <- paste(repsortie,"corgox_period_fr.png",sep="")
 cat(paste("![](",fichiers,")",sep=""))
 ```
 
+## Préparation des données (en cours, test et questionnement sur l'intérêt)
+
+```{r echo=FALSE,eval=FALSE,warning=FALSE,error=FALSE}
+dcast.bdat
+
+melted.test <- melted.bdat[melted.bdat$variable %in% "Médiane",]
+melted.test$winsorize <- winsorize(melted.test[,"value"])
+melted.test$diff <- melted.test$winsorize-melted.test$value
+outliers_canton <- unique(as.character(melted.test[melted.test$diff!=0,"code_canton"]))
+
+melted.test <- melted.bdat[melted.bdat$variable %in% "Médiane",]
+# Dans l'idéal, il serait intéressant d'identifier les zones équettées...Quid de la Bretagne, Haut de France ?
+
+
+paste(pbl,collapse="|")
+
+
+
+
+# Revoir la discussion sur les outliers (https://www.researchgate.net/post/Should_outliers_be_removed_before_or_after_data_transformation)
+# Sinon, on peut supprimer les outliers et regarder l'effet sur la dynamique globale dans l'évolution des teneurs en CO.? et comparer avec les valeurs initiales.?
+
+test <- outlier(test)apply(melted.test["value"],2, function(x) tapply(x, melted.test["annees"],outlier))
+
+
+
+melted.test$logvalue <- log(melted.test$value)
+shapirobdat <- apply(melted.test["logvalue"],2, function(x) tapply(x, melted.test["annees"],shapiro.test))
+# Avec ou sans le log, la distribution des valeurs n'est pas normale, autant conserver les vrais valeurs plutôt que les logs.
+
+
+
+
+
+
+
+## Load Pennsylvania Lung Cancer Data
+library(SpatialEpi)
+
+map <- dbReadSpatial(con, schemaname="dm_vecteurs", tablename="canton_9514", geomcol="geom")
+data <- map@data
+## Process geographical information and convert to grid
+geo <- coordinates(map)
+geo <- latlong2grid(geo)
+
+## Get aggregated counts of population and cases for each county
+population <- tapply(data$population,data$county,sum)
+cases <- tapply(data$cases,data$county,sum)
+
+data(pennLC)
+data <- pennLC$data
+## Process geographical information and convert to grid
+geo <- pennLC$geo[,2:3]
+geo <- latlong2grid(geo)
+
+## Get aggregated counts of population and cases for each county
+population <- tapply(data$population,data$county,sum)
+cases <- tapply(data$cases,data$county,sum)
+
+## Based on the 16 strata levels, computed expected numbers of disease
+n.strata <- 16
+expected.cases <- expected(data$population, data$cases, n.strata)
+
+## Set Parameters
+pop.upper.bound <- 0.5
+n.simulations <- 999
+alpha.level <- 0.05
+plot <- TRUE
+
+## Kulldorff using Binomial likelihoods
+binomial <- kulldorff(geo, cases, population, NULL, pop.upper.bound, n.simulations,
+alpha.level, plot)
+cluster <- binomial$most.likely.cluster$location.IDs.included
+## plot
+plot(pennLC$spatial.polygon,axes=TRUE)
+plot(pennLC$spatial.polygon[cluster],add=TRUE,col="red")
+title("Most Likely Cluster")
+## Kulldorff using Poisson likelihoods
+poisson <- kulldorff(geo, cases, population, expected.cases, pop.upper.bound,
+n.simulations, alpha.level, plot)
+cluster <- poisson$most.likely.cluster$location.IDs.included
+## plot
+plot(pennLC$spatial.polygon,axes=TRUE)
+plot(pennLC$spatial.polygon[cluster],add=TRUE,col="red")
+title("Most Likely Cluster Controlling for Strata")
+```
 ## Statistiques descriptives
 
 La figure `r fig$ref("cdf_fr",link=TRUE)` présente les courbes de fréquences cumulées des teneurs en carbone organique distribuées pour les 4 périodes identifiées. Les courbes de fréquences des 4 périodes présentent la même forme en "S" et s'individualisent juste avant le plateau, présentant une différence affectant les sols riches en teneurs organiques (entre 17 et 45 g/kg). Sur cette zone (figure à droite), la figure montre un décalage des courbes des périodes 2000-2004, 2005-2009 et 2010-2014 vers des valeurs plus faibles. Parmi ces 3 périodes, la période 2005-2009 est celle qui se décale le plus vers des teneurs plus faible tandis que la période 2010-2014 se rapproche des valeurs de 1995-1999, présentant ainsi une inversion de la tendance observée.
 
 **Ces observations mettent en évidence une diminution des teneurs en carbone entre les périodes 1990-1999 et 2000-2009 et une légère augmentation pour la période 2010-2014.**
+
 
 ```{r cdf_fr,highlight=TRUE,echo=FALSE,eval=TRUE,warning=FALSE,error=FALSE,fig.height=5, fig.width=7,fig.cap = fig$cap("cdf_fr","Courbe de fréquences cumulées"),fig.align="center"}
 
@@ -176,7 +277,7 @@ colors <- brewer.pal(nperiod,"Set1")#wes_palette("Rushmore",nperiod,type="contin
 
 p <- list()
 # Courbe de fréquence cumulée
-p[[1]] <- ggplot(melted.bdat, aes(x=value))+
+p[[1]] <- ggplot(melted.bdat[melted.bdat$variable %in% "Médiane",], aes(x=value))+
        stat_ecdf(aes(colour=annees))+
        scale_color_manual(values=colors, 
                           name="Périodes")+
@@ -184,7 +285,7 @@ p[[1]] <- ggplot(melted.bdat, aes(x=value))+
        theme_perso()
 
 #ggsave(p[[1]],file = paste(repsortie,"cdf_fr1.png",sep=""), width = 9, height = 7)  
-p[[2]] <- ggplot(melted.bdat[(melted.bdat$value > 17) & (melted.bdat$value < 45) ,], aes(x=value))+
+p[[2]] <- ggplot(melted.bdat[melted.bdat$variable %in% "Médiane" & (melted.bdat$value > 17) & (melted.bdat$value < 45) ,], aes(x=value))+
        stat_ecdf(aes(colour=annees))+
        scale_color_manual(values=colors, 
                           name="Périodes")+
@@ -197,42 +298,88 @@ tt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=1,ncol=2,position="bottom
 #ggsave(tt,file = paste(repsortie,"cdf_fr.pdf",sep=""), width = 10, height = 7)  
 ```
 
-```{r summarybdatfrance,echo=FALSE,eval=TRUE}
-# Résumé des statistiques 
-bdatsummary <- apply(melted.bdat["value"],2, function(x) tapply(x, melted.bdat[,"annees"],summary))
-bdatsummary <- lapply(bdatsummary, do.call, what = rbind)
+```{r ,echo=FALSE,eval=TRUE,results='asis',fig.height=10, fig.width=10,fig.align="center"}
+p <- list()
+bdatsummarystats <- list()
+for(i in levels(as.factor(melted.bdat$variable))){
+  melted.test <- melted.bdat[melted.bdat$variable %in% i,]
+  # Résumé des statistiques 
+  bdatsummary <- apply(melted.test["value"],2, function(x) tapply(x, melted.test[,"annees"],summary))
+  bdatsummary <- lapply(bdatsummary, do.call, what = rbind)
+  bdatsummarystats[[i]] <- bdatsummary
 
-tx_baisse_fr <- round(((bdatsummary$value["9599","Median"]-bdatsummary$value["0004","Median"])/bdatsummary$value["9599","Median"])*100,1)
-tx_augmentation_fr <- round(((bdatsummary$value["1014","Median"]-bdatsummary$value["0004","Median"])/bdatsummary$value["1014","Median"])*100,1)
+  pander(bdatsummary,caption="Stastistiques descriptives des teneurs en CO pour les différentes statistiques aggrégées à l'échelle cantonale")
+
+# Changer le nom des variables (pour améliorer la compréhension)
+  datasummary <- as.data.frame(bdatsummary$value[,"Median"])
+  colnames(datasummary) <- "median"
+  datasummary <- t(datasummary)
+  colnames(datasummary) <- c("1995-1999","2000-2004","2005-2009","2010-2014")
+
+  res <- outer(1:ncol(datasummary), 1:ncol(datasummary), 
+              function(x,y) ((datasummary[,x]-datasummary[,y])/datasummary[,x])*100)
+
+  period_count <- c(1995,2000,2005,2010)
+
+  res_period <- outer(1:length(period_count), 1:length(period_count), 
+              function(x,y) ((period_count[x])-period_count[y]))
+
+  res[upper.tri(res, diag = TRUE)] <- NA
+  res2 <- res/res_period
+  colnames(res2) <- as.character(colnames(datasummary))
+  rownames(res2) <- as.character(colnames(datasummary))
+  
+  datasummary2 <- melt(res2)
+  datasummary2 <- datasummary2[complete.cases(datasummary2$value),]
+
+  datasummary2$count <- c("23","24","25","34","35","45")
+
+  colnames(datasummary2) <- c("EndDate","StartDate","Group","Count")
+
+#changer les codes couleurs+calculer les taux par années
+  p[[i]] <- ggplot(datasummary2, aes(ymin = StartDate, ymax = EndDate, x = Count)) + geom_linerange(aes(colour=Group),size=3) + coord_flip() + scale_colour_gradient2(limit = c(-1,1),high=muted("green"),name="Taux d'évolution annuel (%)") + ylab("Périodes") + xlab("") + theme_perso() + geom_text(aes(y = StartDate, x = Count, label = paste(round(Group,1),"%",sep="")), hjust = 0, vjust = -1, size = 5) + labs(title= paste(i))
+}
+tt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=1,ncol=2,position="bottom")))
+tt
 ```
+
 La distribution des teneurs en carbone organique par période est présentée figure `r fig$ref("boxplot_fr",link=TRUE)` et les statistiques associées dans le tableau ci-dessous. La tendance de diminution des teneurs observée dans la figure `r fig$ref("cdf_fr",link=TRUE)` est également constatée dans ces deux éléments. La période 2000-2004 montre la valeur médiane la plus faible avec une valeur de `r bdatsummary$value["0004","Median"]` g/kg. Les valeurs les plus importantes sont observées pour les périodes 1995-1999 et 2010-2014 avec des médianes de teneurs en carbone organique équivalente, à `r bdatsummary$value["9599","Median"]` g/kg. Ces évolutions sont très légèrement marquées sur la figure `r fig$ref("boxplot_fr",link=TRUE)` où l'évolution moyenne des teneurs en carbone organique baisse légèrement après la période 1995-1999.
 
 ```{r summarybdatfrancetable,highlight=TRUE,echo=FALSE,eval=TRUE,results = 'asis',warning=FALSE,message=FALSE}
-pander(bdatsummary[[1]],caption = "Statistiques descriptives des teneurs en carbone organique pour les différentes périodes")
+pander(bdatsummarystats["Médiane"][[1]],caption = "Statistiques descriptives des teneurs en carbone organique pour les différentes périodes")
+
+pander(bdatsummarystats["75% centile"][[1]],caption = "Statistiques descriptives des teneurs en carbone organique pour les différentes périodes")
 ```
 
 ```{r boxplot_fr,highlight=TRUE,echo=FALSE,eval=TRUE,fig.height=5, fig.width=6,fig.cap = fig$cap("boxplot_fr","Boxplot des teneurs en carbone organiques par périodes"),fig.align="center",warning=FALSE,message=FALSE}
 
-p <- ggplot(melted.bdat, aes(x=annees,y=value)) + 
-  #geom_violin(trim=FALSE)+
-  #geom_boxplot(width=0.1, fill="white")+
-  geom_boxplot()+
-  #scale_color_manual(values=colors,name="Années")+
-  geom_smooth(method = "loess", se=FALSE, color="black", aes(group=1))+
-  scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone organique (g/kg)")+
-  theme_perso()
+ylim1 <- c(min(melted.bdat$value,na.rm=TRUE),quantile(melted.bdat$value,0.95,na.rm=TRUE))
+
+test1 <- generate_label_df(db=melted.bdat[melted.bdat$variable %in% "Médiane",],value="value",lev="annees",LETTERS,position=1)
+test2 <- generate_label_df(db=melted.bdat[melted.bdat$variable %in% "75% centile",],value="value",lev="annees",letters,position=1)
+
+p <- ggplot(melted.bdat,aes(x=annees,y=value)) + 
+     geom_boxplot(aes(x=annees,y=value,fill=variable))+
+     stat_summary(fun.y=mean, geom="line",size = 1, aes(group=variable),alpha = 0.8) +
+     scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone organique (g/kg)")+
+     theme_perso(position="right")+ geom_text(data = test1,hjust = 2, vjust=-0.75,aes(x = plot.labels, y = V1, label = labels))+ geom_text(data = test2,hjust = -2,vjust=-0.75, aes(x = plot.labels, y = V1, label = labels))#+ coord_cartesian(ylim = ylim1)
 p
-#ggsave(p,file = paste(repsortie,"boxplotbdat.png",sep=""), width = 5, height = 6)  
 ```
 Les résultats du test de Wilcoxon présentés ci-dessous montrent que **les différences des médianes cantonales à l'échelle de la France entre les périodes sont significatives pour la baisse observée entre les périodes 1995-1999 et 2000-2004, 1995-1999 et 2005-2009 et l'augmentation des teneurs entre les périodes [2000-2004 et 2010-2014]**. Ces résulats confirment les tendances observées sur les courbes de fréquences cumulées (voir figure `r fig$ref("cdf_fr",link=TRUE)`).
 
-```{r,highlight=TRUE,eval=TRUE,echo=TRUE}
-pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"])
+```{r,highlight=TRUE,eval=FALSE,echo=TRUE}
+p <- list()
+for(i in levels(as.factor(melted.bdat$variable))){
+  melted.test <- melted.bdat[melted.bdat$variable %in% i,]
+  
+  p[[i]] <- pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
+}
+print(p)
 ```
 
 ## Conclusion
 
-La médiane cantonale des teneurs en CO des analyses de la BDAT a évolué significativement entre les périodes étudiées (de 1995 à 2014). De 1995 à 2005-2009, la médiane des médianes des teneurs a diminué, passant de 14 g/kg à 13.70 g/kg. Cette tendance s'est inversée significativement entre les périodes 2000-2000 et 2010-2014 pour finalement revenir aux teneurs initiales de 1995-1999, à 14 g/kg. Au plus fort de ces évolutions,  la baisse médiane des médianes des teneurs en CO entre 1995-1999 et 2000-2004 est de `r tx_baisse_fr`%, soit environ une baisse annuelle de **`r round(tx_baisse_fr/5,1)`% par an**. A l'inverse, on retrouve un taux d'augmentation plus faible entre les périodes 2000-2004 et 2010-2014 avec **`r round(tx_augmentation_fr/10,1)`% par an**.
+La médiane cantonale des teneurs en CO des analyses de la BDAT a évolué significativement entre les périodes étudiées (de 1995 à 2014). De 1995 à 2005-2009, la médiane des médianes des teneurs a diminué, passant de 14 g/kg à 13.70 g/kg. Cette tendance s'est inversée significativement entre les périodes 2000-2000 et 2010-2014 pour finalement revenir aux teneurs initiales de 1995-1999, à 14 g/kg. Au plus fort de ces évolutions,  la baisse médiane des médianes des teneurs en CO entre 1995-1999 et 2000-2004 est de %, soit environ une baisse annuelle de **% par an**. A l'inverse, on retrouve un taux d'augmentation plus faible entre les périodes 2000-2004 et 2010-2014 avec **% par an**.
 
 Ces résultats sont comparables avec les travaux de [Bellamy et al., 2005](https://core.ac.uk/download/pdf/141023.pdf?repositoryId=23). Ces auteurs ont mis en évidence sur un ensemble d'analyses de sol réalisé en Angleterre et au Pays-de-Galles de 1978 à 2003 une baisse moyenne de teneurs en CO de **0.6% par an** (relatif par rapport aux teneurs initiales).
 
@@ -257,12 +404,14 @@ Parmi les strates restantes, la variabilité dans le nombre d'analyse est import
 #melted.bdat$typo_climsple[melted.bdat$typo_climsple %in% c("4","5")] <- "45"
 p <- list()
 for(i in levels(as.factor(melted.bdat$typo_clim))){
-  melted.test <- melted.bdat[melted.bdat$typo_clim %in% i,]
+  melted.test <- melted.bdat[melted.bdat$typo_clim %in% i & melted.bdat$variable %in% "Médiane",]
   p[[i]] <- apply(melted.test["value"],2, function(x) tapply(x, melted.test[,"annees"],length))[1,1]
 }
 clim_nbranalyses <- as.data.frame(melt(p))
 colnames(clim_nbranalyses) <- c("Nbr","Type_climat")
 pander(clim_nbranalyses[,c("Type_climat","Nbr")],caption="Nombre d'analyse par type de climat")
+
+#Voir pour power.t.test
 ```
 
 ### Cartographie des types de climat
@@ -276,8 +425,10 @@ variablecarto <- "typo_clim" #variable à spatialiser
 l_legend <- "Type de climat"#label de la variable
 nclasse <- 8 #Nombre de classes de valeurs pour la cartographie
 style_classe <- "fixed" #"pretty"#"jenks","fixed"
-couleur <- brewer.pal(nclasse,"Paired")#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
 nomfichier <- "typo_clim"
+
+code_typoclim <- read.csv(paste(repmetadonnees,"Nomenclature_typeclimat.csv",sep=""))
+couleur <- as.character(code_typoclim$Code_couleur)
 
 carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,title="",caption="",dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=7,ggsavewidth=10)
 ```
@@ -294,35 +445,25 @@ On commence par analyser les teneurs par strates géographiques...
 Ci-dessous, la figure présente la répartition des teneurs en C pour les différentes périodes et pour les principales régions d'élevage. Rajouter les différences significatives
 
 
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=12,fig.cap = fig$cap("boxplot_regclim",""),fig.align="center"}
-
-xlabel <- "Carbone organique (g/kg)"
-ylabel <- "Fréquence"
-colour <- brewer.pal(5,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
-#typo_climsple <- c("1","2","3","45")
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=7,fig.cap = fig$cap("boxplot_regclim",""),fig.align="center"}
+code_typoclim <- read.csv(paste(repmetadonnees,"Nomenclature_typeclimat.csv",sep=""))
 typo_clim <- 1:5
+couleur <- as.character(code_typoclim[code_typoclim$Code %in% typo_clim,"Code_couleur"])
 
-melted.bdat_clim <- melted.bdat[(melted.bdat$typo_clim %in% typo_clim),]
+melted.bdat_clim <- melted.bdat[(melted.bdat$variable %in% "Médiane") & (melted.bdat$typo_clim %in% typo_clim),]
+labtest <- generate_label_df(db=melted.bdat_clim,value="value",lev="typo_clim",letters,position=1)
 
-p <- ggplot(melted.bdat_clim) +
-            geom_boxplot(aes(x=typo_clim,y=value))+
-            #geom_smooth(aes(x=as.integer(annees),y=value,color=zonage_simple,fill=zonage_simple),method=loess)+
-            #scale_color_manual(values=colors,name="Années")
-            scale_x_discrete("Type de climat")+scale_y_continuous("Teneur en carbone (g/kg)")+
-            theme_perso()
+p <- ggplot(melted.bdat_clim) + geom_boxplot(aes(x=typo_clim,y=value,fill=typo_clim))+scale_x_discrete("Type de climat")+scale_y_continuous("Teneur en carbone organique (g/kg)")+scale_fill_manual(values=couleur,name="")+theme_perso(position="") +geom_text(data = labtest,vjust=-1,aes(x = plot.labels, y = V1, label = labels))
             
 p  
 #ggsave(p,file = paste(repsortie,"boxplotbdat_zonage_cplt.png",sep=""), width = 12, height = 6)  
 ```
 
-```{r, eval=TRUE,echo=FALSE}
-pairwise.wilcox.test(melted.bdat_clim[,"value"], melted.bdat_clim[,"typo_clim"])
-```
-```{r cdf_clim,highlight=TRUE,echo=FALSE,eval=TRUE,fig.height=10, fig.width=12,fig.cap = fig$cap("cdf_clim",""),fig.align="center"}
+```{r cdf_clim,highlight=TRUE,echo=FALSE,eval=TRUE,fig.height=10, fig.width=10,fig.cap = fig$cap("cdf_clim",""),fig.align="center"}
 cdf_clim <- ggplot(melted.bdat_clim, aes(x=value))+
        facet_wrap(~typo_clim)+
        stat_ecdf(aes(colour=annees))+
-       scale_color_manual(values=colour, 
+       scale_color_manual(values=couleur, 
                           name="Périodes")+
        scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
        theme(plot.title = element_text(size = 14, face = "bold"), 
@@ -340,21 +481,22 @@ La courbe de fréquence cumulée pour le type de climat 5 présente une dynamiqu
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=7,fig.cap = fig$cap("boxplot_clim",""),fig.align="center",warning=FALSE,message=FALSE}
 
-ylim1 <- c(min(melted.bdat_clim$value,na.rm=TRUE),quantile(melted.bdat$value,0.99,na.rm=TRUE))
-colors <- brewer.pal(4,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
+ylim1 <- c(min(melted.bdat$value,na.rm=TRUE),quantile(melted.bdat$value,0.99,na.rm=TRUE))
+colors <- brewer.pal(5,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
 
-boxplot_clim <- ggplot(melted.bdat_clim) +
-            geom_boxplot(aes(x=annees,y=value,col=annees),outlier.shape = NA,outlier.size=NA)+
+boxplot_clim <- ggplot(melted.bdat[melted.bdat$typo_clim %in% 1:5,],aes(x=annees,y=value,fill=variable)) +
+            geom_boxplot(outlier.shape = NA,outlier.size=NA)+
+            stat_summary(fun.y=median, geom="line",size = 1, aes(group=variable,color=variable))+
             facet_wrap(~typo_clim,scales="free")+
-            scale_color_manual(values=colors,name="Périodes")+
-            geom_smooth(aes(x=as.integer(annees),y=value),method=loess,color="black")+
             scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone (g/kg)")+
             theme(plot.title = element_text(size = 14, face = "bold"), 
                   text = element_text(size = 12),
                   axis.title = element_text(face="bold"),
                   axis.text.x=element_text(size = 11))+
             coord_cartesian(ylim = ylim1*1.05)
+
 boxplot_clim
+
 #ggsave(boxplot_clim,file = paste(repsortie,"boxplot_clim2.jpg",sep=""), width = 7, height = 6)  
 ```
 
@@ -362,7 +504,7 @@ boxplot_clim
 panderOptions('knitr.auto.asis', FALSE)
 p <- list()
 for(i in levels(as.factor(melted.bdat_clim$typo_clim))){
-  melted.test <- melted.bdat_clim[melted.bdat_clim$typo_clim%in% i,]   
+  melted.test <- melted.bdat_clim[melted.bdat_clim$typo_clim %in% i,]   
   bdatsummary <- apply(melted.test["value"],2, function(x) tapply(x, melted.test[,"annees"],summary))
   nbrobservation <- apply(melted.test["value"],2, function(x) tapply(x, melted.test[,"annees"],length))[1,1]
   bdatsummary <- lapply(bdatsummary, do.call, what = rbind)
@@ -370,18 +512,66 @@ for(i in levels(as.factor(melted.bdat_clim$typo_clim))){
 }
 ```
 
+## Intensité des évolutions par type de climat
+
+```{r echo=FALSE,eval=TRUE,results='asis'}
+for(i in levels(as.factor(melted.bdat$variable))){
+  cpt <- 0
+  for(s in 1:5){
+    cpt <- cpt + 1
+    melted.test <- melted.bdat[(melted.bdat$variable %in% i) & melted.bdat$typo_clim %in% s,]
+    bdatmedian <- apply(melted.test["value"],2, function(x) tapply(x, melted.test[,"annees"],median))
+
+    colnames(bdatmedian) <- "median"
+    bdatmedian <- t(bdatmedian)
+    colnames(bdatmedian) <- c("1995-1999","2000-2004","2005-2009","2010-2014")
+
+    res <- outer(1:ncol(bdatmedian), 1:ncol(bdatmedian), 
+                function(x,y) ((bdatmedian[,x]-bdatmedian[,y])/bdatmedian[,x])*100)
+    period_count <- c(1995,2000,2005,2010)
+
+    res_period <- outer(1:length(period_count), 1:length(period_count), 
+                function(x,y) ((period_count[x])-period_count[y]))
+
+    res[upper.tri(res, diag = TRUE)] <- NA
+    res2 <- res/res_period
+    colnames(res2) <- as.character(colnames(bdatmedian))
+    rownames(res2) <- as.character(colnames(bdatmedian))
+ 
+    bdatmedian2 <- melt(res2)
+    bdatmedian2 <- bdatmedian2[complete.cases(bdatmedian2$value),]
+    bdatmedian2$count <- c("23","24","25","34","35","45")
+    colnames(bdatmedian2) <- c("EndDate","StartDate",paste("txevol_",s,sep=""),"Count")
+
+    if(cpt==1){
+     # Construction de la première table
+     stats.canton <- bdatmedian2
+      }else{
+       # Ajout à chaque itération de la variable (i)
+       stats.canton <- merge(stats.canton,bdatmedian2, by.x=c("EndDate","StartDate","Count"), by.y=c("EndDate","StartDate","Count"),all.x=FALSE,all.y=FALSE)      
+     }   
+  }
+meltstats <- melt(stats.canton,id.vars=c("EndDate","StartDate","Count"))
+  p[[i]] <- ggplot(meltstats, aes(ymin = StartDate, ymax = EndDate, x = Count)) + geom_linerange(aes(colour=value),size=3) + facet_wrap(~variable) + coord_flip() + scale_colour_gradient2(limit = c(min(meltstats$value),max(meltstats$value)),high=muted("green"),name="Taux d'évolution annuel (%)") + ylab("Périodes") + xlab("") + theme_perso() + geom_text(aes(y = StartDate, x = Count, label = paste(round(value,1),"%",sep="")), hjust = 0, vjust = -1, size = 5) + labs(title= paste(i))
+}   
+tt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=1,ncol=2,position="bottom")))
+tt
+
+```
 La figure `r fig$ref("boxplot_clim",link=TRUE)` représente la distribution des teneurs en carbone organique sous forme de boxplot pour les différentes périodes et les différentes zones climatiques. Les tableaux ci-dessus présentent les statistiques descriptives des teneurs en CO pour les différentes périodes et les différents types de climat. De ces tableaux et de ces boxplots, les zones 1, 2, 3 et 4 présentent une dynamique similaire avec une baisse puis une augmentation des teneurs. Ces évolutions se rapprochent des tendances nationales précédemment observées. Entre ces zones, seul les résultats pour le type de climat 3 sont significatifs. **La baisse des teneurs entre 9599 et 0004 et l'augmentation des teneurs en CO entre 0004 et 1014 et 0509-1014 sont significatives.** 
 
 La zone 5 présente une évolution en dent de scie, avec une augmentation, une diminution et une augmentation. Ces évolutions ne sont pas significatives d'après le test de Wilcoxon.
 
-```{r,eval=TRUE,echo=FALSE}
+```{r,eval=TRUE,echo=FALSE,warning=FALSE,error=FALSE,message=FALSE}
 p <- list()
-for(i in levels(as.factor(melted.bdat_clim$typo_clim))){
-  melted.test <- melted.bdat_clim[melted.bdat_clim$typo_clim %in% i,]
-  
-  p[[i]] <- pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
+for(s in levels(as.factor(melted.bdat$variable))){
+  for(i in levels(as.factor(melted.bdat_clim$typo_clim))){
+  melted.test <- melted.bdat[(melted.bdat$variable %in% s) & (melted.bdat$typo_clim %in% i),]
+  p[[paste(s,"_",i,sep="")]] <- pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
+  if(p[[paste(s,"_",i,sep="")]]$p.value <= 0.05){
+  print(p[[paste(s,"_",i,sep="")]])}else{}
+  }
 }
-print(p)
 ```
 
 ## Analyse par région d'élevage
@@ -393,7 +583,7 @@ Les grandes régions d'élevage représentent un zonage des principaux systèmes
 ```{r ,highlight=TRUE,echo=FALSE,eval=TRUE,results = 'asis',warning=FALSE,message=FALSE}
 p <- list()
 for(i in levels(as.factor(melted.bdat$zonage_cplt))){
-  melted.test <- melted.bdat[melted.bdat$zonage_cplt %in% i,]
+  melted.test <- melted.bdat[melted.bdat$zonage_cplt %in% i & melted.bdat$variable %in% "Médiane",]
   p[[i]] <- apply(melted.test["value"],2, function(x) tapply(x, melted.test[,"annees"],length))[1,1]
 }
 regelevage_nbranalyses <- as.data.frame(melt(p))
@@ -419,13 +609,14 @@ Parmi les strates restantes, la variabilité dans le nombre d'analyse est import
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE}
 tablecarto <- "dm_vecteurs.canton" 
 dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
-variablecarto <- "zonage_simple" #variable à spatialiser
+variablecarto <- "zonage_cplt" #variable à spatialiser
 l_legend <- "Principales régions d'élevage"#label de la variable
-nclasse <- 8 #Nombre de classes de valeurs pour la cartographie
+nclasse <- 13 #Nombre de classes de valeurs pour la cartographie
 style_classe <- "fixed" #"pretty"#"jenks","fixed"
-couleur <- c(brewer.pal(nclasse,"Paired"),"#000010") #nom de la palette couleur (selon RColorBrewer)
-nomfichier <- "reg_elevage_simple"
+nomfichier <- "reg_elevage_cplt"
+code_regelevage <- read.csv(paste(repmetadonnees,"Nomenclature_regionelevage.csv",sep=""))
 
+couleur <- as.character(code_regelevage$Code_couleur)
 carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,title="",caption="",dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=7,ggsavewidth=10)
 ```
 
@@ -441,29 +632,39 @@ On commence par analyser les teneurs par strates géographiques...
 Ci-dessous, la figure présente la répartition des teneurs en C pour les différentes périodes et pour les principales régions d'élevage. Rajouter les différences significatives
 
 ```{r boxplot_reg_elevagezoom,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=12,fig.cap = fig$cap("boxplot_regelevage",""),fig.align="center"}
+# Lecture de la table des couleurs
+code_regelevage <- read.csv(paste(repmetadonnees,"Nomenclature_regionelevage.csv",sep=""))
 
 period <- c("9599","0004","0509","1014")
-xlabel <- "Carbone organique (g/kg)"
-ylabel <- "Fréquence"
-colour <- brewer.pal(5,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
 reg_elevage <- c("A","B1","B2","C1","D","E1","E2")
+couleur <- as.character(code_regelevage[code_regelevage$Zonage_cplt %in% reg_elevage,"Code_couleur"])
 
-melted.bdat_regelevage <- melted.bdat[complete.cases(melted.bdat$zonage_cplt) & (melted.bdat$zonage_cplt %in% reg_elevage),]
+melted.bdat_regelevage <- melted.bdat[complete.cases(melted.bdat$zonage_cplt) & (melted.bdat$zonage_cplt %in% reg_elevage) & melted.bdat$variable %in% "Médiane",]
+
+wilcotest <- generate_label_df(db=melted.bdat_regelevage,value="value",lev="zonage_cplt",letters,position=1)
+
+pairwise.wilcox.test(melted.bdat_regelevage[,"value"], melted.bdat_regelevage[,"zonage_cplt"])
 
 p <- ggplot(melted.bdat_regelevage) +
-            geom_boxplot(aes(x=zonage_cplt,y=value))+
-            #geom_smooth(aes(x=as.integer(annees),y=value,color=zonage_simple,fill=zonage_simple),method=loess)+
-            #scale_color_manual(values=colors,name="Années")
-            scale_x_discrete("Région d'élevage")+scale_y_continuous("Teneur en carbone (g/kg)")+
-            theme_perso()
+            geom_boxplot(aes(x=zonage_cplt,y=value,fill=zonage_cplt))+
+            scale_fill_manual(values=couleur[1:7],name="") + scale_x_discrete("Grandes régions d'élevage")+scale_y_continuous("Teneur en carbone organique (g/kg)")+ theme_perso("") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = labels))
             
-p  
-
+p 
 #ggsave(p,file = paste(repsortie,"boxplotbdat_zonage_cplt.png",sep=""), width = 12, height = 6)  
 ```
 
 ```{r, eval=TRUE,echo=FALSE}
-pairwise.wilcox.test(melted.bdat_regelevage[,"value"], melted.bdat_regelevage[,"zonage_cplt"])
+#pairwise.wilcox.test(melted.bdat_regelevage[,"value"], melted.bdat_regelevage[,"zonage_cplt"])
+p <- list()
+for(s in levels(as.factor(melted.bdat$variable))){
+  for(i in levels(as.factor(melted.bdat_regelevage$zonage_cplt))){
+  melted.test <- melted.bdat[(melted.bdat$variable %in% s) & (melted.bdat$zonage_cplt %in% i),]
+  p[[paste(s,"_",i,sep="")]] <- pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
+   if(p[[paste(s,"_",i,sep="")]]$p.value <= 0.05){
+  print(p[[paste(s,"_",i,sep="")]])}else{}
+  }
+}
+print(p)
 ```
 
 ```{r,highlight=TRUE,eval=FALSE,message=FALSE,echo=FALSE}
@@ -483,7 +684,7 @@ A ce niveau, il est difficile de rentrer dans le détail. D'autres figures sont 
 cdf_regelevage <- ggplot(melted.bdat_regelevage, aes(x=value))+
        facet_wrap(~zonage_cplt)+
        stat_ecdf(aes(colour=annees))+
-       scale_color_manual(values=colour, 
+       scale_color_manual(values=couleur, 
                           name="Périodes")+
        scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
        theme(plot.title = element_text(size = 14, face = "bold"), 
@@ -510,25 +711,124 @@ bdatsummary <- lapply(bdatsummary, do.call, what = rbind)
 ```
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=8, fig.width=12,fig.cap = fig$cap("boxplot_regelevage2",""),fig.align="center",warning=FALSE,message=FALSE}
-ylim1 <- c(min(melted.bdat_regelevage$value,na.rm=TRUE),quantile(melted.bdat$value,0.99,na.rm=TRUE))
-colors <- brewer.pal(5,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
+ylim1 <- c(min(melted.bdat$value,na.rm=TRUE),quantile(melted.bdat$value,0.99,na.rm=TRUE))
 
-boxplot_reg_elevage <- ggplot(melted.bdat_regelevage) +
-            geom_boxplot(aes(x=annees,y=value,col=annees),outlier.shape = NA,outlier.size=NA)+
+boxplot_reg_elevage <- ggplot(melted.bdat[melted.bdat$zonage_cplt %in% reg_elevage,],aes(x=annees,y=value,fill=variable)) +
+            geom_boxplot(outlier.shape = NA,outlier.size=NA)+
+            stat_summary(fun.y=median, geom="line",size = 1, aes(group=variable,color=variable))+
             facet_wrap(~zonage_cplt,scales="free")+
-            scale_color_manual(values=colors,name="Périodes")+
-            geom_smooth(aes(x=as.integer(annees),y=value),method=loess,color="black")+
             scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone (g/kg)")+
             theme(plot.title = element_text(size = 14, face = "bold"), 
                   text = element_text(size = 12),
                   axis.title = element_text(face="bold"),
                   axis.text.x=element_text(size = 11))+
             coord_cartesian(ylim = ylim1*1.05)
+
 boxplot_reg_elevage
 
-ggsave(boxplot_reg_elevage,file = paste(repsortie,"boxplot_reg_elevage.png",sep=""), width = 12, height = 8)  
+# Voir pour apporter les résultats des tests avec l'ajout de cette fonctionnalité (http://stackoverflow.com/questions/12603988/what-is-the-ggplot2-plyr-way-to-calculate-statistical-tests-between-two-subgroup)
+#ddply(diam,"color",
+ #     function(x) {
+  #        w <- wilcox.test(price~cut,data=x)
+   #       with(w,data.frame(statistic,p.value))
+    #  })
+#ggsave(boxplot_clim,file = paste(repsortie,"boxplot_clim2.jpg",sep=""), width = 7, height = 6)  
+
+panderOptions('knitr.auto.asis', FALSE)
+p <- list()
+for(i in levels(as.factor(melted.bdat_regelevage$zonage_cplt))){
+  melted.test <- melted.bdat_regelevage[melted.bdat_regelevage$zonage_cplt%in% i,]   
+  bdatsummary <- apply(melted.test["value"],2, function(x) tapply(x, melted.test[,"annees"],summary))
+  nbrobservation <- apply(melted.test["value"],2, function(x) tapply(x, melted.test[,"annees"],length))[1,1]
+  bdatsummary <- lapply(bdatsummary, do.call, what = rbind)
+  pander(bdatsummary[[1]],caption = paste("Statistiques descriptives des teneurs en carbone organique pour le type de climat ",i,". Nombre de canton analysé : ",nbrobservation,sep=""))
+}
+```
+```{r echo=FALSE,eval=TRUE,results='asis'}
+for(i in levels(as.factor(melted.bdat$variable))){
+  cpt <- 0
+  for(s in levels(as.factor(melted.bdat$zonage_cplt))){
+    cpt <- cpt + 1
+    melted.test <- melted.bdat[(melted.bdat$variable %in% i) & melted.bdat$zonage_cplt %in% s,]
+    
+    # Utiliser les sorties de pairwise.wilcox.test pour rajouter un indicateur de différence significative sur les graphiques de taux d'évolution (genre %)
+    res.wilcoxon <- pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])$p.value
+    res.wilcoxon[upper.tri(res.wilcoxon, diag = FALSE)] <- NA
+
+
+    bdatmedian <- apply(melted.test["value"],2, function(x) tapply(x, melted.test[,"annees"],median))
+
+    colnames(bdatmedian) <- "median"
+    bdatmedian <- t(bdatmedian)
+    colnames(bdatmedian) <- c("1995-1999","2000-2004","2005-2009","2010-2014")
+
+    res <- outer(1:ncol(bdatmedian), 1:ncol(bdatmedian), 
+                function(x,y) ((bdatmedian[,x]-bdatmedian[,y])/bdatmedian[,x])*100)
+    period_count <- c(1995,2000,2005,2010)
+
+    res_period <- outer(1:length(period_count), 1:length(period_count), 
+                function(x,y) ((period_count[x])-period_count[y]))
+
+    res[upper.tri(res, diag = TRUE)] <- NA
+    res2 <- res/res_period
+    colnames(res2) <- as.character(colnames(bdatmedian))
+    rownames(res2) <- as.character(colnames(bdatmedian))
+ 
+    bdatmedian2 <- melt(res2)
+    bdatmedian2 <- bdatmedian2[complete.cases(bdatmedian2$value),]
+    bdatmedian2$count <- c("23","24","25","34","35","45")
+    colnames(bdatmedian2) <- c("EndDate","StartDate",paste("txevol_",s,sep=""),"Count")
+
+    if(cpt==1){
+     # Construction de la première table
+     stats.canton <- bdatmedian2
+      }else{
+       # Ajout à chaque itération de la variable (i)
+       stats.canton <- merge(stats.canton,bdatmedian2, by.x=c("EndDate","StartDate","Count"), by.y=c("EndDate","StartDate","Count"),all.x=FALSE,all.y=FALSE)      
+     }   
+  }
+  meltstats <- melt(stats.canton,id.vars=c("EndDate","StartDate","Count"))
+
+  p[[i]] <- ggplot(meltstats, aes(ymin = StartDate, ymax = EndDate, x = Count)) + geom_linerange(aes(colour=value),size=3) + facet_wrap(~variable) + coord_flip() + scale_colour_gradient2(limit = c(min(meltstats$value),max(meltstats$value)),high=muted("green"),name="Taux d'évolution annuel (%)") + ylab("Périodes") + xlab("") + theme_perso() + geom_text(aes(y = StartDate, x = Count, label = paste(round(value,1),"%",sep="")), hjust = 0, vjust = 0.5, size = 3.5) + labs(title= paste(i))
+}   
+tt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=1,ncol=2,position="bottom")))
+tt
+
+
+## En cours##
+p <- list()
+for(s in levels(as.factor(melted.bdat$variable))){
+  for(i in levels(as.factor(melted.bdat_regelevage$zonage_cplt))){
+  melted.test <- melted.bdat[(melted.bdat$variable %in% s) & (melted.bdat$zonage_cplt %in% i),]
+  p[[paste(s,"_",i,sep="")]] <- pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])
+   if(p[[paste(s,"_",i,sep="")]]$p.value <= 0.05){
+  print(p[[paste(s,"_",i,sep="")]])}else{}
+  }
+}
+print(p)
 ```
 
+## Analyse par occupation du sol (Test)
+
+
+```{r eval=TRUE,echo=FALSE}
+period <- c("9599","0004","0509","1014")
+xlabel <- "Carbone organique (g/kg)"
+
+melted.bdat_prairie <- melted.bdat[complete.cases(melted.bdat$classe_p_prairie1988),]
+
+test1 <- generate_label_df(db=melted.bdat_prairie[melted.bdat_prairie$variable %in% "Médiane",],value="value",lev="classe_p_prairie1988",LETTERS,position=1)
+test2 <- generate_label_df(db=melted.bdat_prairie[melted.bdat_prairie$variable %in% "75% centile",],value="value",lev="classe_p_prairie1988",letters,position=1)
+ 
+p <- ggplot(melted.bdat_prairie) +
+            geom_boxplot(aes(x=classe_p_prairie1988,y=value,color=variable))+
+            #geom_smooth(aes(x=as.integer(annees),y=value,color=zonage_simple,fill=zonage_simple),method=loess)+
+            #scale_color_manual(values=colors,name="Années")
+            scale_x_discrete("Pourcentage de prairies dans la SAU")+scale_y_continuous("Teneur en CO (g/kg)")+
+  geom_text(data = test1, hjust = 2.4,vjust=-0.75,aes(x = plot.labels, y = V1, label = labels))+
+  geom_text(data = test2,hjust = -2.4,vjust=-0.75, aes(x = plot.labels, y = V1, label = labels))+theme_perso()
+p
+```
 
 ## Conclusion 
 
@@ -555,7 +855,7 @@ typetopo <- replicate(length(Rcovartopo), "pedologie")
 
 Rnaturel <- c(Rcovartopo,Rcovarclimato)
 
-Ranthrop <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
+Ranthrop <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
 typeoccup <- replicate(length(Ranthrop), "occup")
 
 type <- c(typeclimato,typetopo,typeoccup)
@@ -604,10 +904,10 @@ Les p-value sont supérieures à 0.05 et l'hypothèse null ne peut être rejeté
 
 ```{r,highlight=TRUE,eval=TRUE,echo=TRUE,results = 'asis',warning=FALSE}
 # selon http://eclr.humanities.manchester.ac.uk/index.php/IV_in_R
-library(AER)
+library(AER,lmtest)
 
-# Ensemble des variables d'occupation du sol suspectées d'être endogène
-endo <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
+# Variables d'occupation du sol suspectées d'être endogène
+endo <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
 
 # Ensemble des variables exogènes (climat+topo+pédo)
 exo <- c("altimean","hpluie_an","jchauds_an","jfroids_an","pluie_ecart_janv","std_pluie_juil","std_temp_janv","std_temp_juil","argi_med","sabt_med")
@@ -633,7 +933,7 @@ for(i in endo){
   instrHausWutest <- waldtest(first_stage,.~.-corgox1014-corgox0509)
   intrutest[[i]] <- instrHausWutest[2,4]#Sargan
 
-  # Régression linéaire du carbone (1995-1999) avec les variables exogène et le résidus de la première régression linéaire
+  # Régression linéaire du carbone (1995-1999) avec les variables exogènes et le résidu de la première régression linéaire
   Hausman_reg <- lm(paste(vNames[1], " ~ ", paste(exo,collapse="+"),"+first_stage$residuals",sep=""),data=d)#Ajout des résidus au modèle de base
   
   # Comparaison des deux modèles 
@@ -650,8 +950,10 @@ pander(rest,caption="Résutlats des tests d'endogénéité (test de Wu-Hausman)"
 
 L'objectif de cette partie est de sélectionner les principales variables explicatives et d'étudier l'effet des variables d'origines anthropiques sur un modèle linéaire des teneurs en CO. Pour cela, l'algorithmme suivant est appliqué :
 
-- 1 : Pour chaque type de variables explicatives (naturelle et anthropique), application d'un modèle linéaire avec sélection du meilleur modèle sur le critère AIC. La méthode utilisée pour construire les modèles est basé sur le stepwise/backward (fonction stepAIC).
-- 2 : Extraction des meilleurs modèles et calcul du R2 non-ajusté
+- 1 : Pour chaque type de variables explicatives (naturelle et anthropique), application d'un modèle linéaire avec sélection du meilleur modèle sur deux critères :
+  * VIF : Sélection selon un critère de multicollinéarité (variance inflation factor, VIF.
+  * L'AIC : Les variables sélectionnées précédemment sont utilisé pour construire un modèle linéaire dans lequel les variables sont sélectionnées selon l'AIC. La méthode utilisée pour construire les modèles est basé sur le stepwise/backward (fonction stepAIC).
+- 2 : Identification des meilleurs modèles et calcul du R2 non-ajusté
 - 3 : Construction d'un modèle linéaire basé sur les variables anthropiques et naturelles précédemment sélectionnés. Calcul du R2 non-ajusté et comparaison avec les modèles linéaires anthropiques et naturelles.
 
 ```{r,eval=FALSE,echo=FALSE,message=FALSE,warning=FALSE}
@@ -668,51 +970,58 @@ typetopo <- replicate(length(Rcovartopo), "topographie")
 Rcovarpedo <- c("argi_med","sabt_med")
 typetopo <- replicate(length(Rcovartopo), "pedologie")
 
-Rnaturel <- c(Rcovartopo,Rcovarclimato)
+Rnaturel <- c(Rcovartopo,Rcovarclimato,Rcovarpedo)
 
-Ranthrop <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
+periodra <- c("1970","1979","1988","2000","2010")
+ra_occup <- c("p_sfp","p_prairie","p_sth","p_cop","p_c","p_mf")
+ra_otex <- c("polyelevage1988","elevage1988","elevagehorsol1988","ugbta1988","grdcultures1988")
+Ranthrop <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
 
 Variay <- c("corgox9599","corgox0004","corgox0509","corgox1014")
 
 # Lancement de la fonction pour calculer le R2 des différentes types de variables
+
+#d=d2
+#Rnaturel
+#Ranthrop
+#Variay<-i
+
 p <- list()
 lmcpl <- list()
 formule <- list()
+indexperiod <- list(1:3,1:4,1:4,1:5)
+cpt <- 0
 
 for(i in Variay){
-  Rcovar <- c(Rcovarclimato,Rcovartopo,Rcovarpedo,Ranthrop)
+  cpt <- cpt + 1
+  ra_occupyears <- apply(expand.grid(ra_occup,periodra[indexperiod[[cpt]]]),1, function(x){paste(x[1],x[2],sep="")})
+  Rcovaroccup <- c(ra_otex,ra_occupyears)
+  Rcovar <- c(Rcovartopo,Rcovarpedo,Rcovaroccup,Rcovarclimato)
   vNames <- c(i,Rcovar)
+
   d2 <- dcast.bdat[complete.cases(dcast.bdat[,vNames]),vNames]
   plm <- lm_variatype(d2,Rnaturel,Ranthrop,i)
   
-  p[[i]] <- plm$df[1:2]
+  p[[i]] <- plm$df[1:3]
   lmcpl[[i]] <- plm$lmcplt
-  formule[[i]] <- plm$df[1:3]
+  formule[[i]] <- plm$df[1:4]
 }
 
 save(p,file=paste(repsortie,"p_lm_variatype.RData",sep=""))
 
-#formulecplt <- as.character(formule[[1]][formule[[1]]$nom %in% "Complet",3])
-#vNamescplt <- c("corgox9599",str_split(formulecplt,"\\+")[[1]])
-#formulecplt2 <- as.formula(paste("corgox9599~",formulecplt,sep=""))
-#d2 <- dcast.bdat[complete.cases(dcast.bdat[vNamescplt]),vNamescplt]
-#stepcplt <- stepAIC(lm(formulecplt2,data=d2),data=d2)
-
-#lmMod <- lm(stepcplt)  # fit lm() model
-#relImportance <- calc.relimp(lmMod, type = "lmg", rela = TRUE)  # calculate relative importance scaled to 100
-
-#test <- earth(formulecplt2,data=d2)
-#ev <- evimp(test) # estimate variable importance
-#plot(ev)
-
 ```
-Les résultats de ces tests sont présentés dans le tableau ci-dessous. Pour l'ensemble des teneurs en CO modélisées, la part des variables de types anthropiques est toujours la plus faible. Elle se situe entre 5 et 7% pour les (voir deuxième tableaux ci-dessous). La part des variables naturelle (topographie, pédologie et climat) est bien plus importante. 
+Les résultats de ces tests sont présentés dans le tableau ci-dessous. Pour l'ensemble des teneurs en CO modélisé, la part des variables de types anthropiques est toujours la plus faible. Elle se situe entre 5 et 7% pour les (voir deuxième tableaux ci-dessous). La part des variables naturelle (topographie, pédologie et climat) est bien plus importante. 
 
 ```{r summaryR2ml_fr,highlight=TRUE,echo=FALSE,eval=TRUE,results = 'asis',message=FALSE,warning=FALSE}
 load(paste(repsortie,"p_lm_variatype.RData",sep=""))
-p2 <- melt(p)
-colnames(p2) <- c("Type_variable","Indicateur","R2_nonajusté","Teneur_CO")
-pander(p2[,c("Teneur_CO","Type_variable","R2_nonajusté")])
+#p2 <- melt(p)
+#colnames(p2) <- c("Type_variable","Indicateur","R2_nonajusté","Teneur_CO")
+#pander(p2[,c("Teneur_CO","Type_variable","R2_nonajusté")])
+p2 <- do.call("rbind",p)
+rownames(p2) <- NULL
+p2$Teneur_CO <- c(replicate(3,"corgox9599"),replicate(3,"corgox0004"),replicate(3,"corgox0509"),replicate(3,"corgox1014"))
+colnames(p2) <- c("Type_variable","R2_nonajusté","durbinWatsonTest","Teneur_CO")
+pander(p2[,c("Teneur_CO","Type_variable","R2_nonajusté","durbinWatsonTest")])
 
 p3 <- list()
 for(i in as.factor(unique(p2["Teneur_CO"])[[1]])){
@@ -720,6 +1029,290 @@ for(i in as.factor(unique(p2["Teneur_CO"])[[1]])){
 }
 p3 <- as.data.frame(p3)
 pander(p3,caption="Contribution (en %) des variables anthropiques dans la modélisation des teneurs en carbone organique pour les différentes périodes")
+```
+
+## Modèle de fouille de données
+
+Dans cette partie, on testera rapidement deux modèles de fouille de données utilisés dans plusieurs travaux sur les sols (voir [Murciano et al., 2015](http://www.afes.fr/afes/egs/EGS_22_1_2201_09_18murciano_final.pdf) pour une description des modèles)
+
+- GBM : Le principe de cet algorithme est de construire une séquence de modèles afin qu’à chaque
+étape, chaque modèle ajouté à la combinaison apparaisse comme un pas vers une meilleure solution.
+- Cubist : Cubist est un modèle de régression axé prédiction qui combine les idées de modèle à base de règles, décrites dans Quinlan (1992) avec des corrélations supplémentaires basées sur les voisins les plus proches dans l'ensemble d’apprentissage (voir Quinlan (1993) pour plus de détails).L’algorithme de Cubist est basé sur des règles permettant l’accumulation de modèles prédictifs basée sur des partitions du jeu de données.
+
+### Comparaison des modèles (GBM et Cubist)
+
+```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,error=FALSE}
+
+##### Préparation des données pour la modélisation############################################
+Rcovarclimato <- c("hpluie_an","jfroids_an","ampli_t_juil_janv","pluie_ecart_janv","pluie_ecart_juil","jpluie_janv","jpluie_juil","ttemp_an","jchauds_an")
+typeclimato <- replicate(length(Rcovarclimato), "climat")
+
+Rcovartopo <- "altimean"
+typetopo <- replicate(length(Rcovartopo), "topographie")
+
+Rcovarpedo <- c("argi_med","sabt_med","mat11")
+typepedo <- replicate(length(Rcovarpedo), "pedologie")
+
+Rcovaroccup <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
+
+typeoccup <- replicate(length(Rcovaroccup), "occup")
+
+Rcovarstrates <- c("zonage_cplt","zonage_simple","typo_clim","code_dept","eff_corgox9599")#test avec eff_corgco9599
+typestrates <- replicate(length(Rcovarstrates), "strates")
+
+Rcovar <- c(Rcovartopo,Rcovarpedo,Rcovaroccup,Rcovarclimato,Rcovarstrates)
+type <- c(typetopo,typepedo,typeoccup,typeclimato,typestrates)
+# Construction du vecteur des variables du modèle. 
+vNames <- c("corgox9599",Rcovar)
+
+# Sélection du jeu de données
+d <- dcast.bdat[complete.cases(dcast.bdat[vNames]),vNames]
+#############################################################################################
+
+# Paramètres de modélisation
+trControl <- trainControl(method = "cv",p=0.8,number=10)
+tuneGrid <- list(gbm=expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 10),cubist=expand.grid(.committees = c(10,50,100),.neighbors = c(1,5,9)))
+
+# 
+datax <- d[, vNames[-1]]
+datay <- d[, vNames[1]]
+
+# On lance caret pour les deux types modèles (voir https://github.com/tobigithub/caret-machine-learning/blob/master/caret-parallel/run-multiple-caret-models-parallel-lapply.R)
+
+modelObjects <- list()
+model <- c("gbm","cubist")
+for(i in 1:length(model)){
+  print(model[i])
+  modelObjects[[model[i]]] <- train(x = datax, y = datay,model[i],tuneGrid = tuneGrid[[i]],trControl = trControl,verbose = F,keep.data = T)
+  }
+
+# Sauvegarde
+save(modelObjects,file=paste(repsortie,"modelObjects.RData",sep=""))
+
+#modelObjects <- list()
+#model <- c("gbm","cubist")
+
+#m <- c("gbm","cubist")
+#t2 <- lapply(m,function(x) {set.seed(123); seeds <- vector(mode = "list", length = nrow(datax) + 1); seeds <- lapply(seeds, function(x) 1:20); t1 <- train(datax, datay, (x),trControl = trainControl(method = "cv",seeds=seeds))})
+#r2 <- lapply(1:length(t2), function(x) {cat(sprintf("%-10s",(m[x])));cat(t2[[x]]$results$Rsquared[which.min(t2[[x]]$results$RMSE)],"\t"); cat(t2[[x]]$results$RMSE[which.min(t2[[x]]$results$RMSE)],"\n")})
+```
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,error=FALSE}
+load(paste(repsortie,"modelObjects.RData",sep=""))
+resamps <- resamples(modelObjects)
+```
+Ci-dessous, la figure et les tableaux présentent les résultats de la qualité de la prédicition des deux modèles sur les 10 validations croisées. Le modèle cubist présente de meilleurs résultats que le modèle gbm. Pour la précision du modèle, la médiane de la racine quarré de l'erreur quadratique moyenne du modèle cubist est de `r median(summary(resamps)$values[,"cubist~RMSE"])` tandis qu'elle est de `r median(summary(resamps)$values[,"gbm~RMSE"])` pour gbm. Les coefficients de détermination entre les deux modèles sont quasiment identique, avec un légèr avantage pour le modèle cubist.
+**Le modèle Cubist sera utilisé par la suite.**
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,error=FALSE}
+pander(summary(resamps)$statistics,caption="Statistiques des résultats de la validation croisée pour les modèles gbm et cubist")
+p1 <- dotplot(resamps)
+p2 <- parallelplot(resamps, metric = "Rsquared")
+grid.arrange(p1,p2,nrow=1)
+```
+
+### Application du meilleur modèle Cubist
+
+Ci-dessous, la modélisation avec Cubist est relancé selon l'algorithme suivant :
+
+```{r engine='bash',eval=FALSE,}
+1. Définition des paramètres de modélisation
+   - Validation croisée sur les différents paramètres de modélisation (10 fois)
+   - Sélection des meilleurs paramètres
+2. Application du modèle avec les meilleurs paramètres (100 fois)
+   - Sélection aléatoire de 80% du jeu de données pour l'apprentissage et 20% pour la validation
+   - Construction du modèle sur 80% du jeu de données
+   - Calcul de l'importance des variables dans le modèle
+   - Prédiction sur 20% du jeu de données et comparaison avec le jeu de données initial
+   - Calcul des indicateurs de qualité (R2, MSE, RMSE)
+3. Calcul de la moyenne des indicateurs sur les 100 répétitions
+   - Calcul de la moyenne des indicateurs de qualité sur le nombre de répétition
+   - Calcul de l''importance moyenne des variables pour le nombre de répétition
+```
+
+```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,error=FALSE}
+#http://stackoverflow.com/questions/24779363/return-variable-importance-for-each-iteration-in-caret-package-in-r
+
+Rcovarclimato <- c("hpluie_an","jfroids_an","ampli_t_juil_janv","pluie_ecart_janv","pluie_ecart_juil","jpluie_janv","jpluie_juil","ttemp_an","jchauds_an")
+typeclimato <- replicate(length(Rcovarclimato), "climat")
+
+Rcovartopo <- "altimean"
+typetopo <- replicate(length(Rcovartopo), "topographie")
+
+Rcovarpedo <- c("argi_med","sabt_med","mat11")
+typepedo <- replicate(length(Rcovarpedo), "pedologie")
+
+Rcovarstrates <- c("zonage_cplt","zonage_simple","typo_clim","code_dept")
+typestrates <- replicate(length(Rcovarstrates), "strates")
+
+## Construction des variables occupation du sol en fonction de la période en C étudiée
+periodra <- c("1970","1979","1988","2000","2010")
+ra_occup <- c("p_sfp","p_prairie","p_sth","p_cop","p_c","p_mf")
+ra_otex <- c("polyelevage1988","elevage1988","elevagehorsol1988","ugbta1988","grdcultures1988")
+Variay <- c("corgox9599","corgox0004","corgox0509","corgox1014")
+effectif <- c("eff_corgox9599","eff_corgox0004","eff_corgox0509","eff_corgox1014")
+indexperiod <- list(1:3,1:4,1:4,1:5)
+
+nbr <- 100
+prob <- 0.8
+model="cubist"
+cpt <- 0
+
+for(i in Variay){
+  cpt <- cpt + 1
+  ra_occupyears <- apply(expand.grid(ra_occup,periodra[indexperiod[[cpt]]]),1, function(x){paste(x[1],x[2],sep="")})
+
+  # Suppression p_protea1970 (inexistant en 1970!)
+  #ra_occupyears <- ra_occupyears[!ra_occupyears %in% "p_protea1970"]
+
+  Rcovaroccup <- c(ra_otex,ra_occupyears)
+  
+  # Ajout des effectifs
+  Rcovar <- c(Rcovartopo,Rcovarpedo,Rcovaroccup,Rcovarclimato,Rcovarstrates,effectif[cpt])
+
+  # Construction du vecteur des variables du modèle. 
+  vNames <- c(i,Rcovar)
+
+  # Sélection du jeu de données
+  d <- dcast.bdat[complete.cases(dcast.bdat[vNames]),vNames]
+
+  trControl <- trainControl(method = "cv",p=prob,number=10)
+  tuneGrid <- list(gbm=expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 10),cubist=expand.grid(.committees = c(10,50,100),.neighbors = c(1,5,9)))
+    
+  d <- dcast.bdat[complete.cases(dcast.bdat[vNames]),vNames]
+  datax <- d[,vNames[-1]]
+  datay <- d[,vNames[1]]
+  
+  mcubist_fr <- cv_datamining(datax,datay,nbr=nbr,prob,model,select=1:15,tuneGrid,trControl,repsortie)
+
+  saveRDS(mcubist_fr,file=paste(repsortie,"mcubist_fr_",i,"_",nbr,".rds",sep=""))
+}
+
+#nbr <- 100
+#for(i in Variay){
+ # modelcubistrds <- readRDS(paste(repsortie,"mcubist_fr_",i,"_",nbr,".rds",sep=""))
+  #modelcubistrds <- list(varimp=modelcubistrds$varimp,meanvarimport=modelcubistrds$meanvarimport,qualityindex=modelcubistrds$qualityindex,R2=modelcubistrds$R2,RMSE=modelcubistrds$RMSE,MSE=modelcubistrds$MSE)
+  #saveRDS(modelcubistrds,file=paste(repsortie,"mcubist_fr_",i,"_",nbr,"2.rds",sep=""))
+#}
+```
+
+```{r,eval=TRUE,echo=FALSE,message=FALSE,warning=FALSE,error=FALSE,fig.height=9, fig.width=11,fig.align="center"}
+# Ci-dessous, construction des graphiques pour calculer l'importance des variables
+
+Rcovarclimato <- c("hpluie_an","jfroids_an","ampli_t_juil_janv","pluie_ecart_janv","pluie_ecart_juil","jpluie_janv","jpluie_juil","ttemp_an","jchauds_an")
+typeclimato <- replicate(length(Rcovarclimato), "climat")
+
+Rcovartopo <- "altimean"
+typetopo <- replicate(length(Rcovartopo), "topographie")
+
+Rcovarpedo <- c("argi_med","sabt_med","mat11")
+typepedo <- replicate(length(Rcovarpedo), "pedologie")
+
+Rcovarstrates <- c("zonage_cplt","zonage_simple","typo_clim","code_dept","eff_corgox9599")#test avec eff_corgco9599
+typestrates <- replicate(length(Rcovarstrates), "strates")
+
+periodra <- c("1970","1979","1988","2000","2010")
+ra_occup <- c("p_sfp","p_prairie","p_sth","p_cop","p_c","p_mf")
+ra_otex <- c("polyelevage1988","elevage1988","elevagehorsol1988","ugbta1988","grdcultures1988")
+Variay <- c("corgox9599","corgox0004","corgox0509","corgox1014")
+effectif <- c("eff_corgox9599","eff_corgox0004","eff_corgox0509","eff_corgox1014")
+
+indexperiod <- list(1:3,1:4,1:4,1:5)
+
+nbr <- 100
+pourcent <- list()
+rest <- array(NA, dim = c(length(Variay), 3),list(Period_co = Variay, mod = c("r2","MSE","RMSE")))
+cpt <- 0
+for(i in Variay){
+  cpt <- cpt + 1
+  ra_occupyears <- apply(expand.grid(ra_occup,periodra[indexperiod[[cpt]]]),1, function(x){paste(x[1],x[2],sep="")})
+
+  Rcovaroccup <- c(ra_otex,ra_occupyears)
+  typeoccup <- replicate(length(Rcovaroccup), "occup")
+  type <- c(typetopo,typepedo,typeoccup,typeclimato)
+
+  Rcovar <- c(Rcovartopo,Rcovarpedo,Rcovaroccup,Rcovarclimato,Rcovarstrates,effectif[cpt])
+
+  varimp <- readRDS(paste(repsortie,"mcubist_fr_",i,"_",nbr,".rds",sep=""))
+  qualityindex <- varimp$qualityindex
+  varimp <- as.data.frame(varimp$varimp)
+  varimp <- varimp[grep("Overall",names(varimp))]
+
+  varimp$median <- apply(varimp, 1, function(x){median(x,na.rm=TRUE)})
+  varimp$covariable <- rownames(varimp)
+  varimp <- varimp[with(varimp, order(-median)),]
+  varimp$covariable <- reorder(varimp$covariable, varimp$median)
+
+  # Selection quantile(test$value,0.75)>40
+  varimp$Q75 <- apply(varimp[,!names(varimp) %in% c("relatmed","median","covariable")],1, function(x) quantile(x, probs=0.75))
+  varimp40 <- varimp[varimp$Q75>40,]
+  varimp40$relatmed <- apply(varimp40[names(varimp40) %in% "median"],2,function(x){(x/sum(x))*100})
+
+  test <- melt(varimp)
+  test$type <- gsub2(as.character(Rcovar),type,as.character(test$covariable))
+  pp <- list()
+
+  pp[[1]] <- ggplot(test[!test$variable %in% c("relatmed","median","Q75"),],    aes(x=covariable,y=value,fill=type)) + geom_boxplot()+
+     scale_x_discrete("Variables")+scale_y_continuous("Importance des variables (%)")+
+     coord_flip()+
+     geom_hline(yintercept = 40) +
+     theme_perso()  
+
+  test2 <- melt(varimp40)
+  test2$type <- gsub2(as.character(Rcovar),type,as.character(test2$covariable))
+  test2$period <- rep(i,nrow(test2))
+
+  pp[[2]] <- ggplot(test2[!test2$variable %in% c("relatmed","median","Q75"),], aes(x=covariable,y=value,fill=type)) + 
+     geom_boxplot()+
+     scale_x_discrete("Variables")+scale_y_continuous("Importance des variables (%)")+
+     coord_flip()+
+     theme_perso()  
+
+  tt <- do.call(grid_arrange_shared_legend,c(pp,list(nrow=1,ncol=2,position="bottom")))
+  ggsave(tt,file = paste(repsortie,"ImpVariable_cubist_",i,".png",sep=""), width = 11, height = 9)  
+ 
+  pourcent[[i]] <- test2[test2$variable %in% "relatmed",]
+
+  rest[cpt,"r2"] <- qualityindex[,"R2"][[1]]
+  rest[cpt,"MSE"] <- qualityindex[,"MSE"][[1]]
+  rest[cpt,"RMSE"] <- qualityindex[,"RMSE"][[1]]
+}
+
+df <- do.call("rbind",pourcent)
+df <- df[complete.cases(df),]
+df$period <- factor(df$period,levels=c("corgox9599","corgox0004","corgox0509","corgox1014"))
+
+ggplot(df,aes(x=period,y=value,fill=type,label=paste(covariable,":",round(value),"%",sep="")))+geom_col(width = 0.7) + geom_text(size = 3, position = position_stack(vjust = 0.5)) + theme_perso() + xlab("")+ylab("Pourcentage d'importance")
+#ggsave(tt,file = paste(repsortie,"ImpVariable_cubist_",i,".png",sep=""), width = 11, height = 9)  
+```
+
+Les résultats de la validation croisée de la modélisation des teneurs en CO pour les différentes périodes sont présentés dans le tableau ci-dessous. Sur les 100 répétitions, l'application du modèle sur les 20% du jeu d'apprentissage montre une capacité de prédiction des teneurs en CO équivalente entre les périodes et de bonne qualité. La modélisation des teneurs en CO pour la période 2010-2014 montrent la capacité de prédiction la plus mauvaise avec un coefficient de détermination (R2) de 0.78 et un erreur moyenne (Root Mean Square Error) de 2.4 g/kg. La période 2000-2004 affiche les meilleurs avec un R2 de 0.83 et une erreur moyenne de 2.2 g/kg. En moyenne la modélisation des teneurs en CO toute période confondues affiche donc une capacité d'explication de la variance de plus de 80%.
+
+```{r,eval=TRUE,echo=FALSE,results='asis'}
+pander(as.data.frame(rest),caption="Moyenne des indicateurs de la validation croisée pour les différents modèles")
+```
+
+Les 15 variables explicatives de ces modélisations sont présentées dans la figure ci-dessous. Le taux d'argile (`argi_med`) et l'écart de pluie à la moyenne en janvier (`pluie_ecart_janv`) sont les deux premières variables explicatives des 4 modèles. Elles présentent toutes deux un pourcentage d'importance supérieur à 50%. L'altitude moyenne (`altimean`) par canton et le pourcentage de surface fourragère principale (pour différentes périodes) (`p_sfp`) sont également des variables explicatives d'importance. 
+
+Cette dernière variable est quasiment présente sous toutes ces déclinaisons temporelles (1970, 1979, 1988, 2000, 2010). Dans une moindre mesure, le pourcentage de prairie dans la SAU et le pourcentage de maïs fourrage sont les autres variables de type occupation du sol qui ressortent régulièrement dans ce classement des 15 variables explicatives les plus importantes.
+
+L'ordre d'importance des variables explicatives des 4 périodes des teneurs en CO ne sont pas complètement identique à défaut de la première variables explicatives (l'argile). Toutefois, on note de nombreuses similitude entre les 3 premiers modèles (1995-1999 à 2005-2009). La dernière modélisation (2010-2014) présente des résultats différents, avec une part de variable d'origine climatique plus importante.
+
+```{r,eval=TRUE,echo=FALSE}
+#do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
+```
+
+> **En conclusion** Ces résultats montrent que la répartition des teneurs en CO de la BDAT à l'échelle de la France est principalement expliquée par des variable d'origine naturelle (pédologique, climatique, et topographique). L'effet de l'occupation du sol apparaît secondaire. Ces résultats concordent avec les premières conclusions du travail de la modélisation avec des régressions linéaires multiples effectuées avec des co-variables naturelles ou d'origines anthropiques. 
+
+```{r,eval=FALSE,echo=FALSE}
+# Construction de la grille 
+grille <- expand.grid(argi_med = quantile(d[,"argi_med"], c(seq(0,0.9,0.1),0.98)), 
+                      pluie_ecart_janv = quantile(d[,"pluie_ecart_janv"],c(seq(0,0.9,0.1),0.98)),
+                      altimean = quantile(d[,"altimean"],c(seq(0,0.9,0.1),0.98)),
+                      p_sfp1979 = quantile(d[,"p_sfp1979"],c(seq(0,0.9,0.1),0.98)))
+
+autre <- vNames[!(vNames %in% c("argi_med","pluie_ecart_janv","p_sfp1979","altimean"))][-1]
+
+variaeffect(grille = grille,vNames = autre,data = d,model = mcubist,nameModel = "cubist",neighbors=tuneGrid,nomsortie="test",sortie=repsortie)
 ```
 
 ## Régressions linéaires
@@ -840,212 +1433,7 @@ for(i in period){
   
 do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
 ```
-## Modèle de fouille de données
 
-Dans cette partie, on testera rapidement deux modèles de fouille de données utilisés dans plusieurs travaux sur les sols (voir [Murciano et al., 2015](http://www.afes.fr/afes/egs/EGS_22_1_2201_09_18murciano_final.pdf) pour une description des modèles)
-
-- GBM : Le principe de cet algorithme est de construire une séquence de modèles afin qu’à chaque
-étape, chaque modèle ajouté à la combinaison apparaisse comme un pas vers une meilleure solution.
-- Cubist : Cubist est un modèle de régression axé prédiction qui combine les idées de modèle à base de règles, décrites dans Quinlan (1992) avec des corrélations supplémentaires basées sur les voisins les plus proches dans l'ensemble d’apprentissage (voir Quinlan (1993) pour plus de détails).L’algorithme de Cubist est basé sur des règles permettant l’accumulation de modèles prédictifs basée sur des partitions du jeu de données.
-
-### Comparaison des modèles (GBM et Cubist)
-
-```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,error=FALSE}
-
-##### Préparation des données pour la modélisation############################################
-Rcovarclimato <- c("hpluie_an","jfroids_an","ampli_t_juil_janv","pluie_ecart_janv","pluie_ecart_juil","jpluie_janv","jpluie_juil","ttemp_an","jchauds_an")
-typeclimato <- replicate(length(Rcovarclimato), "climat")
-
-Rcovartopo <- "altimean"
-typetopo <- replicate(length(Rcovartopo), "topographie")
-
-Rcovarpedo <- c("argi_med","sabt_med","mat11")
-typepedo <- replicate(length(Rcovarpedo), "pedologie")
-
-Rcovaroccup <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
-
-typeoccup <- replicate(length(Rcovaroccup), "occup")
-
-type <- c(typetopo,typepedo,typeoccup,typeclimato)
-Rcovar <- c(Rcovartopo,Rcovarpedo,Rcovaroccup,Rcovarclimato)
-
-# Construction du vecteur des variables du modèle. 
-vNames <- c("corgox9599",Rcovar)
-
-# Sélection du jeu de données
-d <- dcast.bdat[complete.cases(dcast.bdat[vNames]),vNames]
-#############################################################################################
-
-# Paramètres de modélisation
-trControl <- trainControl(method = "cv",p=0.8,number=10)
-tuneGrid <- list(gbm=expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 10),cubist=expand.grid(.committees = c(10,50,100),.neighbors = c(1,5,9)))
-
-# 
-datax <- d[, vNames[-1]]
-datay <- d[, vNames[1]]
-
-# On lance caret pour les deux types modèles (voir https://github.com/tobigithub/caret-machine-learning/blob/master/caret-parallel/run-multiple-caret-models-parallel-lapply.R)
-
-modelObjects <- list()
-model <- c("gbm","cubist")
-for(i in 1:length(model)){
-  print(model[i])
-  modelObjects[[model[i]]] <- train(x = datax, y = datay,model[i],tuneGrid = tuneGrid[[i]],trControl = trControl,verbose = F,keep.data = T)
-  }
-
-# Sauvegarde
-save(modelObjects,file=paste(repsortie,"modelObjects.RData",sep=""))
-
-#modelObjects <- list()
-#model <- c("gbm","cubist")
-
-#m <- c("gbm","cubist")
-#t2 <- lapply(m,function(x) {set.seed(123); seeds <- vector(mode = "list", length = nrow(datax) + 1); seeds <- lapply(seeds, function(x) 1:20); t1 <- train(datax, datay, (x),trControl = trainControl(method = "cv",seeds=seeds))})
-#r2 <- lapply(1:length(t2), function(x) {cat(sprintf("%-10s",(m[x])));cat(t2[[x]]$results$Rsquared[which.min(t2[[x]]$results$RMSE)],"\t"); cat(t2[[x]]$results$RMSE[which.min(t2[[x]]$results$RMSE)],"\n")})
-```
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,error=FALSE}
-load(paste(repsortie,"modelObjects.RData",sep=""))
-resamps <- resamples(modelObjects)
-```
-Ci-dessous, la figure et les tableaux présentent les résultats de la qualité de la prédicition des deux modèles sur les 10 validations croisées. Le modèle cubist présente de meilleurs résultats que le modèle gbm. Pour la précision du modèle, la médiane de la racine quarré de l'erreur quadratique moyenne du modèle cubist est de `r median(summary(resamps)$values[,"cubist~RMSE"])` tandis qu'elle est de `r median(summary(resamps)$values[,"gbm~RMSE"])` pour gbm. Les coefficients de détermination entre les deux modèles sont quasiment identique, avec un légèr avantage pour le modèle cubist.
-**Le modèle Cubist sera utilisé par la suite.**
-
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,error=FALSE}
-pander(summary(resamps)$statistics,caption="Statistiques des résultats de la validation croisée pour les modèles gbm et cubist")
-p1 <- dotplot(resamps)
-p2 <- parallelplot(resamps, metric = "Rsquared")
-grid.arrange(p1,p2,nrow=1)
-```
-
-### Application du meilleur modèle Cubist
-
-Ci-dessous, la modélisation avec Cubist est relancé selon l'algorithme suivant :
-
-```{r engine='bash',eval=FALSE,}
-1. Définition des paramètres de modélisation
-   - Validation croisée sur les différents paramètres de modélisation (10 fois)
-   - Sélection des meilleurs paramètres
-2. Application du modèle avec les meilleurs paramètres (100 fois)
-   - Sélection aléatoire de 80% du jeu de données pour l'apprentissage et 20% pour la validation
-   - Construction du modèle sur 80% du jeu de données
-   - Calcul de l'importance des variables dans le modèle
-   - Prédiction sur 20% du jeu de données et comparaison avec le jeu de données initial
-   - Calcul des indicateurs de qualité (R2, MSE, RMSE)
-3. Calcul de la moyenne des indicateurs sur les 100 répétitions
-   - Calcul de la moyenne des indicateurs de qualité sur le nombre de répétition
-   - Calcul de l''importance moyenne des variables pour le nombre de répétition
-```
-
-```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,error=FALSE}
-#http://stackoverflow.com/questions/24779363/return-variable-importance-for-each-iteration-in-caret-package-in-r
-
-Rcovarclimato <- c("hpluie_an","jfroids_an","ampli_t_juil_janv","pluie_ecart_janv","pluie_ecart_juil","jpluie_janv","jpluie_juil","ttemp_an","jchauds_an")
-typeclimato <- replicate(length(Rcovarclimato), "climat")
-
-Rcovartopo <- "altimean"
-typetopo <- replicate(length(Rcovartopo), "topographie")
-
-Rcovarpedo <- c("argi_med","sabt_med","mat11")
-typepedo <- replicate(length(Rcovarpedo), "pedologie")
-
-## Construction des variables occupation du sol en fonction de la période en C étudiée
-periodra <- c("1970","1979","1988","2000","2010")
-ra_occup <- c("p_sfp","p_prairie","p_sth","p_cop","p_c","p_mf")
-ra_otex <- c("elevage1988","elevagehorsol1988","polyelevage1988","ugbta1988","grdcultures1988")
-Variay <- c("corgox9599","corgox0004","corgox0509","corgox1014")
-indexperiod <- list(1:3,1:4,1:4,1:5)
-
-nbr <- 100
-prob <- 0.8
-model="cubist"
-cpt <- 0
-
-for(i in Variay){
-  cpt <- cpt + 1
-  ra_occupyears <- apply(expand.grid(ra_occup,periodra[indexperiod[[cpt]]]),1, function(x){paste(x[1],x[2],sep="")})
-
-  # Suppression p_protea1970 (inexistant en 1970!)
-  #ra_occupyears <- ra_occupyears[!ra_occupyears %in% "p_protea1970"]
-
-  Rcovaroccup <- c(ra_otex,ra_occupyears)
-  typeoccup <- replicate(length(Rcovaroccup), "occup")
-  type <- c(typetopo,typepedo,typeoccup,typeclimato)
-  Rcovar <- c(Rcovartopo,Rcovarpedo,Rcovaroccup,Rcovarclimato)
-
-  # Construction du vecteur des variables du modèle. 
-  vNames <- c(i,Rcovar)
-
-  # Sélection du jeu de données
-  d <- dcast.bdat[complete.cases(dcast.bdat[vNames]),vNames]
-
-  trControl <- trainControl(method = "cv",p=prob,number=10)
-  tuneGrid <- list(gbm=expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 10),cubist=expand.grid(.committees = c(10,50,100),.neighbors = c(1,5,9)))
-    
-  d <- dcast.bdat[complete.cases(dcast.bdat[vNames]),vNames]
-  datax <- d[,vNames[-1]]
-  datay <- d[,vNames[1]]
-
-  #library(debug)
-  #debug(cv_datamining)
-  #mtrace("cv_datamining")
-  
-  mcubist_fr <- cv_datamining(datax,datay,nbr=nbr,prob,model,select=1:15,tuneGrid,trControl,repsortie)
-
-  # Compte tenu du poid de ces objets, on recueille uniquement qualityindex et varimport
-  mcubist_fr <- mcubist_fr[c("qualityindex","varimport")]
-
-  saveRDS(mcubist_fr,file=paste(repsortie,"mcubist_fr_",i,".rds",sep=""))
-}
-```
-
-```{r,eval=TRUE,echo=FALSE}
-Variay <- c("corgox9599","corgox0004","corgox0509","corgox1014")
-impvar <- list()
-p <- list()
-rest <- array(NA, dim = c(length(Variay), 3),list(Period_co = Variay, mod = c("r2","MSE","RMSE")))
-cpt <- 0
-for(i in Variay){
-  cpt <- cpt + 1
-  namemodel <- paste("mcubist_fr_",i,sep="")
-  modelcubistrds <- readRDS(paste(repsortie,namemodel,".rds",sep=""))
-  p[[cpt]] <- ggplot(modelcubistrds$varimport, aes(x = variable, y = importance,fill=type)) + 
-              geom_bar(stat = "identity") + coord_flip() + labs(title=i)
-  rest[cpt,"r2"] <- modelcubistrds$qualityindex[,"R2"][[1]]
-  rest[cpt,"MSE"] <- modelcubistrds$qualityindex[,"MSE"][[1]]
-  rest[cpt,"RMSE"] <- modelcubistrds$qualityindex[,"RMSE"][[1]]
-  impvar[[i]] <-modelcubistrds$varimport
-}
-```
-
-Les résultats de la validation croisée de la modélisation des teneurs en CO pour les différentes périodes sont présentés dans le tableau ci-dessous. Sur les 100 répétitions, l'application du modèle sur les 20% du jeu d'apprentissage montre une capacité de prédiction des teneurs en CO équivalente entre les périodes et de bonne qualité. La modélisation des teneurs en CO pour la période 2010-2014 montrent la capacité de prédiction la plus mauvaise avec un coefficient de détermination (R2) de 0.78 et un erreur moyenne (Root Mean Square Error) de 2.4 g/kg. La période 2000-2004 affiche les meilleurs avec un R2 de 0.83 et une erreur moyenne de 2.2 g/kg. En moyenne la modélisation des teneurs en CO toute période confondues affiche donc une capacité d'explication de la variance de plus de 80%.
-
-```{r,eval=TRUE,echo=FALSE,results='asis'}
-pander(as.data.frame(rest),caption="Moyenne des indicateurs de la validation croisée pour les différents modèles")
-```
-
-Les 15 variables explicatives de ces modélisations sont présentées dans la figure ci-dessous. Le taux d'argile (`argi_med`) et l'écart de pluie à la moyenne en janvier (`pluie_ecart_janv`) sont les deux premières variables explicatives des 4 modèles. Elles présentent toutes deux un pourcentage d'importance supérieur à 50%. L'altitude moyenne (`altimean`) par canton et le pourcentage de surface fourragère principale (pour différentes périodes) (`p_sfp`) sont également des variables explicatives d'importance. 
-
-Cette dernière variable est quasiment présente sous toutes ces déclinaisons temporelles (1970, 1979, 1988, 2000, 2010). Dans une moindre mesure, le pourcentage de prairie dans la SAU et le pourcentage de maïs fourrage sont les autres variables de type occupation du sol qui ressortent régulièrement dans ce classement des 15 variables explicatives les plus importantes.
-
-L'ordre d'importance des variables explicatives des 4 périodes des teneurs en CO ne sont pas complètement identique à défaut de la première variables explicatives (l'argile). Toutefois, on note de nombreuses similitude entre les 3 premiers modèles (1995-1999 à 2005-2009). La dernière modélisation (2010-2014) présente des résultats différents, avec une part de variable d'origine climatique plus importante.
-
-```{r,eval=TRUE,echo=FALSE}
-do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
-```
-
-> **En conclusion** Ces résultats montrent que la répartition des teneurs en CO de la BDAT à l'échelle de la France est principalement expliquée par des variable d'origine naturelle (pédologique, climatique, et topographique). L'effet de l'occupation du sol apparaît secondaire. Ces résultats concordent avec les premières conclusions du travail de la modélisation avec des régressions linéaires multiples effectuées avec des co-variables naturelles ou d'origines anthropiques. 
-
-```{r,eval=FALSE,echo=FALSE}
-# Construction de la grille 
-grille <- expand.grid(argi_med = quantile(d[,"argi_med"], c(seq(0,0.9,0.1),0.98)), 
-                      pluie_ecart_janv = quantile(d[,"pluie_ecart_janv"],c(seq(0,0.9,0.1),0.98)),
-                      altimean = quantile(d[,"altimean"],c(seq(0,0.9,0.1),0.98)),
-                      p_sfp1979 = quantile(d[,"p_sfp1979"],c(seq(0,0.9,0.1),0.98)))
-
-autre <- vNames[!(vNames %in% c("argi_med","pluie_ecart_janv","p_sfp1979","altimean"))][-1]
-
-variaeffect(grille = grille,vNames = autre,data = d,model = mcubist,nameModel = "cubist",neighbors=tuneGrid,nomsortie="test",sortie=repsortie)
-```
 ## Conclusion
 
 A la suite de ce premier travail, la modélisation des teneurs en CO doit être reconduite à l'échelle d'un zonage où le contexte climatique, pédologique et topographique est homogène afin d'identifier les variables d'occupation du sol susceptibles d'agir sur les teneurs en CO.
@@ -1074,7 +1462,7 @@ typetopo <- replicate(length(Rcovartopo), "pedologie")
 
 Rnaturel <- c(Rcovartopo,Rcovarclimato)
 
-Ranthrop <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
+Ranthrop <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
 Variay <- "corgox9599"
 
 Rcovar <- c(Rcovarclimato,Rcovartopo,Rcovarpedo,Ranthrop)
@@ -1119,7 +1507,7 @@ typetopo <- replicate(length(Rcovartopo), "pedologie")
 
 Rnaturel <- c(Rcovartopo,Rcovarclimato)
 
-Ranthrop <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
+Ranthrop <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","clc31_90","clc21_90","clc22_90","clc23_90","clc24_90","clc31_90","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
 Variay <- "corgox9599"
 
 Rcovar <- c(Rcovarclimato,Rcovartopo,Rcovarpedo,Ranthrop)
@@ -1178,20 +1566,49 @@ Fin
   
 ### Stratification par type de climat
 
+Ci-dessous, la figure et le tableau présentent les résultats de la modélisation des teneurs en CO pour la période 1995-1999 au sein des strates de type de climat. Le tableau présente la moyenne des indicateurs de qualité de modélisation pour les 100 validations croisées. La figure présente la moyenne de l'importance des variables explicatives pour les 100 répétitions.
+
 ```{r cubiststratification,eval=FALSE,echo=FALSE}
-strates <- 1:5
-prob <- 0.8
+Rcovarclimato <- c("hpluie_an","jfroids_an","ampli_t_juil_janv","pluie_ecart_janv","pluie_ecart_juil","jpluie_janv","jpluie_juil","ttemp_an","jchauds_an")
+typeclimato <- replicate(length(Rcovarclimato), "climat")
+
+Rcovartopo <- "altimean"
+typetopo <- replicate(length(Rcovartopo), "topographie")
+
+Rcovarpedo <- c("argi_med","sabt_med","mat11")
+typepedo <- replicate(length(Rcovarpedo), "pedologie")
+
+## Construction des variables occupation du sol en fonction de la période en C étudiée
+periodra <- c("1970","1979","1988","2000","2010")
+ra_occup <- c("p_sfp","p_prairie","p_sth","p_cop","p_c","p_mf")
+ra_otex <- c("polyelevage1988","elevage1988","elevagehorsol1988","ugbta1988","grdcultures1988")
+Variay <- c("corgox9599","corgox0004","corgox0509","corgox1014")
+indexperiod <- list(1:3,1:4,1:4,1:5)
+
 nbr <- 100
-impvar <- list()
-p <- list()
+prob <- 0.8
+model="cubist"
+strates <- 1:5
 rest <- array(NA, dim = c(length(strates), 3),list(strates = strates, mod = c("r2","MSE","RMSE")))
-model <- "cubist"
 
 cpt <- 0
-for(i in strates){
-  cpt <- cpt + 1
+for(i in Variay){
   print(i)
-  d_typo <- dcast.bdat[complete.cases(dcast.bdat[vNames]) & dcast.bdat$typo_clim %in% i,vNames]
+  cpt <- cpt + 1
+  ra_occupyears <- apply(expand.grid(ra_occup,periodra[indexperiod[[cpt]]]),1, function(x){paste(x[1],x[2],sep="")})
+
+  Rcovaroccup <- c(ra_otex,ra_occupyears)
+  typeoccup <- replicate(length(Rcovaroccup), "occup")
+  type <- c(typetopo,typepedo,typeoccup,typeclimato)
+  Rcovar <- c(Rcovartopo,Rcovarpedo,Rcovaroccup,Rcovarclimato)
+
+  # Construction du vecteur des variables du modèle. 
+  vNames <- c(i,Rcovar)
+cpt1 <- 0
+for(s in strates){
+  print(s)
+  cpt1 <- cpt1 + 1
+  d_typo <- dcast.bdat[complete.cases(dcast.bdat[vNames]) & dcast.bdat$typo_clim %in% s,vNames]
   
   datax <- d_typo[, vNames[-1]]
   datay <- d_typo[, vNames[1]]
@@ -1202,27 +1619,102 @@ for(i in strates){
 
   # Modélisation avec les meilleurs paramètres
   mcubistbst <- cv_datamining(datax,datay,nbr=nbr,prob,model,tuneGrid,trControl,repsortie,select=1:15)
+  saveRDS(mcubistbst,file=paste(repsortie,"mcubist_strates_",s,"_",i,"_",nbr,".rds",sep=""))
 
-  rest[cpt,"r2"] <- mcubistbst$qualityindex[,"R2"][[1]]
-  rest[cpt,"MSE"] <- mcubistbst$qualityindex[,"MSE"][[1]]
-  rest[cpt,"RMSE"] <- mcubistbst$qualityindex[,"RMSE"][[1]]
-  
-  p[[cpt]] <- mcubistbst$p + labs(title=i)
-  impvar[[i]] <- mcubistbst$varimport
+  rest[cpt1,"r2"] <- mcubistbst$qualityindex[,"R2"][[1]]
+  rest[cpt1,"MSE"] <- mcubistbst$qualityindex[,"MSE"][[1]]
+  rest[cpt1,"RMSE"] <- mcubistbst$qualityindex[,"RMSE"][[1]]
+  }
+saveRDS(rest,file=paste(repsortie,"restcubist_typoclim_",nbr,"_",i,".rds",sep=""))  
 }
 
-do.call(grid_arrange_shared_legend,c(p,list(nrow=1,ncol=3,position="bottom")))
+#nbr <- 100
+#for(i in Variay){
+  #for(s in strates){
+  #modelcubistrds <- readRDS(paste(repsortie,"mcubist_strates_",s,"_",i,"_",nbr,".rds",sep=""))
+  #modelcubistrds <- list(varimp=modelcubistrds$varimp,meanvarimport=modelcubistrds$meanvarimport,qualityindex=modelcubistrds$qualityindex,R2=modelcubistrds$R2,RMSE=modelcubistrds$RMSE,MSE=modelcubistrds$MSE)
+  #saveRDS(modelcubistrds,file=paste(repsortie,"mcubist_strates_",s,"_",i,"_",nbr,"2.rds",sep=""))
+  #}
+#}
+```
 
-ggplot(impvar$G2, aes(x = variable, y = importance,fill=type)) + 
-  geom_bar(stat = "identity") + coord_flip() + labs(title=i)
+```{r,eval=TRUE,echo=FALSE}
 
+Rcovarclimato <- c("hpluie_an","jfroids_an","ampli_t_juil_janv","pluie_ecart_janv","pluie_ecart_juil","jpluie_janv","jpluie_juil","ttemp_an","jchauds_an")
+typeclimato <- replicate(length(Rcovarclimato), "climat")
 
-ggplot(impvar$G2, aes(x = variable, y = importance,fill=type)) + 
-  geom_bar(position="fill") + coord_flip() + labs(title=i) + coord_polar("y")
+Rcovartopo <- "altimean"
+typetopo <- replicate(length(Rcovartopo), "topographie")
 
-save(impvar,file=paste(repsortie,"impvarcubist_typoclim.RData",sep=""))
-save(p,file=paste(repsortie,"pcubist_typoclim.RData",sep=""))
-save(rest,file=paste(repsortie,"restcubist_typoclim.RData",sep=""))
+Rcovarpedo <- c("argi_med","sabt_med","mat11")
+typepedo <- replicate(length(Rcovarpedo), "pedologie")
+
+periodra <- c("1970","1979","1988","2000","2010")
+ra_occup <- c("p_sfp","p_prairie","p_sth","p_cop","p_c","p_mf")
+ra_otex <- c("polyelevage1988","elevage1988","elevagehorsol1988","ugbta1988","grdcultures1988")
+Variay <- c("corgox9599","corgox0004","corgox0509","corgox1014")
+indexperiod <- list(1:3,1:4,1:4,1:5)
+
+Variay <- c("corgox9599","corgox0004","corgox0509","corgox1014")
+nbr <- 100
+p <- list()
+strates <- 1:5
+cpt <- 0
+
+for(i in Variay){
+  cpt <- cpt + 1
+  ra_occupyears <- apply(expand.grid(ra_occup,periodra[indexperiod[[cpt]]]),1, function(x){paste(x[1],x[2],sep="")})
+
+  Rcovaroccup <- c(ra_otex,ra_occupyears)
+  typeoccup <- replicate(length(Rcovaroccup), "occup")
+  type <- c(typetopo,typepedo,typeoccup,typeclimato)
+  Rcovar <- c(Rcovartopo,Rcovarpedo,Rcovaroccup,Rcovarclimato)
+  namemodel <- paste("mcubist_fr_",i,sep="")
+  
+  cpt1 <- 0
+  pourcent <- list()
+  for(s in strates){
+    modelcubistrds <- readRDS(paste(repsortie,"mcubist_strates_",s,"_",i,"_",nbr,"2.rds",sep=""))
+    varimp <- as.data.frame(modelcubistrds$varimp)
+    varimp <- varimp[grep("Overall",names(varimp))]
+
+    varimp$median <- apply(varimp, 1, function(x){median(x,na.rm=TRUE)})
+    varimp$covariable <- rownames(varimp)
+    varimp <- varimp[with(varimp, order(-median)),]
+    varimp$covariable <- reorder(varimp$covariable, varimp$median)
+
+    # Selection quantile(test$value,0.75)>40
+    varimp$Q75 <- apply(varimp[,!names(varimp) %in% c("relatmed","median","covariable")],1, function(x) quantile(x, probs=0.75))
+    varimp40 <- varimp[varimp$Q75>40,]
+    varimp40$relatmed <- apply(varimp40[names(varimp40) %in% "median"],2,function(x){(x/sum(x))*100})
+
+    test <- melt(varimp)
+    test$type <- gsub2(as.character(Rcovar),type,as.character(test$covariable))
+    pp <- list()
+
+    pp[[1]] <- ggplot(test[!test$variable %in% c("relatmed","median","Q75"),],    aes(x=covariable,y=value,fill=type)) + geom_boxplot()+
+     scale_x_discrete("Variables")+scale_y_continuous("Importance des variables (%)")+coord_flip()+geom_hline(yintercept = 40) +theme_perso()  
+
+    test2 <- melt(varimp40)
+    test2$type <- gsub2(as.character(Rcovar),type,as.character(test2$covariable))
+    test2$strates <- rep(s,nrow(test2))
+
+    pp[[2]] <- ggplot(test2[!test2$variable %in% c("relatmed","median","Q75"),], aes(x=covariable,y=value,fill=type)) + geom_boxplot()+scale_x_discrete("Variables")+scale_y_continuous("Importance des variables (%)")+coord_flip()+
+     theme_perso()  
+
+    tt <- do.call(grid_arrange_shared_legend,c(pp,list(nrow=1,ncol=2,position="bottom")))
+    #ggsave(tt,file = paste(repsortie,"ImpVariable_typoclim_",s,"_",i,".png",sep=""), width = 11, height = 9)
+    pourcent[[s]] <- test2[test2$variable %in% "relatmed",]
+    }
+
+    df <- do.call("rbind",pourcent)
+    df <- df[complete.cases(df),]
+    df$strates <- factor(df$strates,levels=c("1","2","3","4","5"))
+    p[[i]] <- ggplot(df,aes(x=strates,y=value,fill=type,label=paste(covariable,":",round(value),"%",sep="")))+geom_col(width = 0.7) + geom_text(size = 3, position = position_stack(vjust = 0.5)) + theme_perso() + xlab("")+ylab("Pourcentage d'importance") + labs(title=i) 
+}
+
+tt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
+ggsave(tt,file = paste(repsortie,"ImpVariable_typoclim_",s,"_",i,".png",sep=""), width = 11, height = 9)
 ```
 Sur les 3 strates climatiques modélisées, les tests de modélisation présentent des r2 de 
 
@@ -1231,59 +1723,186 @@ Le rôle des variables explicatives est différent. Pour les zones 3 et 4, le ta
 Dans la zone climatique 5, les variables climatiques sont nettement plus contributrices du modèle que les variables d'occupation du sol. 
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=12, fig.width=12,fig.cap = fig$cap("cubist_strat_fr","Importance des variables explicatives"),fig.align="center",message=FALSE,warning=FALSE,results = 'asis'}
-load(paste(repsortie,"pcubist_typoclim.RData",sep=""))
-load(paste(repsortie,"restcubist_typoclim.RData",sep=""))
+nbr <- 100
+load(paste(repsortie,"restcubist_typoclim_",nbr,".RData",sep=""))
 pander(as.data.frame(rest),caption="Moyenne des indicateurs de la validation croisée")
 do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=3,position="bottom")))
 ```
 
 ### Stratification par grande région d'élevage
 
-```{r gbmstratificationelevage,eval=FALSE,echo=FALSE}
-reg_elevage <- c("A","B1","B2","C1","D","E1","E2")
+Ci-dessous, la figure et le tableau présentent les résultats de la modélisation des teneurs en CO pour la période 1995-1999 au sein des différentes strates d'élevage. Le tableau présente la moyenne des indicateurs de qualité de modélisation pour les 100 validations croisées. La figure présente la moyenne de l'importance des variables explicatives pour les 100 répétitions.
 
-p_regelevage <- list()
-impvar <- list()
+La qualité de la modélisation ainsi que l'importance des variables explicatives sont différentes en fonction des strates. Les régions B1 (Zone de polyculture-élevage du Bassin Parisien) et C1 (Zone intensive du Grand Ouest) présentent les meilleurs résultats de modélisation avec un R2 moyen de 0.83 et 0.86 respectivement. 
+
+La modélisation des teneurs en CO dans la région B1 est essentiellement basée sur les variables naturelles. La teneur en argile est la principale variable explicative. Les variables climatiques et la topographie occupent une part importante. Les variables d'occupation du sol ont une faible part dans la modélisation avec moins de 25%. Parmi celles-ci, ce sont les pourcentage de SFP, de prairie, de COP et de maïs fourrage dans la SAU qui sont le mieux représentés. On retrouve un classement similaire pour C1. L'argile et la topographie sont d'une moindre importance dans la modélisation et ce sont surtout les variables climatiques qui expliquent les teneurs en CO. Dans cette région, l'OTEX elevage 1988 et les pourcentages en STH sont les principales variables explicatives de type d'occupation du sol. A noter que ces régions 
+
+```{r ,eval=FALSE,echo=FALSE}
+reg_elevage <- c("A","B1","B2","C1","D","E1","E2","G1","G2")
 rest <- array(NA, dim = c(length(reg_elevage), 3),list(strates = reg_elevage, mod = c("r2","MSE","RMSE")))
 nbr <- 100
 prob <- 0.8
 cpt <- 0
+model <- "cubist"
+Rcovarclimato <- c("hpluie_an","jfroids_an","ampli_t_juil_janv","pluie_ecart_janv","pluie_ecart_juil","jpluie_janv","jpluie_juil","ttemp_an","jchauds_an")
+typeclimato <- replicate(length(Rcovarclimato), "climat")
 
-for(i in reg_elevage){
-  cpt <- cpt + 1
+Rcovartopo <- "altimean"
+typetopo <- replicate(length(Rcovartopo), "topographie")
+
+Rcovarpedo <- c("argi_med","sabt_med","mat11")
+typepedo <- replicate(length(Rcovarpedo), "pedologie")
+
+## Construction des variables occupation du sol en fonction de la période en C étudiée
+periodra <- c("1970","1979","1988","2000","2010")
+ra_occup <- c("p_sfp","p_prairie","p_sth","p_cop","p_c","p_mf")
+ra_otex <- c("polyelevage1988","elevage1988","elevagehorsol1988","ugbta1988","grdcultures1988")
+Variay <- c("corgox9599","corgox0004","corgox0509","corgox1014")
+indexperiod <- list(1:3,1:4,1:4,1:5)
+
+cpt <- 0
+for(i in Variay){
   print(i)
+  cpt <- cpt + 1
+  ra_occupyears <- apply(expand.grid(ra_occup,periodra[indexperiod[[cpt]]]),1, function(x){paste(x[1],x[2],sep="")})
+
+  Rcovaroccup <- c(ra_otex,ra_occupyears)
+  typeoccup <- replicate(length(Rcovaroccup), "occup")
+  type <- c(typetopo,typepedo,typeoccup,typeclimato)
+  Rcovar <- c(Rcovartopo,Rcovarpedo,Rcovaroccup,Rcovarclimato)
+
+  # Construction du vecteur des variables du modèle. 
+  vNames <- c(i,Rcovar)
+  cpt1 <- 0
+  for(s in reg_elevage){
+    cpt1 <- cpt + 1
+    print(s)
   
-  d_typo <- dcast.bdat[complete.cases(dcast.bdat[vNames]) & dcast.bdat$zonage_cplt %in% i,vNames]
+    d_typo <- dcast.bdat[complete.cases(dcast.bdat[vNames]) & dcast.bdat$zonage_cplt %in% s,vNames]
   
-  datax <- d_typo[, vNames[-1]]
-  datay <- d_typo[, vNames[1]]
+    datax <- d_typo[, vNames[-1]]
+    datay <- d_typo[, vNames[1]]
  
-  # Paramètres de modélisation
-  trControl <- trainControl(method = "cv",p=prob,number=10)
-  tuneGrid <- list(gbm=expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 10),cubist=expand.grid(.committees = c(10,50,100),.neighbors = c(1,5,9)))
+    # Paramètres de modélisation
+    trControl <- trainControl(method = "cv",p=prob,number=10)
+    tuneGrid <- list(gbm=expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 10),cubist=expand.grid(.committees = c(10,50,100),.neighbors = c(1,5,9)))
 
-  # Modélisation avec les meilleurs paramètres
-  mcubistbst <- cv_datamining(datax,datay,nbr=nbr,prob,model,tuneGrid,trControl,repsortie,select=1:15)
-
-  rest[cpt,"r2"] <- mcubistbst$qualityindex[,"R2"][[1]]
-  rest[cpt,"MSE"] <- mcubistbst$qualityindex[,"MSE"][[1]]
-  rest[cpt,"RMSE"] <- mcubistbst$qualityindex[,"RMSE"][[1]]
-  
-  p_regelevage[[cpt]] <- mcubistbst$p + labs(title=i)
-  impvar[[i]] <- mcubistbst$varimport
+    # Modélisation avec les meilleurs paramètres
+    mcubistbst <- cv_datamining(datax,datay,nbr=nbr,prob,model,tuneGrid,trControl,repsortie,select=1:15)
+    saveRDS(mcubistbst,file=paste(repsortie,"mcubist_strates_",s,"_",i,"_",nbr,".rds",sep=""))
+    
+    rest[cpt1,"r2"] <- mcubistbst$qualityindex[,"R2"][[1]]
+    rest[cpt1,"MSE"] <- mcubistbst$qualityindex[,"MSE"][[1]]
+    rest[cpt1,"RMSE"] <- mcubistbst$qualityindex[,"RMSE"][[1]]
+  }
+saveRDS(rest,file=paste(repsortie,"restcubist_elevage_",nbr,"_",i,".rds",sep=""))  
 }
 
-save(impvar,file=paste(repsortie,"impvarcubist_elevage.RData",sep=""))
-save(p_regelevage,file=paste(repsortie,"pcubist_elevage.RData",sep=""))
-save(rest,file=paste(repsortie,"restcubist_elevage.RData",sep=""))
+nbr <- 100
+for(i in reg_elevage){
+  for(s in strates){
+  modelcubistrds <- readRDS(paste(repsortie,"mcubist_strates_",s,"_",i,"_",nbr,".rds",sep=""))
+  modelcubistrds <- list(varimp=modelcubistrds$varimp,meanvarimport=modelcubistrds$meanvarimport,qualityindex=modelcubistrds$qualityindex,R2=modelcubistrds$R2,RMSE=modelcubistrds$RMSE,MSE=modelcubistrds$MSE)
+  saveRDS(modelcubistrds,file=paste(repsortie,"mcubist_strates_",s,"_",i,"_",nbr,"2.rds",sep=""))
+  }
+}
+
+
+```
+
+Ci-dessous, les figures sont à commenter
+
+```{r,eval=TRUE,echo=FALSE,warning=FALSE,message=FALSE,error=FALSE,fig.height=10, fig.width=10,fig.align="center"}
+
+Rcovarclimato <- c("hpluie_an","jfroids_an","ampli_t_juil_janv","pluie_ecart_janv","pluie_ecart_juil","jpluie_janv","jpluie_juil","ttemp_an","jchauds_an")
+typeclimato <- replicate(length(Rcovarclimato), "climat")
+
+Rcovartopo <- "altimean"
+typetopo <- replicate(length(Rcovartopo), "topographie")
+
+Rcovarpedo <- c("argi_med","sabt_med","mat11")
+typepedo <- replicate(length(Rcovarpedo), "pedologie")
+
+periodra <- c("1970","1979","1988","2000","2010")
+ra_occup <- c("p_sfp","p_prairie","p_sth","p_cop","p_c","p_mf")
+ra_otex <- c("polyelevage1988","elevage1988","elevagehorsol1988","ugbta1988","grdcultures1988")
+Variay <- c("corgox9599","corgox0004","corgox0509","corgox1014")
+indexperiod <- list(1:3,1:4,1:4,1:5)
+
+nbr <- 100
+p <- list()
+reg_elevage <- c("A","B1","B2","C1","D","E1","E2","G1","G2")
+cpt <- 0
+
+for(i in Variay){
+  cpt <- cpt + 1
+  ra_occupyears <- apply(expand.grid(ra_occup,periodra[indexperiod[[cpt]]]),1, function(x){paste(x[1],x[2],sep="")})
+
+  Rcovaroccup <- c(ra_otex,ra_occupyears)
+  typeoccup <- replicate(length(Rcovaroccup), "occup")
+  type <- c(typetopo,typepedo,typeoccup,typeclimato)
+  Rcovar <- c(Rcovartopo,Rcovarpedo,Rcovaroccup,Rcovarclimato)
+    
+  pourcent <- list()
+  for(s in reg_elevage){
+    pp <- list()
+    modelcubistrds <- readRDS(paste(repsortie,"mcubist_strates_",s,"_",i,"_",nbr,"2.rds",sep=""))
+    varimp <- as.data.frame(modelcubistrds$varimp)
+    varimp <- varimp[grep("Overall",names(varimp))]
+
+    varimp$median <- apply(varimp, 1, function(x){median(x,na.rm=TRUE)})
+    varimp$covariable <- rownames(varimp)
+    varimp <- varimp[with(varimp, order(-median)),]
+    varimp$covariable <- reorder(varimp$covariable, varimp$median)
+
+    # Selection quantile(test$value,0.75)>30
+    varimp$Q75 <- apply(varimp[,!names(varimp) %in% c("relatmed","median","covariable")],1, function(x) quantile(x, probs=0.75))
+    varimp40 <- varimp[varimp$Q75>30,]
+    varimp40$relatmed <- apply(varimp40[names(varimp40) %in% "median"],2,function(x){(x/sum(x))*100})
+
+    test <- melt(varimp)
+    test$type <- gsub2(as.character(Rcovar),type,as.character(test$covariable))
+
+    pp[[1]] <- ggplot(test[!test$variable %in% c("relatmed","median","Q75"),],    aes(x=covariable,y=value,fill=type)) + geom_boxplot()+
+     scale_x_discrete("Variables")+scale_y_continuous("Importance des variables (%)")+coord_flip()+geom_hline(yintercept = 30) +theme_perso()  
+
+    test2 <- melt(varimp40)
+    test2$type <- gsub2(as.character(Rcovar),type,as.character(test2$covariable))
+    test2$strates <- rep(s,nrow(test2))
+
+    pp[[2]] <- ggplot(test2[!test2$variable %in% c("relatmed","median","Q75"),], aes(x=covariable,y=value,fill=type)) + geom_boxplot()+scale_x_discrete("Variables")+scale_y_continuous("Importance des variables (%)")+coord_flip()+
+     theme_perso()  
+
+    tt <- do.call(grid_arrange_shared_legend,c(pp,list(nrow=1,ncol=2,position="bottom")))
+    #ggsave(tt,file = paste(repsortie,"ImpVariable_regelevage_",s,"_",i,".png",sep=""), width = 11, height = 9)
+    pourcent[[s]] <- test2[test2$variable %in% "relatmed",]
+    }
+
+    df <- do.call("rbind",pourcent)
+    df <- df[complete.cases(df),]
+    #df$strates <- factor(df$strates,levels=c("2","3","4","5"))
+    p[[i]] <- ggplot(df,aes(x=strates,y=value,fill=type,label=paste(covariable,":",round(value),"%",sep="")))+geom_col(width = 0.7) + geom_text(size = 3, position = position_stack(vjust = 0.5)) + theme_perso() + xlab("")+ylab("Pourcentage d'importance") + labs(title=i) 
+}
+
+tt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
+ggsave(tt,file = paste(repsortie,"ImpVariable_regelevage_",s,"_",i,".png",sep=""), width = 11, height = 9)
+```
+
 ```
 Ci-dessous, commenter les résultats de la stratification avec les principales régions d'élevage
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=12, fig.width=12,fig.cap = fig$cap("cubist_strat_elevage","Importance des variables explicatives"),fig.align="center",message=FALSE,warning=FALSE,results = 'asis'}
-
-load(paste(repsortie,"pcubist_elevage.RData",sep=""))
-load(paste(repsortie,"restcubist_elevage.RData",sep=""))
+load(paste(repsortie,"restcubist_elevage_",nbr,".RData",sep=""))
 pander(as.data.frame(rest),caption="Moyenne des indicateurs de la validation croisée")
-do.call(grid_arrange_shared_legend,c(p_regelevage,list(nrow=3,ncol=3,position="bottom")))
-
 ```
+
+## Conclusion
+
+Ici, on pourra conclure sur les résultats de modélisation par stratification
+
+
+
+
+# Conclusion générale
+
+Dans ce premier travail

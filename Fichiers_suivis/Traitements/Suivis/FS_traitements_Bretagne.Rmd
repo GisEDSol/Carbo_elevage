@@ -98,45 +98,42 @@ melted_focus <- melted.bdat[melted.bdat$code_reg %in% reg_focus,]
 
 # Objectifs
 
+Regarder dans un premier temps les évolutions des effectifs. Surtout faire un focus en île et vilaine et dans le morhiban. Les évolutions dans ces départements sont vraiment louches.
+
 
 # Cartographie
 
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,message=FALSE}
 tablecarto <- "dm_vecteurs.canton" 
-dsn <- "PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'" 
-variablecarto <- c("diffmedian13","diffmedian24","diffmedian35","diffmedian14") #variable à spatialiser
-l_legend <- "Evolution des teneurs en C"#label de la variable
+
+variablecarto <- c("diffmedian_corgox13","diffmedian_corgox24","diffmedian_corgox35","diffmedian_corgox45") 
+l_legend <- "Evolution des teneurs en CO"#label de la variable
 nclasse <- 4 #Nombre de classes de valeurs pour la cartographie
 style_classe <- "quantile" #"pretty"#"jenks","fixed"
-couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+couleur <- viridis(nclasse)#("#04B404","#FE2E2E","#045FB4")#nom de la palette couleur (pour connaître les différentes palettes
+nomfichier <- "Median_evolu_corgox_5352"
+caption <- ""
 
-reg <- "53"
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,title=c("1990-1994 et 2000-2004","1995-1999 et 2005-2009","2000-2004 et 2010-2014","2005-2009 et 2010-2014"),caption=caption,dept=FALSE,reg="53|52",nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=5.5,ggsavewidth=6.27)  
 
-nomfichier <- "Median_evolu_c53"
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=reg,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=5,ggsavewidth=7)
-
-##
-nomfichier <- "Median_diff_c53"
-variablecarto <- c("diff13","diff24","diff35","diff14") #variable à spatialiser
+variablecarto <- c("diff_corgox13","diff_corgox24","diff_corgox35","diff_corgox45") 
+l_legend <- "Evolution des teneurs en CO"#label de la variable
+nclasse <- 3 #Nombre de classes de valeurs pour la cartographie
 style_classe <- "fixed" #"pretty"#"jenks","fixed"
-couleur <- "Set1"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=reg,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=5,ggsavewidth=7)
-##
+couleur <- viridis(nclasse)
+nomfichier <- "Median_diff_corgox_5352"
+caption <- ""
 
-nomfichier <- "corgox_53"
-l_legend <- "Teneur en C (g/kg)"
-variablecarto <- c("corg_medequiv9094","corg_medequiv9599","corg_medequiv0004","corg_medequiv0509","corg_medequiv1014") #variable à spatialiser
-style_classe <- "quantile"
-couleur <- "Spectral"
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=reg,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=4.5,ggsavewidth=9)
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,title=c("1990-1994 et 2000-2004","1995-1999 et 2005-2009","2000-2004 et 2010-2014","2005-2009 et 2010-2014"),caption=caption,dept=FALSE,reg="53|52",nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=5.5,ggsavewidth=6.27)
 
 ##
-nomfichier <- "effectif_53"
+nomfichier <- "effectif_5352"
 l_legend <- "Nombre d'échantillon"
-variablecarto <- c("eff9094","eff9599","eff0004","eff0509","eff1014") #variable à spatialiser
+variablecarto <- c("eff_corgox9599","eff_corgox0004","eff_corgox0509","eff_corgox1014") #variable à spatialiser
 style_classe <- "quantile"
-couleur <- "Spectral"
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=reg,nrowlayout=2,ncollayout=3,position="bottom",ggsaveheight=4.5,ggsavewidth=9)
+nclasse <- 4
+couleur <- viridis(nclasse)
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,title=c("1995-1999","2000-2004","2005-2009","2010-2014"),caption=caption,dept=FALSE,reg="53|52",nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=5.5,ggsavewidth=6.27)
 ```
 
 ```{r map_carbo_fr_bretagne, echo=F, eval=T,results = 'asis'}
@@ -196,74 +193,10 @@ bdatsummary <- lapply(bdatsummary, do.call, what = rbind)
 ```{r summarybdatfrancetable,highlight=TRUE,echo=FALSE,eval=TRUE,results = 'asis'}
 pander(bdatsummary[[1]],caption = "Statistiques descriptives des teneurs en carbone organique par périodes en Bretagne")
 ```
+
 ```{r,highlight=TRUE,eval=TRUE,echo=TRUE}
 pairwise.wilcox.test(melted.bdat[,"value"], melted.bdat[,"annees"])
 ```
-
-
-## GBM
-
-```{r,eval=FALSE,echo=FALSE}
-Rcovarclimato <- c("std_temp_janv","std_temp_juil","std_pluie_janv","std_pluie_juil")
-typeclimato <- replicate(length(Rcovarclimato), "climat")
-#
-Rcovaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000","var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010","var_cop1988_2010","var_cop1979_2010","var_elevagehorsol1988_2010","altimean")
-
-typeoccup <- replicate(length(Rcovaroccup), "occup")
-
-type <- c(typeclimato,typeoccup)
-Rcovar <- c(Rcovarclimato,Rcovaroccup)
-periodetud <- c("13","24","35","14")
-
-set.seed(157) #Pour assurer la reproductibilité
-registerDoMC(4)
-
-p <- list()
-for(i in periodetud){
-    print(i)
-    vNames <- c(paste("diffmedian",i,sep=""),Rcovar)
-
-    #####################
-    d <- dcast.bdat[(dcast.bdat$code_reg %in% reg_focus) & complete.cases(dcast.bdat[,vNames]),][,c(vNames)]
-    formula <- as.formula(paste(vNames[1],"~",paste(vNames[-1],collapse="+"),sep=""))
-
-    trControl <- trainControl(method = "cv",p=0.8,number=10)
-    tuneGrid <- expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 20)
-
-    mgbm_picardiNPC <- train(formula,data=d,"gbm",tuneGrid = tuneGrid,trControl = trControl,verbose = F,keep.data = T,na.action = na.omit)
-
-    p[[i]] <- plot(varImp(mgbm_picardiNPC), top = 10,main=i)
-    save(mgbm_picardiNPC,file=paste(repsortie,"mgbm_bretagne_",i,".RData",sep=""))
-}
-save(p,file=paste(repsortie,"plot_mgbm_bretagne.RData",sep=""))
-
-# Test
-#Rcovarclimato <- c("std_temp_janv","std_temp_juil","std_pluie_janv","std_pluie_juil")
-#typeclimato <- replicate(length(Rcovarclimato), "climat")
-#
-#Rcovaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000","var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010","var_cop1988_2010","var_cop1979_2010")
-#Rcovar <- c(Rcovaroccup,Rcovarclimato)
-
-#vNames <- c("diffmedian35","diffmedian13","diffmedian14","diffmedian24",Rcovar)
-
-#d <- dcast.bdat[(dcast.bdat$code_reg %in% reg_focus) & complete.cases(dcast.bdat[,vNames]),][,vNames]
-#M <- cor(d[1:4],d[,5:length(vNames)])
-#corrplot(M, method="circle")
-```
-
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=6,fig.cap = fig$cap("gbm_bretagne","Importance des variables explicatives"),fig.align="center"}
-load(paste(repsortie,"plot_mgbm_bretagne.RData",sep=""))
-tt <- do.call(grid.arrange,p)
-tt
-ggsave(tt, file = paste(repsortie,"plot_mgbm_bretagne.png",sep=""),width = 8, height = 8)  
-```
-**En conclusion** de cette modélisatoin, on observe la pré-dominance des variables climatiques en sortie des modèles. L'importance et la prédominance de ces variables vis-à-vis des variables d'occupation du sol dépend des périodes analysées. Pour les périodes 13, 14 et 35, la variabilité des pluies mensuelles en Janvier et Juillet représentent les principaux facteurs explicatifs.
-La proportion des facteurs d'occupation du sol est plus importante pour les évolutions des teneurs en carbone pour la période 24, avec notamment les variation des surfaces de prairie entre 1988 et 2010. Par la suite, on regardera dans le détail les variables les plus mobilisées dans les modèles.
-
-## Analyses des variables sélectionnées pour les périodes 13 et 14
-
-Dans cette section, on regarde dans le détail le comportement des variables isolées vis-à-vis des teneurs en carbone organique pour les périodes 13 et 14. Ces deux périodes présentent une diminution importante des teneurs en C, essentiellement localisées dans le Morhiban...
-
 
 ### Graphiques de comparaison
 
