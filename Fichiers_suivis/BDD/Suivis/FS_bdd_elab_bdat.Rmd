@@ -29,7 +29,6 @@ Ce fichier permet de créer les tables de données de la BDAT utilisables pour l
 # Intégration des données de la BDAT vers la table `dm_vecteurs.canton`
 
 
-
 ## Intégration de la médiane, du 1er et 3ème quartile des teneurs en carbone organique par canton (teneurs + effectifs)
 
 ### Les teneurs en carbone organique
@@ -389,8 +388,7 @@ for(i in varia){
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
 period <- "9009"
 schema <- "bdat"
-vpedo <- c("argi_med","sabt_med") #Voir pour le pH
-
+vpedo <- c("argi_med","sabt_med") #Intégration du taux d'argile et du taux de sable de la BDAT (voir pour le pH)
 signification <- c("taux d\''argile","taux de sable")
 
 cpt <- 0
@@ -458,7 +456,7 @@ for(i in vpedo){
   sqlQuery(loc,"drop table if exists dm_vecteurs.tmp")
 
   print(sqlQuery(loc,paste("
-  COMMENT ON COLUMN ",table_dm,".",i," IS \'",signification[cpt]," (g/kg) calculée sur 1990-2009.\';",sep="")))
+  COMMENT ON COLUMN ",table_dm,".",vName," IS \'",signification[cpt]," (g/kg) calculée sur 1990-2009.\';",sep="")))
   }  
 ```
 

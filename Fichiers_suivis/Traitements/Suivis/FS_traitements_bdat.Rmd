@@ -336,11 +336,27 @@ for(i in levels(as.factor(melted.bdat$variable))){
 
   colnames(datasummary2) <- c("EndDate","StartDate","Group","Count")
 
-#changer les codes couleurs+calculer les taux par années
-  p[[i]] <- ggplot(datasummary2, aes(ymin = StartDate, ymax = EndDate, x = Count)) + geom_linerange(aes(colour=Group),size=3) + coord_flip() + scale_colour_gradient2(limit = c(-1,1),high=muted("green"),name="Taux d'évolution annuel (%)") + ylab("Périodes") + xlab("") + theme_perso() + geom_text(aes(y = StartDate, x = Count, label = paste(round(Group,1),"%",sep="")), hjust = 0, vjust = -1, size = 5) + labs(title= paste(i))
+ # Ajout du test statistiques (wilcoxon)
+ res.wilcoxon <- pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])$p.value
+ res.wilcoxon[upper.tri(res.wilcoxon, diag = FALSE)] <- NA
+ colnames(res.wilcoxon) <- as.character(c("1995-1999","2000-2004","2005-2009"))
+ rownames(res.wilcoxon) <- as.character(c("2000-2004","2005-2009","2010-2014"))
+ res.wilcoxon <- melt(res.wilcoxon,na.rm=TRUE)
+    
+ # Ajout du test vers bdatmedian2
+ datasummary2$pvalue <- res.wilcoxon$value
+ datasummary2$value <- datasummary2$Group
+
+# changer les codes couleurs+calculer les taux par années
+  p[[i]] <- ggplot(datasummary2, aes(ymin = StartDate, ymax = EndDate, x = Count)) + geom_linerange(aes(colour=Group),size=3) + coord_flip() + scale_colour_gradient2(limit = c(-1,1),high=muted("green"),name="Taux d'évolution annuel (%)") + ylab("Périodes") + xlab("") + theme_perso() + geom_text(aes(y = StartDate, x = Count, label = ifelse(pvalue<=0.05,paste(round(value,1),"% **",sep=""),paste(round(value,1),"%",sep=""))), hjust = 0, vjust = 0.5, size = 3.5) + labs(title= paste(i))
+
 }
 tt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=1,ncol=2,position="bottom")))
 tt
+
+#############################################################################################
+p[[i]] <- ggplot(datasummary2, aes(ymin = StartDate, ymax = EndDate, x = Count)) + geom_linerange(aes(colour=value),size=3) + coord_flip() + scale_colour_gradient2(limit = c(min(datasummary2$value),max(datasummary2$value)),low="orange",high=muted("purple"),name="Taux d'évolution annuel (%)") + ylab("Périodes") + xlab("") + theme_perso() + geom_text(aes(fontface=2,y = StartDate, x = Count, label = ifelse(pvalue<=0.05,paste(round(value,1),"% **",sep=""),paste(round(value,1),"%",sep=""))), hjust = 0, vjust = 0.5, size = 3.5) + labs(title= paste(i))
+
 ```
 
 La distribution des teneurs en carbone organique par période est présentée figure `r fig$ref("boxplot_fr",link=TRUE)` et les statistiques associées dans le tableau ci-dessous. La tendance de diminution des teneurs observée dans la figure `r fig$ref("cdf_fr",link=TRUE)` est également constatée dans ces deux éléments. La période 2000-2004 montre la valeur médiane la plus faible avec une valeur de `r bdatsummary$value["0004","Median"]` g/kg. Les valeurs les plus importantes sont observées pour les périodes 1995-1999 et 2010-2014 avec des médianes de teneurs en carbone organique équivalente, à `r bdatsummary$value["9599","Median"]` g/kg. Ces évolutions sont très légèrement marquées sur la figure `r fig$ref("boxplot_fr",link=TRUE)` où l'évolution moyenne des teneurs en carbone organique baisse légèrement après la période 1995-1999.
@@ -1228,7 +1244,7 @@ for(i in Variay){
 
   Rcovaroccup <- c(ra_otex,ra_occupyears)
   typeoccup <- replicate(length(Rcovaroccup), "occup")
-  type <- c(typetopo,typepedo,typeoccup,typeclimato)
+  type <- c(typetopo,typepedo,typeoccup,typeclimato,typestrates)
 
   Rcovar <- c(Rcovartopo,Rcovarpedo,Rcovaroccup,Rcovarclimato,Rcovarstrates,effectif[cpt])
 
@@ -1674,7 +1690,7 @@ for(i in Variay){
   cpt1 <- 0
   pourcent <- list()
   for(s in strates){
-    modelcubistrds <- readRDS(paste(repsortie,"mcubist_strates_",s,"_",i,"_",nbr,"2.rds",sep=""))
+    modelcubistrds <- readRDS(paste(repsortie,"mcubist_strates_",s,"_",i,"_",nbr,".rds",sep=""))
     varimp <- as.data.frame(modelcubistrds$varimp)
     varimp <- varimp[grep("Overall",names(varimp))]
 
@@ -1798,16 +1814,14 @@ for(i in Variay){
 saveRDS(rest,file=paste(repsortie,"restcubist_elevage_",nbr,"_",i,".rds",sep=""))  
 }
 
-nbr <- 100
-for(i in reg_elevage){
-  for(s in strates){
-  modelcubistrds <- readRDS(paste(repsortie,"mcubist_strates_",s,"_",i,"_",nbr,".rds",sep=""))
-  modelcubistrds <- list(varimp=modelcubistrds$varimp,meanvarimport=modelcubistrds$meanvarimport,qualityindex=modelcubistrds$qualityindex,R2=modelcubistrds$R2,RMSE=modelcubistrds$RMSE,MSE=modelcubistrds$MSE)
-  saveRDS(modelcubistrds,file=paste(repsortie,"mcubist_strates_",s,"_",i,"_",nbr,"2.rds",sep=""))
-  }
-}
-
-
+#nbr <- 100
+#for(i in Variay){
+  #for(s in reg_elevage){
+  #modelcubistrds <- readRDS(paste(repsortie,"mcubist_strates_",s,"_",i,"_",nbr,".rds",sep=""))
+  #modelcubistrds <- list(varimp=modelcubistrds$varimp,meanvarimport=modelcubistrds$meanvarimport,qualityindex=modelcubistrds$qualityindex,R2=modelcubistrds$R2,RMSE=modelcubistrds$RMSE,MSE=modelcubistrds$MSE)
+  #saveRDS(modelcubistrds,file=paste(repsortie,"mcubist_strates_",s,"_",i,"_",nbr,"2.rds",sep=""))
+  #}
+#}
 ```
 
 Ci-dessous, les figures sont à commenter
@@ -1846,7 +1860,7 @@ for(i in Variay){
   pourcent <- list()
   for(s in reg_elevage){
     pp <- list()
-    modelcubistrds <- readRDS(paste(repsortie,"mcubist_strates_",s,"_",i,"_",nbr,"2.rds",sep=""))
+    modelcubistrds <- readRDS(paste(repsortie,"mcubist_strates_",s,"_",i,"_",nbr,".rds",sep=""))
     varimp <- as.data.frame(modelcubistrds$varimp)
     varimp <- varimp[grep("Overall",names(varimp))]
 

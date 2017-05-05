@@ -229,6 +229,8 @@ for(r in repmethodo){
 ```
 ### Importation des résultats pour le 3ème quartile
 
+Travail en cours (28/04)
+
 ```{r importBDAT_harmomethodes, eval=FALSE}
 #Attention, changer la valeur de la virgule avant d'importer le fichier...
 ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/tables_3emequartile/",sep=""),pattern="\\.csv$"))
@@ -251,14 +253,7 @@ ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/tables_3
     #sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
   }
 ```
-corgox_dqua
-  canton character 
-  diff character varying(255),
-  eff integer,
-  effp2 integer,
-  med double precision,
-  med2 double precision,
-  diffmedian12 double precision
+
 
 
 

@@ -319,42 +319,63 @@ La figure ci-dessous présente la relation entre la teneur initiale en CO et la 
 # Lecture du fichier présentant les différentes périodes analysées
 nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""),sep=",",colClasses = "character")
 coname <- "corgox"
-periodetud <- c("13","23","35","45")
-
+periodetud <- c("14","24","15","25","13","35")
 p <- list()
 r2 <- list()
+rest <- list()
 
-for(i in periodetud){
-        y <- paste("diffmedian_",coname,i,sep="")
-        teststats <- paste("diff_",coname,i,sep="")
-        x <- paste(coname,nomdiff[nomdiff$Code %in% i,"Periode1"],sep="")
+for(s in periodetud){
+        y <- paste("diffmedian_",coname,s,sep="")
+        teststats <- paste("diff_",coname,s,sep="")
+        x <- paste(coname,nomdiff[nomdiff$Code %in% s,"Periode1"],sep="")
         xyNames <- c(x,y,teststats)
 
-        dd <- dcast.bdat[complete.cases(dcast.bdat[,xyNames]),][,xyNames]    
+        #dd <- dcast.bdat[complete.cases(dcast.bdat[,xyNames]),][,xyNames]    
 
-        if(nrow(dd) < 15){
+        for(i in c("Diminution","Augmentation","Non significatif")){
+
+          dd <- dcast.bdat[complete.cases(dcast.bdat[,xyNames]) & dcast.bdat[,teststats] %in% i,][,xyNames]    
+          
+          if(nrow(dd) < 15){
             next
-        }else{}
+          }else{}
 
-        xlabel <- paste("CO ",x,sep="")
-        ylabel <- paste("Différence CO",i,sep="")
+          xlabel <- paste("CO ",x,sep="")
+          ylabel <- paste("Différence CO",i,sep="")
 
-        p[[i]] <- ggplot(dd, aes_string(x,y)) +
-                geom_point(aes_string(colour = teststats),alpha = 0.8, size = 1) +
-                scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
-                theme(plot.title = element_text(size = 14, face = "bold"), 
-                text = element_text(size = 12),
-                axis.title = element_text(face="bold"),
-                axis.text.x=element_text(size = 11))+ labs(title=i)+
-                annotate("text", x=20, y=10, label=lm_eqn(lm(dd[,y]~dd[,x], dd)), parse=TRUE)+
-                geom_smooth(method = "lm", se = FALSE,color="black")
-        r2[[i]] <- summary(lm(dd[,y]~dd[,x]))$r.squared
+          p[[i]] <- ggplot(dd, aes_string(x,y)) +
+                  geom_point(aes_string(colour = teststats),alpha = 0.8, size = 1) +
+                  scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+                  theme(plot.title = element_text(size = 14, face = "bold"), 
+                  text = element_text(size = 12),
+                  axis.title = element_text(face="bold"),
+                  axis.text.x=element_text(size = 11))+ labs(title=i)+
+                  annotate("text", x=20, y=10, label=lm_eqn(lm(dd[,y]~dd[,x], dd)), parse=TRUE)+
+                  geom_smooth(method = "lm", se = FALSE,color="black")
+          r2[[i]] <- summary(lm(dd[,y]~dd[,x]))$r.squared
+        }
+
+      stats_r2 <- as.data.frame(melt(r2))
+      colnames(stats_r2) <- c("R2","Type")
+      rest[[s]] <- stats_r2
 }
-pcplt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
-stats_r2 <- as.data.frame(melt(r2))
-colnames(stats_r2) <- c("R2","Period")
-save(stats_r2,file=paste(repsortie,"diff_initial_frR2.RData",sep=""))
+
+#pcplt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
+#stats_r2 <- as.data.frame(melt(r2))
+#colnames(stats_r2) <- c("R2","Period")
+save(rest,file=paste(repsortie,"diff_initial_frR2.RData",sep=""))
 ```
+
+```{r,eval=TRUE,echo=FALSE}
+load(paste(repsortie,"diff_initial_frR2.RData",sep=""))
+#load(paste(repsortie,"diff_initial_regR2_diminution.RData",sep=""))
+
+test2 <- melt(rest)
+colnames(test2)[4] <- "Period"
+ggplot(test2, aes(x=Period,y=value,colour=Type)) + geom_boxplot() +
+  scale_x_discrete("Périodes comparées")+scale_y_continuous("Coefficient de détermination non-ajusté (R2)")+theme_perso()  
+```
+
 
 
 ## Analyse par strates
@@ -430,28 +451,32 @@ ggplot(test2, aes(x=Period,y=value)) + facet_wrap(~L1) + geom_boxplot() +
 ### Région d'élevage
 
 ```{r,eval=FALSE,echo=FALSE}
+# Dans l'analyse des R2, on pourrait regarder les différences entre les cantons aux différences significatives ou non?
+
 # Lecture du fichier présentant les différentes périodes analysées
 nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""),sep=",",colClasses = "character")
 coname <- "corgox"
 periodetud <- c("14","24","15","25","13","35")
-strates <- c("A","B1","B2","C1","C2","D","E1","E2","G1","G2")
+strates <- c("A","B1","B2","C1","C2","D","E1","E2","F2")
 
 rest <- list()
 for(s in strates){
-    
+    print(s)
     d_typo <- dcast.bdat[dcast.bdat$zonage_cplt %in% s,]
     p <- list()
     r2 <- list()
     
     for(i in periodetud){
+      print(i)
         y <- paste("diffmedian_",coname,i,sep="")
         teststats <- paste("diff_",coname,i,sep="")
         x <- paste(coname,nomdiff[nomdiff$Code %in% i,"Periode1"],sep="")
         xyNames <- c(x,y,teststats)
 
         dd <- d_typo[complete.cases(d_typo[,xyNames]),][,xyNames]    
-
+        #dd <- d_typo[complete.cases(d_typo[,xyNames]) & d_typo[,teststats] %in% "Diminution",][,xyNames]    
         if(nrow(dd) < 15){
+            print("Pas assez de données")
             next
         }else{}
 
@@ -467,8 +492,10 @@ for(s in strates){
                 axis.text.x=element_text(size = 11))+ labs(title=i)+
                 annotate("text", x=20, y=10, label=lm_eqn(lm(dd[,y]~dd[,x], dd)), parse=TRUE)+
                 geom_smooth(method = "lm", se = FALSE,color="black")
+        
         r2[[i]] <- summary(lm(dd[,y]~dd[,x]))$r.squared
         }
+
     stats_r2 <- as.data.frame(melt(r2))
     colnames(stats_r2) <- c("R2","Period")
     rest[[s]] <- stats_r2
@@ -476,19 +503,17 @@ for(s in strates){
     pcplt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=3,position="bottom")))
     ggsave(pcplt,file = paste(repsortie,"diff_initial_reg",s,".png",sep=""), width = 10, height = 6)
 }
+
 save(rest,file=paste(repsortie,"diff_initial_regR2.RData",sep=""))
 ```
 
 ```{r,eval=TRUE,echo=FALSE}
 load(paste(repsortie,"diff_initial_regR2.RData",sep=""))
+#load(paste(repsortie,"diff_initial_regR2_diminution.RData",sep=""))
 test2 <- melt(rest)
 
 ggplot(test2, aes(x=Period,y=value)) + facet_wrap(~L1) + geom_boxplot() +
-  scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone organique (g/kg)")+
-  theme(plot.title = element_text(size = 14, face = "bold"), 
-        text = element_text(size = 12),
-        axis.title = element_text(face="bold"),
-        axis.text.x=element_text(size = 11))
+  scale_x_discrete("Périodes comparées")+scale_y_continuous("Coefficient de détermination non-ajusté (R2)")+theme_perso()  
 ```
 
 # Modélisation test avec GBM et Cubist
@@ -508,9 +533,9 @@ typetopo <- replicate(length(Rcovartopo), "topographie")
 Rcovarpedo <- c("argi_med","sabt_med","mat11")
 typepedo <- replicate(length(Rcovarpedo), "pedologie")
 
-Rcovarvaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000","var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010","var_cop1988_2010","var_cop1979_2010","eff_corgox9094","eff_corgox9599","eff_corgox0004","eff_corgox0509","eff_corgox1014")
+Rcovarvaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000","var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_cop1988_2010","var_cop1979_2010","eff_corgox9094","eff_corgox9599","eff_corgox0004","eff_corgox0509","eff_corgox1014")
 
-Rcovaroccup <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
+Rcovaroccup <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
 
 typeoccup <- replicate(length(c(Rcovaroccup,Rcovarvaroccup)), "occup")
 
@@ -544,9 +569,7 @@ for(x in periodetud){
     d <- dcast.bdat[complete.cases(dcast.bdat[vNames]),]
 
     print(i)
-  
-        
-  
+         
         datax <- d_typo[, vNames[-1]]
         datay <- d_typo[, vNames[1]]
  
@@ -593,9 +616,9 @@ typetopo <- replicate(length(Rcovartopo), "topographie")
 Rcovarpedo <- c("argi_med","sabt_med","mat11")
 typepedo <- replicate(length(Rcovarpedo), "pedologie")
 
-Rcovarvaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000","var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010","var_cop1988_2010","var_cop1979_2010","eff_corgox9094","eff_corgox9599","eff_corgox0004","eff_corgox0509","eff_corgox1014")
+Rcovarvaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000","var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_cop1988_2010","var_cop1979_2010","eff_corgox9094","eff_corgox9599","eff_corgox0004","eff_corgox0509","eff_corgox1014")
 
-Rcovaroccup <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
+Rcovaroccup <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
 
 typeoccup <- replicate(length(c(Rcovaroccup,Rcovarvaroccup)), "occup")
 
@@ -608,7 +631,7 @@ model <- "cubist"
 
 # Paramètres pour les boucles
 periodetud <- c("13","23","35","45")
-reg_elevage <- c("A","B1","B2","C1","C2","D","E1","E2","G1","G2")
+reg_elevage <- c("A","B1","B2","C1","C2","D","E1","E2","F2")
 nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""),sep=",",colClasses = "character")
 coname <- "corgox"
 
@@ -657,7 +680,7 @@ for(x in periodetud){
         RMSE[[i]] <- as.data.frame(unlist(mcubistbst$RMSE))[[1]]
 
         #p_regelevage[[cpt]] <- mcubistbst$p + labs(title=i)
-        impvar[[i]] <- mcubistbst$varimport
+        impvar[[i]] <- mcubistbst$varimp
     }
 
     dimpvar[[x]] <- impvar
@@ -684,12 +707,7 @@ load(paste(repsortie,"dR2varcubistdiff_regelevage_",nbr,".RData",sep=""))
 test <- melt(dR2)
 
 p <- ggplot(test, aes(x=L2,y=value)) + facet_wrap(~L1) + geom_boxplot() +
-  scale_x_discrete("Périodes")+scale_y_continuous("Teneur en carbone organique (g/kg)")+
-  theme(plot.title = element_text(size = 14, face = "bold"), 
-        text = element_text(size = 12),
-        axis.title = element_text(face="bold"),
-        axis.text.x=element_text(size = 11))
-
+  scale_x_discrete("Grandes régions d'élevage")+scale_y_continuous("Coefficient de détermiantion (R2)")+ theme_perso()
 p
 
 #rest_cubistlmregelevage <- melt(drest[["14"]][[3]])
@@ -724,12 +742,12 @@ typetopo <- replicate(length(Rcovartopo), "pedologie")
 
 Rnaturel <- c(Rcovartopo,Rcovarclimato)
 
-Ranthrop <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
+Ranthrop <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
 
-Rcovarvaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000","var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010","var_cop1988_2010","var_cop1979_2010","eff_corgox9094","eff_corgox9599","eff_corgox0004","eff_corgox0509","eff_corgox1014")
+Rcovarvaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_cop1988_2000","var_cop1979_2000","var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010","var_cop1988_2010","var_cop1979_2010","eff_corgox9094","eff_corgox9599","eff_corgox0004","eff_corgox0509","eff_corgox1014")
 
 Ranthrop <- c(Ranthrop,Rcovarvaroccup)
-#Rcovaroccup <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
+#Rcovaroccup <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
 
 typeoccup <- replicate(length(c(Rcovaroccup,Rcovarvaroccup)), "occup")
 
@@ -783,9 +801,9 @@ typetopo <- replicate(length(Rcovartopo), "topographie")
 Rcovarpedo <- c("argi_med","sabt_med")
 typepedo <- replicate(length(Rcovarpedo), "pedologie")
 
-Rcovarvaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000","var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010","var_cop1988_2010","var_cop1979_2010","eff_corgox9094","eff_corgox9599","eff_corgox0004","eff_corgox0509","eff_corgox1014")
+Rcovarvaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000","var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_cop1988_2010","var_cop1979_2010","eff_corgox9094","eff_corgox9599","eff_corgox0004","eff_corgox0509","eff_corgox1014")
 
-Rcovaroccup <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
+Rcovaroccup <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
 
 typeoccup <- replicate(length(c(Rcovaroccup,Rcovarvaroccup)), "occup")
 
@@ -869,9 +887,9 @@ typetopo <- replicate(length(Rcovartopo), "topographie")
 Rcovarpedo <- c("argi_med","sabt_med")
 typepedo <- replicate(length(Rcovarpedo), "pedologie")
 
-Rcovarvaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000","var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_ugb1988_2010","var_cop1988_2010","var_cop1979_2010","eff_corgox9094","eff_corgox9599","eff_corgox0004","eff_corgox0509","eff_corgox1014")
+Rcovarvaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000","var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_cop1988_2010","var_cop1979_2010","eff_corgox9094","eff_corgox9599","eff_corgox0004","eff_corgox0509","eff_corgox1014")
 
-Rcovaroccup <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","p_mf1988","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
+Rcovaroccup <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
 
 typeoccup <- replicate(length(c(Rcovaroccup,Rcovarvaroccup)), "occup")
 
@@ -944,53 +962,145 @@ pander(rest_lmclim,caption="Résultats des régressions linéaires pour les diff
 
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE}
-# graphique intéressant à creuser. Revoir en calculant les différences relatives et revoir pour les autres occupations du sol
+# IMPORTANT : graphique intéressant à creuser. Revoir en calculant les différences relatives et revoir pour les autres occupations du sol !!!
 
-bdatdiff <- subset(melted.bdatdiff,diff_corgox!="Non significatif")
+melted.bdatdiff <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdatdiff",sep=""))
+melted.bdatdiff$diffmedian_corgox <- as.numeric(melted.bdatdiff$diffmedian_corgox)
+melted.bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff_corgox),]
+
+## Ici, voir pour supprimer les diff_corgox avec 'augmentation'??
+#bdatdiff <- subset(melted.bdatdiff,diff_corgox!="Non significatif")
 periodetud <- c("14","24","15","25","13","35")
-bdatdiff <- bdatdiff[complete.cases(bdatdiff$classe_var_sfp1988_2010) & bdatdiff$period %in% periodetud,]
-
+bdatdiff <- melted.bdatdiff[melted.bdatdiff$period %in% periodetud,]
 
 # Pour voir...
 enplus <- c("12","45","23")
 periodetud <- c(periodetud,enplus)
 
-#bdatdiff2 <- bdatdiff[bdatdiff$period %in% "13", ]
-#bdatdiff2$diff_corgox <- as.factor(bdatdiff2$diff_corgox)
-#bdatdiff2 <- bdatdiff2[complete.cases(bdatdiff2$diffmedian_corgox),]
-#bdatdiff$classe_var_prairie1970_2010 <- ordered(bdatdiff$classe_var_prairie1970_2010, levels = c("[-97.8,-21.4]","(-21.4,-11.8]","(-11.8,-4.19]","(-4.19,4.5]","(4.5,73]"))
-
 bdatdiff$classe_var_sfp1988_2010 <- ordered(bdatdiff$classe_var_sfp1988_2010, levels = c("[-57.4,-9.83]","(-9.83,-5.18]","(-5.18,-1.39]","(-1.39,1.67]","(1.67,54.7]"))
 bdatdiff$classe_var_prairie1988_2010 <- ordered(bdatdiff$classe_var_prairie1988_2010, levels = c("[-96.3,-10]","(-10,-4.62]","(-4.62,-1.07]","(-1.07,1.83]","(1.83,99.9]"))
-
-
-
-melted.bdatdiff <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdatdiff",sep=""))#,as.is=c(FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE))
-melted.bdatdiff$diffmedian_corgox <- as.numeric(melted.bdatdiff$diffmedian_corgox)
-melted.bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff_corgox),]
-bdatdiff <- bdatdiff[complete.cases(bdatdiff$classe_argi_med),]
+bdatdiff$classe_var_mf1988_2010 <- ordered(bdatdiff$classe_var_mf1988_2010, levels = c("[-10.8,-1.22]","(-1.22,-0.296]","(-0.296,0.417]","(0.417,1.75]","(1.75,16.6]"))
 bdatdiff$classe_argi_med <- ordered(bdatdiff$classe_argi_med, levels = c("[20,150]","(150,182]","(182,240]","(240,562]"))
 
 
-test <- bdatdiff[bdatdiff$zonage_simple %in% "B",]
-test <- test[complete.cases(test$diffmedian_corgox),] 
-# Revoir le test, problème avec boxplot.df <- ddply(db, lev, function (x) quantile(x$value,position,na.rm=TRUE) + 0.2)s sur les NA
 
-wilcotest <- generate_label_df(db=test,value="diffmedian_corgox",lev="classe_var_sfp1988_2010",letters,position=0.5)
+# A développer sur d'autre occupation du sol. Résultats à creuser.
+reg_elevage <- c("A","B1","B2","C1","C2","D","E1","E2","F2")
+p <- list()
+cpt <- 0
+for(i in reg_elevage){
+  cpt <- cpt + 1
 
-ggplot(bdatdiff,aes(y=diffmedian_corgox,x=classe_var_sfp1988_2010))+
- geom_boxplot()  + xlab("Variation de la SFP 1988-2010 (%)")+ylab("Différences des teneurs en CO")+ coord_flip() + geom_hline(yintercept = 0,color="red") +geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = labels))
+  datatest <- bdatdiff[bdatdiff$zonage_cplt %in% i,]
+  datatest <- datatest[complete.cases(datatest$classe_var_mf1988_2010),] 
 
-### Test avec l'argile
+  wilcotest <- generate_label_df(db=datatest,value="diffmedian_corgox",lev="classe_var_mf1988_2010",letters,position=0.5)
+
+  if(cpt==4){
+    print("test")
+    lablex <- "Variation du maïs fourrage entre 1988-2010 (%)"
+  }else{lablex <- ""}
+
+    if(cpt==8){
+    labley <- "Différences des teneurs en CO (g/kg)"
+  }else{labley <- ""}
+
+  p[[i]] <- ggplot(datatest,aes(y=diffmedian_corgox,x=classe_var_mf1988_2010))+
+            geom_boxplot() + coord_flip() + geom_hline(yintercept = 0,color="red") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = labels)) + scale_x_discrete(lablex)+scale_y_continuous(labley)+theme_perso()+labs(title=i)
+}
+tt <- do.call(grid.arrange,p)
+ggsave(tt,file = paste(repsortie,"boxplot_diffregelevage_mf.png",sep=""), width = 17, height = 10)  
+
+## ## ##
+
+p <- list()
+cpt <- 0
+for(i in reg_elevage){
+  cpt <- cpt + 1
+
+  datatest <- bdatdiff[bdatdiff$zonage_cplt %in% i,]
+  datatest <- datatest[complete.cases(datatest$classe_var_prairie1988_2010),] 
+
+  wilcotest <- generate_label_df(db=datatest,value="diffmedian_corgox",lev="classe_var_prairie1988_2010",letters,position=0.5)
+
+  if(cpt==4){
+    print("test")
+    lablex <- "Variation de la surface de prairie entre 1988-2010 (%)"
+  }else{lablex <- ""}
+
+    if(cpt==8){
+    labley <- "Différences des teneurs en CO (g/kg)"
+  }else{labley <- ""}
+
+  p[[i]] <- ggplot(datatest,aes(y=diffmedian_corgox,x=classe_var_prairie1988_2010))+
+            geom_boxplot() + coord_flip() + geom_hline(yintercept = 0,color="red") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = labels)) + scale_x_discrete(lablex)+scale_y_continuous(labley)+theme_perso()+labs(title=i)
+}
+tt <- do.call(grid.arrange,p)
+ggsave(tt,file = paste(repsortie,"boxplot_diffregelevage_prairie.png",sep=""), width = 17, height = 10)  
+
+## ## ##
+
+p <- list()
+cpt <- 0
+for(i in reg_elevage){
+  cpt <- cpt + 1
+
+  datatest <- bdatdiff[bdatdiff$zonage_cplt %in% i,]
+  datatest <- datatest[complete.cases(datatest$classe_var_sfp1988_2010),] 
+
+  wilcotest <- generate_label_df(db=datatest,value="diffmedian_corgox",lev="classe_var_sfp1988_2010",letters,position=0.5)
+
+  if(cpt==4){
+    print("test")
+    lablex <- "Variation de SFP entre 1988-2010 (%)"
+  }else{lablex <- ""}
+
+    if(cpt==8){
+    labley <- "Différences des teneurs en CO (g/kg)"
+  }else{labley <- ""}
+
+  p[[i]] <- ggplot(datatest,aes(y=diffmedian_corgox,x=classe_var_sfp1988_2010))+
+            geom_boxplot() + coord_flip() + geom_hline(yintercept = 0,color="red") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = labels)) + scale_x_discrete(lablex)+scale_y_continuous(labley)+theme_perso()+labs(title=i)
+}
+tt <- do.call(grid.arrange,p)
+ggsave(tt,file = paste(repsortie,"boxplot_diffregelevage_sfp.png",sep=""), width = 17, height = 10)  
 
 
 
-ggplot(bdatdiff,aes(y=diffmedian_corgox,x=classe_var_sfp1988_2010))+
- geom_boxplot() + facet_wrap(~ zonage_simple)  + xlab("Variation de la SFP 1988-2010 (%)")+ylab("Différences des teneurs en CO")+ coord_flip() + geom_hline(yintercept = 0,color="red")# stat_summary(fun.y=median, geom="line",size = 1,aes(group=1)) #scale_fill_brewer(palette = 'Paired',name="Evolution des prairies % (1970-2010)")
 
 
-ggplot(bdatdiff,aes(y=diffmedian_corgox,x=classe_var_prairie1988_2010))+
- geom_boxplot() + facet_wrap(~ zonage_simple)  + xlab("Variation des prairies entre 1988-2010 (%)")+ylab("Différences des teneurs en CO")+ coord_flip() + geom_hline(yintercept = 0,color="red")# stat_summary(fun.y=median, geom="line",size = 1,aes(group=1)) #scale_fill_brewer(palette = 'Paired',name="Evolution des prairies % (1970-2010)")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+################
+
+## Avec facet_wrap
+
+ggplot(bdatdiff,aes(y=diffmedian_corgox,x=classe_var_mf1988_2010))+
+ geom_boxplot() + facet_wrap(~ zonage_cplt)  + xlab("Variation du maïs fourrage entre 1988-2010 (%)")+ylab("Différences des teneurs en CO")+ coord_flip() + geom_hline(yintercept = 0,color="red")# stat_summary(fun.y=median, geom="line",size = 1,aes(group=1)) #scale_fill_brewer(palette = 'Paired',name="Evolution des prairies % (1970-2010)")
                  # 
 
 test <- bdatdiff[bdatdiff$zonage_cplt %in% "C1",]
@@ -998,6 +1108,7 @@ test <- bdatdiff[bdatdiff$zonage_cplt %in% "C1",]
 # Voir pour le problème sur les valeurs positives et négatives
 wilcotest <- generate_label_df(db=test,value="diffmedian_corgox",lev="classe_argi_med",letters,position=1)
 
+### Test avec l'argile
 ## EN cours
 ggplot(test,aes(y=diffmedian_corgox,x=classe_argi_med))+
  geom_boxplot() + xlab("Taux d'argile (g/kg)")+ylab("Différences des teneurs en CO")+ coord_flip() + geom_hline(yintercept = 0,color="red") + geom_text(data = wilcotest, vjust=0,aes(x = plot.labels, y = V1, label = labels))
