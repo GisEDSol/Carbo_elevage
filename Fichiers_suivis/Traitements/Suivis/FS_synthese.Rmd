@@ -374,6 +374,99 @@ ggsave(evol_elevage,file = paste(repsortie,"evol_elevage.png",sep=""), width = 1
 ## Exemple à reprendre?http://stackoverflow.com/questions/35848654/ggplot2-plot-two-data-sets-into-one-picture
 ```
 
+Ici, on recommence uniquement pour les principales grandes régions d'élevage
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=8, fig.width=12,fig.align="center",warning=FALSE,message=FALSE}
+
+reg_elevage <- c("A","B","C","D","E","F","G")
+p <- list()
+cpt <- 0
+for(i in reg_elevage){
+  cpt <- cpt + 1
+  datatest <- melted.bdat[melted.bdat$zonage_simple %in% i,]
+  datatestobs <- datatest[datatest$variable %in% "Médiane",]
+  nbrobservation <- apply(datatestobs["value"],2, function(x) tapply(x, datatestobs["annees"],length))[1,1]
+
+  ylim1 <- c(min(datatest$value,na.rm=TRUE),quantile(datatest$value,0.99,na.rm=TRUE))
+
+  test1 <- generate_label_df(db=datatest[datatest$variable %in% "Médiane",],value="value",lev="annees",letters,position=0.99)
+  test2 <- generate_label_df(db=datatest[datatest$variable %in% "75% centile",],value="value",lev="annees",LETTERS,position=0.98)
+
+if(cpt==4){
+  labley <- "Teneur en carbone organique (g/kg)"
+}else{labley <- ""}
+
+  if(cpt==8){
+  lablex <- "Périodes"
+}else{lablex <- ""}
+
+  p[[i]] <- ggplot(datatest,aes(x=annees,y=value)) + 
+            geom_boxplot(aes(fill=variable),outlier.shape = NA,outlier.size=NA)+
+            stat_summary(fun.y=median, geom="line",size = 1, aes(group=variable)) +
+            scale_x_discrete(lablex)+scale_y_continuous(labley)+theme_perso()+geom_text(data = test1,aes(x = plot.labels, y = V1, label = labels),hjust = 2,inherit.aes = FALSE)+ geom_text(data = test2, aes(x = plot.labels, y = V1, label = labels),hjust = -2,inherit.aes = FALSE)+ coord_cartesian(ylim = ylim1*1.2) + labs(title= paste(i,". Nbr: ",nbrobservation,sep="")) +
+            scale_fill_manual(values=c("#F1ED0AE6", "#F36E15E6"), 
+                       name="Statistiques cantonales")
+}
+tt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=3,ncol=3,position="bottom")))
+ggsave(tt,file = paste(repsortie,"boxplot_regelevagesimple_stats.png",sep=""), width = 17, height = 10)  
+```
+
+```{r,eval=TRUE,echo=FALSE,fig.height=8, fig.width=13,fig.align="center"}
+cpt <- 0
+  for(s in reg_elevage){
+    cpt <- cpt + 1
+    melted.test <- melted.bdat[(melted.bdat$variable %in% "75% centile") & melted.bdat$zonage_simple %in% s,]
+    
+    bdatmedian <- apply(melted.test["value"],2, function(x) tapply(x, melted.test[,"annees"],median))
+
+    colnames(bdatmedian) <- "median"
+    bdatmedian <- t(bdatmedian)
+    colnames(bdatmedian) <- c("1995-1999","2000-2004","2005-2009","2010-2014")
+
+    res <- outer(1:ncol(bdatmedian), 1:ncol(bdatmedian), 
+                function(x,y) ((bdatmedian[,x]-bdatmedian[,y])/bdatmedian[,x])*100)
+    period_count <- c(1995,2000,2005,2010)
+
+    res_period <- outer(1:length(period_count), 1:length(period_count), 
+                function(x,y) ((period_count[x])-period_count[y]))
+
+    res[upper.tri(res, diag = TRUE)] <- NA
+    res2 <- res/res_period
+    colnames(res2) <- as.character(colnames(bdatmedian))
+    rownames(res2) <- as.character(colnames(bdatmedian))
+ 
+    bdatmedian2 <- melt(res2)
+    bdatmedian2 <- bdatmedian2[complete.cases(bdatmedian2$value),]
+    bdatmedian2$count <- c("23","24","25","34","35","45")
+    colnames(bdatmedian2) <- c("EndDate","StartDate",paste(s),"Count")
+
+    # Ajout du test statistiques (wilcoxon)
+    res.wilcoxon <- pairwise.wilcox.test(melted.test[,"value"], melted.test[,"annees"])$p.value
+    res.wilcoxon[upper.tri(res.wilcoxon, diag = FALSE)] <- NA
+    colnames(res.wilcoxon) <- as.character(c("1995-1999","2000-2004","2005-2009"))
+    rownames(res.wilcoxon) <- as.character(c("2000-2004","2005-2009","2010-2014"))
+    res.wilcoxon <- melt(res.wilcoxon,na.rm=TRUE)
+    
+    # Ajout du test vers bdatmedian2
+    bdatmedian2[paste("pvalue",s,sep="")] <- res.wilcoxon$value
+
+    if(cpt==1){
+     # Construction de la première table
+     stats.canton <- bdatmedian2
+        }else{
+       # Ajout à chaque itération de la variable (i)
+       stats.canton <- merge(stats.canton,bdatmedian2, by.x=c("EndDate","StartDate","Count"), by.y=c("EndDate","StartDate","Count"),all.x=FALSE,all.y=FALSE)      
+     }   
+  }
+
+meltstats <- melt(stats.canton[!colnames(stats.canton) %in% paste("pvalue",reg_elevage,sep="")],id.vars=c("EndDate","StartDate","Count"))
+pvaluemeltstats <- melt(stats.canton[!colnames(stats.canton) %in% reg_elevage],id.vars=c("EndDate","StartDate","Count"))
+meltstats$pvalue <- pvaluemeltstats$value
+
+evol_elevage <- ggplot(meltstats, aes(ymin = StartDate, ymax = EndDate, x = Count)) + geom_linerange(aes(colour=value),size=3) + facet_wrap(~variable) + coord_flip() + scale_colour_gradient2(limit = c(min(meltstats$value),max(meltstats$value)),low="orange",high=muted("purple"),name="Taux d'évolution annuel (%)") + ylab("Périodes") + xlab("") + theme_perso() + geom_text(aes(fontface=2,y = StartDate, x = Count, label = ifelse(pvalue<=0.05,paste(round(value,1),"% **",sep=""),paste(round(value,1),"%",sep=""))), hjust = 0, vjust = 0.5, size = 3.5)
+evol_elevage
+ggsave(evol_elevage,file = paste(repsortie,"evol_elevage_simple.png",sep=""), width = 17, height = 6)  
+```
 
 # Distribution spatiale des teneurs en carbone organique
 
@@ -408,26 +501,7 @@ cat(paste("![](",fichiers,")",sep=""))
 
 # Analyse des facteurs contrôlant la distribution spatiale des teneurs en CO
 
-## Effet de la teneur en CO initiale
-
-```{r,eval=TRUE,echo=FALSE}
-load(paste(repsortie,"diff_initial_frR2.RData",sep=""))
-test2 <- melt(rest)
-colnames(test2)[4] <- "Period"
-ggplot(test2, aes(x=Period,y=value,colour=Type)) + geom_boxplot() +
-  scale_x_discrete("Périodes comparées")+scale_y_continuous("Coefficient de détermination non-ajusté (R2)")+theme_perso()  
-```
-
-```{r,eval=TRUE,echo=FALSE}
-load(paste(repsortie,"diff_initial_regR2.RData",sep=""))
-#load(paste(repsortie,"diff_initial_regR2_diminution.RData",sep=""))
-test2 <- melt(rest)
-
-ggplot(test2, aes(x=Period,y=value)) + facet_wrap(~L1) + geom_boxplot() +
-  scale_x_discrete("Périodes comparées")+scale_y_continuous("Coefficient de détermination non-ajusté (R2)")+theme_perso()  
-```
-
-## Modélisation sur Cubist
+## Modélisation des teneurs en CO avec Cubist
 
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,error=FALSE}
 Rcovarclimato <- c("hpluie_an","jfroids_an","ampli_t_juil_janv","pluie_ecart_janv","pluie_ecart_juil","jpluie_janv","jpluie_juil","ttemp_an","jchauds_an")
@@ -662,6 +736,45 @@ histo_period <- ggplot(bdatdiff,aes(diff_corgox)) + geom_bar() + facet_wrap(~ pe
 histo_period
 #ggsave(histo_period,file = paste(repsortie,"histo_regelevage.png",sep=""), width = 12, height = 6)  
 ```
+
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=12,fig.align="center"}
+
+melted.bdatdiff <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdatdiff",sep=""))
+melted.bdatdiff$diffmedian_corgox <- as.numeric(melted.bdatdiff$diffmedian_corgox)
+melted.bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff_corgox),]
+bdatdiff <- subset(melted.bdatdiff,diff_corgox!="Non significatif")
+
+code_regelevage <- read.csv(paste(repmetadonnees,"Nomenclature_regionelevage.csv",sep=""))
+reg_elevage <- c("A","B1","B2","C1","C2","D","E1","E2","F2")
+couleur <- as.character(code_regelevage[code_regelevage$Zonage_cplt %in% reg_elevage,"Code_couleur"])
+occupsol <- "zonage_cplt"
+labelx <- "Grandes régions d'élevage"
+datatest <- bdatdiff[bdatdiff$zonage_cplt %in% reg_elevage,]
+datatest <- datatest[complete.cases(datatest[occupsol]),] 
+wilcotest <- generate_label_df(db=datatest,value="diffmedian_corgox",lev=occupsol,letters,position=1)
+lablex <- labelx
+labley <- "Différences des teneurs en CO (g/kg)"
+p <- ggplot(datatest)+ geom_boxplot(aes_string(y="diffmedian_corgox",x=occupsol,fill="zonage_cplt"))+ geom_hline(yintercept = 0,color="red") + scale_fill_manual(values=couleur,name="") +geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = labels)) + scale_x_discrete(lablex)+scale_y_continuous(labley)+theme_perso() + theme(legend.position="none")
+p
+```
+
+```{r,eval=TRUE,echo=FALSE,fig.height=6, fig.width=12,fig.align="center"}
+bdatdiff <- subset(melted.bdatdiff,diff_corgox!="Non significatif")
+
+code_regelevage <- read.csv(paste(repmetadonnees,"Nomenclature_regionelevage.csv",sep=""))
+reg_elevage <- c("A","B","C","D","E","F2","G")
+couleur <- as.character(code_regelevage[code_regelevage$Zonage_simple %in% reg_elevage,"Code_couleur_simple"])
+occupsol <- "zonage_simple"
+labelx <- "Grandes régions d'élevage"
+datatest <- bdatdiff[bdatdiff$zonage_simple %in% reg_elevage,]
+datatest <- datatest[complete.cases(datatest[occupsol]),] 
+wilcotest <- generate_label_df(db=datatest,value="diffmedian_corgox",lev=occupsol,letters,position=1)
+lablex <- labelx
+labley <- "Différences des teneurs en CO (g/kg)"
+p <- ggplot(datatest)+ geom_boxplot(aes_string(y="diffmedian_corgox",x=occupsol,fill="zonage_simple"))+ geom_hline(yintercept = 0,color="red") + scale_fill_manual(values=couleur,name="test") +geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = labels)) + scale_x_discrete(lablex)+scale_y_continuous(labley)+theme_perso() + theme(legend.position="none")
+p
+```
+
 > **En conclusion** de cette section, on constate plusieurs points :
 - Les évolutions des teneurs en CO entre les différentes périodes ne suivent pas les mêmes tendances. Les teneurs en CO ont augmenté sur la période [2010-2014] et cette augmentation est particulièrement prononcée entre les périodes [2000-2004]-[2010-2014].
 - La diminution des teneurs est surtout observée entre [1990-1994]-[2000-2004] et [1994-1999]-[2005-2009] et [1990-1994]-[2005-2009].
@@ -670,7 +783,38 @@ histo_period
     * Augmentation : (35) [2000-2004]-[2010-2014] et (45) [2005-2009]-[2010-2014]
 - Les principales zones d'élevage affectées par ces changements sont : A, B1, C1, C2 et D. Ce résultat provient surtout de la densité d'analyse dans ces zones et de leur étendue spatiale.
 
+
+## Cartographie
+
+```{r map_evol_fr, echo = FALSE, eval=TRUE,results = 'asis'}
+# Pour insérer l'image
+nomfichier <- c("Median_evolu_corgox.png","Median_diff_corgox.png")
+fichiers <- paste(repsortie,nomfichier,sep="")
+cat(paste("![](",fichiers,")",sep=""))
+```
+
 ## Facteurs contrôlant l'évolution des teneurs en carbone organique
+
+### Effet de la teneur en CO initiale
+
+```{r,eval=TRUE,echo=FALSE}
+load(paste(repsortie,"diff_initial_frR2.RData",sep=""))
+test2 <- melt(rest)
+colnames(test2)[4] <- "Period"
+ggplot(test2, aes(x=Period,y=value,colour=Type)) + geom_boxplot() +
+  scale_x_discrete("Périodes comparées")+scale_y_continuous("Coefficient de détermination non-ajusté (R2)")+theme_perso()  
+```
+
+```{r,eval=TRUE,echo=FALSE}
+load(paste(repsortie,"diff_initial_regR2.RData",sep=""))
+#load(paste(repsortie,"diff_initial_regR2_diminution.RData",sep=""))
+test2 <- melt(rest)
+
+ggplot(test2, aes(x=Period,y=value)) + facet_wrap(~L1) + geom_boxplot() +
+  scale_x_discrete("Périodes comparées")+scale_y_continuous("Coefficient de détermination non-ajusté (R2)")+theme_perso()  
+```
+
+### Changement d'occupation du sol
 
 ```{r,eval=TRUE,echo=FALSE}
 ### Test en cours sur l'intérêt de présenter les principales tendances de changement d'occupation du sol au sein des différentes régions d'élevage
@@ -689,4 +833,107 @@ p_ra <- ggplot(melted.ra_focus,aes(x=annees,y=value,col=variable)) + facet_wrap(
             theme_perso()
 p_ra
 
+```
+
+```{r,eval=TRUE,echo=FALSE,message=FALSE,warning=FALSE,error=FALSE,fig.height=9, fig.width=11,fig.align="center",results='asis'}
+
+melted.bdatdiff <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdatdiff",sep=""))
+melted.bdatdiff$diffmedian_corgox <- as.numeric(melted.bdatdiff$diffmedian_corgox)
+melted.bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff_corgox),]
+bdatdiff <- subset(melted.bdatdiff,diff_corgox!="Non significatif")
+
+occupdiff <- c("diff_var_sfp1988_2000","diff_var_prairie1988_2000","diff_var_mf1988_2000","diff_var_sth1988_2000","diff_var_cop1988_2000")
+
+p <- list()
+cpt <- 0
+for(i in occupdiff){
+  cpt <- cpt + 1
+  datatest <- bdatdiff[complete.cases(bdatdiff[i]),] 
+
+  wilcotest <- generate_label_df(db=datatest,value="diffmedian_corgox",lev=i,letters,position=0.5)
+
+  lablex <- ""#legendx[cpt]
+  labley <- "Différences des teneurs en CO (g/kg)"
+  
+  p[[i]] <- ggplot(datatest,aes_string(y="diffmedian_corgox",x=i
+))+
+            geom_boxplot() + coord_flip() + geom_hline(yintercept = 0,color="red") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = labels)) + scale_x_discrete(lablex)+scale_y_continuous(labley)+theme_perso()+labs(title=i)
+}
+tt <- do.call(grid.arrange,p)
+
+ggsave(tt,file = paste(repsortie,"boxplot_diff_occup.png",sep=""), width = 17, height = 10)  
+```
+
+### Modélisation de l'évolution des teneurs en CO
+
+```{r,eval=TRUE,echo=FALSE,message=FALSE,warning=FALSE,error=FALSE,fig.height=9, fig.width=11,fig.align="center",results='asis'}
+
+# Ci-dessous, construction des graphiques pour calculer l'importance des variables
+Rcovarclimato <- c("hpluie_an","jfroids_an","ampli_t_juil_janv","pluie_ecart_janv","pluie_ecart_juil","jpluie_janv","jpluie_juil","ttemp_an","jchauds_an")
+typeclimato <- replicate(length(Rcovarclimato), "climat")
+
+Rcovartopo <- "altimean"
+typetopo <- replicate(length(Rcovartopo), "topographie")
+
+Rcovarpedo <- c("argi_med","sabt_med","mat11")
+typepedo <- replicate(length(Rcovarpedo), "pedologie")
+
+Rcovarvaroccup <- c("var_sth1970_2000","var_sth1979_2000","var_sth1988_2000","var_c1970_2000","var_c1979_2000","var_c1988_2000","var_sfp1970_2000","var_sfp1979_2000","var_sfp1988_2000","var_mf1970_2000","var_mf1979_2000","var_mf1988_2000","var_prairie1970_2000","var_prairie1979_2000","var_prairie1988_2000","var_ugb1988_2010","var_cop1988_2000","var_cop1979_2000","var_sth1970_2010","var_sth1979_2010","var_sth1988_2010","var_c1970_2010","var_c1979_2010","var_c1988_2010","var_sfp1970_2010","var_sfp1979_2010","var_sfp1988_2010","var_mf1970_2010","var_mf1979_2010","var_mf1988_2010","var_prairie1970_2010","var_prairie1979_2010","var_prairie1988_2010","var_cop1988_2010","var_cop1979_2010","eff_corgox9094","eff_corgox9599","eff_corgox0004","eff_corgox0509","eff_corgox1014")
+
+Rcovaroccup <- c("p_sfp1988","elevage1988","elevagehorsol1988","polyelevage1988","p_prairie1970","p_prairie1979","p_prairie1988","p_sfp1970","p_sfp1979","p_mf1988","p_sth1970","p_sth1979","p_sth1988","p_mf1970","p_mf1979","ugbta1988","grdcultures1988","p_cop1970","p_cop1979","p_cop1988","p_c1988","p_c1970","p_c1979")
+
+typeoccup <- replicate(length(c(Rcovaroccup,Rcovarvaroccup)), "occup")
+
+Rcovarstrates <- c("zonage_cplt","zonage_simple","typo_clim","code_dept")
+typestrates <- replicate(length(Rcovarstrates), "strates")
+
+type <- c(typetopo,typepedo,typeoccup,typeclimato,typestrates)
+Rcovar <- c(Rcovartopo,Rcovarpedo,Rcovaroccup,Rcovarvaroccup,Rcovarclimato,Rcovarstrates)
+
+##
+periodetud <- c("13","23","35","45")
+
+nbr <- 100
+pourcent <- list()
+rest <- array(NA, dim = c(length(periodetud), 3),list(Period_co = periodetud, mod = c("r2","MSE","RMSE")))
+
+cpt <- 0
+
+for(i in periodetud){
+  cpt <- cpt + 1
+
+  varimp <- readRDS(paste(repsortie,"mcubist_diff_fr_",i,"_",nbr,".rds",sep=""))
+  qualityindex <- varimp$qualityindex
+  varimp <- as.data.frame(varimp$varimp)
+  varimp <- varimp[grep("Overall",names(varimp))]
+
+  varimp$median <- apply(varimp, 1, function(x){median(x,na.rm=TRUE)})
+  varimp$covariable <- rownames(varimp)
+  varimp <- varimp[with(varimp, order(-median)),]
+  varimp$covariable <- reorder(varimp$covariable, varimp$median)
+
+  # Selection quantile(test$value,0.75)>40
+  varimp$Q75 <- apply(varimp[,!names(varimp) %in% c("relatmed","median","covariable")],1, function(x) quantile(x, probs=0.75))
+  varimp40 <- varimp[varimp$Q75>40,]
+  varimp40$relatmed <- apply(varimp40[names(varimp40) %in% "median"],2,function(x){(x/sum(x))*100})
+
+  test <- melt(varimp)
+  test$type <- gsub2(as.character(Rcovar),type,as.character(test$covariable))
+
+  pp <- ggplot(test[!test$variable %in% c("relatmed","median","Q75"),],    aes(x=covariable,y=value,fill=type)) + geom_boxplot()+
+     scale_x_discrete("Variables")+scale_y_continuous("Importance des variables (%)")+
+     coord_flip()+geom_hline(yintercept = 40) +theme_perso()+labs(title= i)
+  
+  plot(pp)
+  
+  ggsave(pp,file = paste(repsortie,"ImpVariable_cubist_diff_",i,".png",sep=""), width = 11, height = 9)  
+ 
+  rest[cpt,"r2"] <- qualityindex[,"R2"][[1]]
+  rest[cpt,"MSE"] <- qualityindex[,"MSE"][[1]]
+  rest[cpt,"RMSE"] <- qualityindex[,"RMSE"][[1]]
+}
+```
+
+```{r,eval=TRUE,echo=FALSE,results='asis'}
+pander(as.data.frame(rest),caption="Moyenne des indicateurs de la validation croisée pour la modélisation de l'évolution des teneurs en CO")
 ```

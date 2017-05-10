@@ -518,11 +518,14 @@ for(i in varia){
   vNameS <- paste("diff_",i,sep="") # Nom de la variable simplifiée (augmentation,diminution, pas d'évolution)
 
   mapcanton[,vName] <- cut(mapcanton[,i],breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
+  mapcanton[,vNameS] <- ifelse(mapcanton[,i] > 5,"Augmentation",ifelse(mapcanton[,i] < -5,"Diminution","Pas d'évolution"))
+  
   mapcanton[,vNameS] <- ifelse(mapcanton[,i] > 10,"Augmentation",ifelse(mapcanton[,i] < -10,"Diminution","Pas d'évolution"))
+
 
   # Définition des commentaires 
   comment1 <- paste("Classes de changement d\''occupation du sol basées sur la méthode ",style_classe," pour le champ ",i,sep="")
-  comment2 <- paste("Classes de changement d\''occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d\''évolution. Pour le champ",i,sep="")
+  comment2 <- paste("Classes de changement d\''occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d\''évolution. Pour le champ",i,sep="")
   
   comment <- c(comment1,comment2)
   
@@ -553,6 +556,10 @@ for(i in varia){
        COMMENT ON COLUMN ",table_dm,".",v," IS \'",comment[cpt],".\';",sep="")))
     }
 }
+
+
+
+
 ```
 ## Préparation des tables au format "long".
 

@@ -1,14 +1,14 @@
-Zonage_simple,Zonage_cplt,Label_simple,Label_cplt,Code_couleur
-A,A,Zones de grandes cultures ou sans élevage,Zones de grandes cultures ou sans élevage,#F1ED0AE6
-B,B1,Cultures + Elevages,Zone de polyculture-élevage du Bassin Parisien,#F79A39E6
-B,B2,Cultures + Elevages,Zone de polyculture-élevage du Bassin Aquitain & Rhône-Alpes & Alsace (régression plus rapide de l'élevage),#F36E15E6
-C,C1,Cultures fourragères,Zone intensive du Grand Ouest (zone laitière avec alternatives à l’élevage),#394AA7E6
-C,C2,Cultures fourragères,Piémonts intensifs (zone à dominante viande avec peu d’alternatives),#5471C0E6
-D,D,Zone herbagère du Nord-Ouest,Zone herbagère du Nord-Ouest,#60C233E6
-E,E1,Zone herbagère du Centre et de l’Est,Zone herbagère du Nord-Est (de tradition laitière),#566100E6
-E,E2,Zone herbagère du Centre et de l’Est,Zone herbagère du Nord Massif-Central (de tradition allaitante),#0B8024E6
-F,F1,Zones pastorales,Causses et coteaux du Sud-Ouest,#CE76BEE6
-F,F2,Zones pastorales,Zone pastorale méditerranéenne,#8B327BE6
-G,G1,Montagne humides,Franche-comté + Vosges (forte spécialisation laitière),#7C1519E6
-G,G2,Montagne humides,Auvergne (et Massif-Central) (mixité lait-viande),#B8252BE6
-H,H,Haute-Montagne,Haute-Montagne,#000000E6
+Zonage_simple,Zonage_cplt,Label_simple,Label_cplt,Code_couleur,Code_couleur_simple
+A,A,Zones de grandes cultures ou sans élevage,Zones de grandes cultures ou sans élevage,#F1ED0AE6,#F1ED0AE6
+B,B1,Cultures + Elevages,Zone de polyculture-élevage du Bassin Parisien,#F79A39E6,#F79A39E6
+,B2,Cultures + Elevages,Zone de polyculture-élevage du Bassin Aquitain & Rhône-Alpes & Alsace (régression plus rapide de l'élevage),#F36E15E6,
+C,C1,Cultures fourragères,Zone intensive du Grand Ouest (zone laitière avec alternatives à l’élevage),#394AA7E6,#394AA7E6
+,C2,Cultures fourragères,Piémonts intensifs (zone à dominante viande avec peu d’alternatives),#5471C0E6,
+D,D,Zone herbagère du Nord-Ouest,Zone herbagère du Nord-Ouest,#60C233E6,#60C233E6
+E,E1,Zone herbagère du Centre et de l’Est,Zone herbagère du Nord-Est (de tradition laitière),#566100E6,#566100E6
+,E2,Zone herbagère du Centre et de l’Est,Zone herbagère du Nord Massif-Central (de tradition allaitante),#0B8024E6,
+F,F1,Zones pastorales,Causses et coteaux du Sud-Ouest,#CE76BEE6,#CE76BEE6
+,F2,Zones pastorales,Zone pastorale méditerranéenne,#8B327BE6,
+G,G1,Montagne humides,Franche-comté + Vosges (forte spécialisation laitière),#7C1519E6,#7C1519E6
+,G2,Montagne humides,Auvergne (et Massif-Central) (mixité lait-viande),#B8252BE6,
+H,H,Haute-Montagne,Haute-Montagne,#000000E6,#000000E6
