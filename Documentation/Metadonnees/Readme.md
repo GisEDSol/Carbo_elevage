@@ -10,3 +10,4 @@
 * [Nomenclature_typeclimat.csv](https://github.com/GisEDSol/Carbo_elevage/blob/master/Documentation/Metadonnees/Nomenclature_typeclimat.csv) : Description de la nomenclature des types de climat
 * [Nomenclature_clc.csv](https://github.com/GisEDSol/Carbo_elevage/blob/master/Documentation/Metadonnees/Nomenclature_clc.csv) : Description de la nomenclature des codes de Corine Land Cover
 * [Nomenclature_evolutionbdat.csv](https://github.com/GisEDSol/Carbo_elevage/blob/master/Documentation/Metadonnees/Nomenclature_evolutionbdat.csv) : Présentation des codes utilisés pour nommer la comparaison des teneurs en Carbone Organique par période
+* [Nomenclature_evolutionbdat_ra.csv](https://github.com/GisEDSol/Carbo_elevage/blob/master/Documentation/Metadonnees/Nomenclature_evolutionbdat_ra.csv) : Correspondance entre les périodes d'analyse de la BDAT et le lien potentiel avec les périodes du recencement agricole (5-10 ans antérieures aux périodes de la BDAT)

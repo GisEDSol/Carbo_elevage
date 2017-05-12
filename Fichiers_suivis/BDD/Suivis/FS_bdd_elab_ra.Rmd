@@ -335,10 +335,11 @@ Les évolutions d'occupation du sol et de la densité d'UGB sont calculées entr
 ## Evolution pour l'occupation du sol
 
 ```{r,highlight=TRUE,eval=FALSE}
+
 # Calcul de l'évolution des superficies
 # Paramètres
 p_variable <- c("sth","c","sfp","mf","prairie","cop")
-periodref <- c("2010","2000")
+periodref <- c("1988","2010","2000")
 period <- c("1970","1979","1988","2000")
 signification <- cbind("de la surface toujours en herbe","de la surface en céréales"," de la surface fourragère principale","de la surface en maîs fourrage ensilage","des prairies","des surfaces en cop")
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
@@ -492,8 +493,8 @@ for(i in varia){
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
 p_variable <- c("sth","c","sfp","mf","prairie","cop")
-periodref <- c("2010","2000")
-period <- c("1970","1979","1988","2000")
+periodref <- c("2010","2000","1988")
+period <- c("1979","1988","2000")
 varia <- apply(expand.grid(p_variable,period,periodref),1, function(x){paste("var_",x[1],x[2],"_",x[3],sep="")})
 style_classe <- "quantile" # fixed", "sd", "equal", "pretty", "quantile", "kmeans", "hclust", "bclust", "fisher", or "jenks"
 nclasse <- 5
@@ -519,10 +520,7 @@ for(i in varia){
 
   mapcanton[,vName] <- cut(mapcanton[,i],breaks = data.frame(classe_valeur)[,1],include.lowest=T)  
   mapcanton[,vNameS] <- ifelse(mapcanton[,i] > 5,"Augmentation",ifelse(mapcanton[,i] < -5,"Diminution","Pas d'évolution"))
-  
-  mapcanton[,vNameS] <- ifelse(mapcanton[,i] > 10,"Augmentation",ifelse(mapcanton[,i] < -10,"Diminution","Pas d'évolution"))
-
-
+   
   # Définition des commentaires 
   comment1 <- paste("Classes de changement d\''occupation du sol basées sur la méthode ",style_classe," pour le champ ",i,sep="")
   comment2 <- paste("Classes de changement d\''occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d\''évolution. Pour le champ",i,sep="")
@@ -556,9 +554,6 @@ for(i in varia){
        COMMENT ON COLUMN ",table_dm,".",v," IS \'",comment[cpt],".\';",sep="")))
     }
 }
-
-
-
 
 ```
 ## Préparation des tables au format "long".

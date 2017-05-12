@@ -26,6 +26,9 @@ Pour une lecture aisée des traitements et résultats en cours sur l'analyse des
 * **[l'analyse des teneurs en carbone organique pour différentes périodes](https://rawgit.com/GisEDSol/Carbo_elevage/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdat.html)**
 * **[l'analyse de l'évolution des teneurs en carbone organique](https://rawgit.com/GisEDSol/Carbo_elevage/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdatdiff.html)**
 
+Une synthèse des résultats est en cours de préparation : 
+* **[Synthèse des résultats](https://rawgit.com/GisEDSol/Carbo_elevage/master/Fichiers_suivis/Traitements/Suivis/FS_synthese.html)**
+
 Pour aller plus loin, plusieurs documents détaillent l'analyse à l'échelle régionale :
 * **[Nord Pas de Calais et la Picardie](https://rawgit.com/GisEDSol/Carbo_elevage/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_NPCPicardie.html)**
 * **[Bretagne](https://rawgit.com/GisEDSol/Carbo_elevage/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_Bretagne.html)**

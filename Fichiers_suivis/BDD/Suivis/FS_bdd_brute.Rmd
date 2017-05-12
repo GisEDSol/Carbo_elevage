@@ -673,7 +673,7 @@ Voir le problème avec sur les postgis sur ce lien http://mattmakesmaps.com/blog
 
 ```{r,eval=FALSE}
 # Export avec pg_dump
-pg_dump sol_elevage > sol_elevage.sql
+system(paste("pg_dump sol_elevage > sol_elevage",Sys.Date(),".sql",sep=""))
 
 # En cas de problème
 #select AddGeometryColumn('dm_vecteurs','canton','geom','2154','MULTIPOLYGON',2)
