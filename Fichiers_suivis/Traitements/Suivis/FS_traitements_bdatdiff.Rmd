@@ -1028,21 +1028,13 @@ melted.bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff_corgox),]
 
 ## Ici, voir pour supprimer les diff_corgox avec 'augmentation'??
 bdatdiff <- subset(melted.bdatdiff,diff_corgox!="Non significatif")
-#periodetud <- c("14","24","15","25","13","35")
-#bdatdiff <- melted.bdatdiff[melted.bdatdiff$period %in% periodetud,]
-
-# Pour voir...
-#enplus <- c("12","45","23")
-#periodetud <- c(periodetud,enplus)
 
 bdatdiff$classe_var_sfp1988_2010 <- ordered(bdatdiff$classe_var_sfp1988_2010, levels = c("[-57.4,-9.83]","(-9.83,-5.18]","(-5.18,-1.39]","(-1.39,1.67]","(1.67,54.7]"))
 bdatdiff$classe_var_prairie1988_2010 <- ordered(bdatdiff$classe_var_prairie1988_2010, levels = c("[-96.3,-10]","(-10,-4.62]","(-4.62,-1.07]","(-1.07,1.83]","(1.83,99.9]"))
 bdatdiff$classe_var_mf1988_2010 <- ordered(bdatdiff$classe_var_mf1988_2010, levels = c("[-10.8,-1.22]","(-1.22,-0.296]","(-0.296,0.417]","(0.417,1.75]","(1.75,16.6]"))
 bdatdiff$classe_var_sth1988_2000 <- ordered(bdatdiff$classe_var_sth1988_2000, levels = c("[-67.8,-10.8]","(-10.8,-6.06]","(-6.06,-2.81]","(-2.81,-0.223]","(-0.223,72.3]"))
 bdatdiff$classe_argi_med <- ordered(bdatdiff$classe_argi_med, levels = c("[20,150]","(150,182]","(182,240]","(240,562]"))
-
 bdatdiff$classe_var_cop1988_2000 <- ordered(bdatdiff$classe_var_cop1988_2000, levels = c("[-95.7,-5.1]","(-5.1,-1.33]","(-1.33,0.376]","(0.376,4.64]","(4.64,55.9]"))
-
 
 ## En cours
 
@@ -1070,17 +1062,13 @@ occup <- c("classe_var_sfp1988_2010","classe_var_prairie1988_2010","classe_var_m
 
 occupdiff <- c("diff_var_sfp1979_2010","diff_var_prairie1979_2010","diff_var_mf1988_2010","diff_var_cop1979_2010")
 
-#legendx <- c("Variation de la surface en SFP entre 1988-2010 (%)","Variation de la surface en prairie entre 1988-2010 (%)","Variation de la surface en maïs-fourrage entre 1988-2010 (%)","Variation de la surface toujours en herbe entre 1988-2010 (%)","Variation de la surface en COP entre 1988-2010 (%)","Taux d'argile (g/kg)")
-
-
-
 ####En cours####
-# Faire une boucle pour réaliser tous les tests. DAns la boucle, il faudra prendre en compte (et établir une règle) pour sélectionner les variations d'occupation du sol avec la période comparée.
-
 p_variable <- c("sfp","mf","prairie","cop")
 nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""),sep=",",colClasses = "character")
 nomdiff <- nomdiff[!(nomdiff$Code %in% c("12","23","34","45")),]
 nomperiodiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat_ra.csv",sep=""),sep=",",colClasses = "character")
+
+# Voir pour tester plusieurs combinaisons de variation d'occupation du sol (périodes) (sachant que les évolutions entre 1988-2000 pour la période 15 explique bien certaines tendances)
 
 for(x in nomdiff$Code){
   print(x)
@@ -1115,12 +1103,11 @@ ggsave(tt,file = paste(repsortie,"boxplot_diff_occup_",x,".png",sep=""), width =
 
 
 ###Ci-dessous ok### 
-
-
+occup <- c("classe_var_sfp1988_2010","classe_var_prairie1988_2010","classe_var_mf1988_2010","classe_var_sth1988_2000","classe_var_cop1988_2000","classe_argi_med")
 
 p <- list()
 cpt <- 0
-for(i in occupdiff){
+for(i in occup){
   cpt <- cpt + 1
   datatest <- bdatdiff[complete.cases(bdatdiff[i]) & bdatdiff$period=="15",] 
 

@@ -190,74 +190,71 @@ for(i in ListBDAT){
 }
 
 ```
-### Importation des données de la BDAT harmonisées
+### Importation des données de la BDAT ré-échantillonnées
 
-La liste d'instructions suivante intègre les analyses des teneurs de la BDAT ré-échantillonnées dans la base de données. Ci-dessous, ce sont les analyses provenant des deux méthodes de mesures du carbone qui sont intégrées (oxydation humide - corgox +combustion sèche - corgco).
+La liste d'instructions suivante intègre les analyses des teneurs de la BDAT ré-échantillonnées dans la base de données.
 
-```{r importBDAT_harmo, eval=FALSE}
-# Selection des fichiers à importer
-ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/",sep=""),pattern="\\.csv$"))
+#### Médianes
+
+```{r importBDAT_harmomethodes, eval=FALSE}
+nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""),sep=",",colClasses = "character")
+
+ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/mediane/",sep=""),pattern="\\.csv$"))
 
 for(i in ListBDAT){
-  print(i)
-  # Lecture du fichier
-  txtBDAT <- read.csv(paste(repBDAT,"BDAT_harmonisee/",i,".csv",sep=""),sep=";",header=TRUE,colClasses=c("canton"="character"))
-
-    # Intégration dans la bdd
-  sqlQuery(loc,paste("drop table if exists bdat.",i,sep=""))
-  sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
-}
-```
-
-Ci-dessous, les analyses des teneurs en C classées par méthode de mesure sont intégrées dans la base de données. Les analyses réalisées avec la méthode oxydation humide sont nommées `corgox` et les analyses mesurées avec la méthode combustion sèche `corgco`.
-
-```{r importBDAT_harmomethodes, eval=FALSE}
-# Selection des fichiers à importer
-repmethodo <- c("Oxydationhumide","Combustionseche")
-for(r in repmethodo){
-  ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/",r,"/",sep=""),pattern="\\.csv$"))
-  for(i in ListBDAT){
     print(i)
+    # Extraction de la valeur numérique
+    comp <- unlist(regmatches(i,gregexpr('[0-9]+',i)))
+    
+    comp1 <- nomdiff[nomdiff$Code %in% comp,"Periode1"]
+    comp2 <- nomdiff[nomdiff$Code %in% comp,"Periode2"]
+
     # Lecture du fichier
-    txtBDAT <- read.csv(paste(repBDAT,"BDAT_harmonisee/",r,"/",i,".csv",sep=""),sep=";",header=TRUE,colClasses=c("canton"="character"))
+    txtBDAT <- read.csv(paste(repBDAT,"BDAT_harmonisee/mediane/",i,".csv",sep=""),sep=";",header=TRUE,colClasses=c("Canton"="character"),encoding = "latin1")
 
     # Intégration dans la bdd
+
     sqlQuery(loc,paste("drop table if exists bdat.",i,sep=""))
     sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
-  }
-}
-```
-### Importation des résultats pour le 3ème quartile
 
-Travail en cours (28/04)
+     # Ajout d'un commentaire
+     Comment <- paste("Statistiques de la médiane des médianes des teneurs en CO (corgox) des analyses de la BDAT ré-échantillonnées. Différence entre la période ",comp1," et la période ",comp2,sep="")
+
+    print(sqlQuery(loc,paste("
+      COMMENT ON TABLE bdat.",i," IS \'",Comment,".\';",sep="")))
+  }
+```
+
+### 3ème quartile
 
 ```{r importBDAT_harmomethodes, eval=FALSE}
-#Attention, changer la valeur de la virgule avant d'importer le fichier...
-ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/tables_3emequartile/",sep=""),pattern="\\.csv$"))
+nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""),sep=",",colClasses = "character")
+
+ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/dquartile/",sep=""),pattern="\\.csv$"))
+
   for(i in ListBDAT){
     print(i)
     # Extraction de la valeur numérique
     comp <- unlist(regmatches(i,gregexpr('[0-9]+',i)))
+    
+    comp1 <- nomdiff[nomdiff$Code %in% comp,"Periode1"]
+    comp2 <- nomdiff[nomdiff$Code %in% comp,"Periode2"]
 
     # Lecture du fichier
-    txtBDAT <- read.csv(paste(repBDAT,"BDAT_harmonisee/tables_3emequartile/",i,".csv",sep=""),sep=";",header=TRUE,colClasses=c("Canton"="character"))
+    txtBDAT <- read.csv(paste(repBDAT,"BDAT_harmonisee/dquartile/",i,".csv",sep=""),sep=";",header=TRUE,colClasses=c("Canton"="character"),encoding = "latin1")
 
-    colnames(txtBDAT)[1] <- "canton"
-    colnames(txtBDAT)[c(1,4,5,6,7,9,10)] <- c("canton","dqua","dqua2",paste("diffdqua",comp,sep=""),"diff","eff","effp2")
-    txtBDAT <- txtBDAT[,c(1,4,5,6,7,9,10)]
-    head(txtBDAT)
-
-    str(txtBDAT)
     # Intégration dans la bdd
-    #sqlQuery(loc,paste("drop table if exists bdat.",i,sep=""))
-    #sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
+
+    sqlQuery(loc,paste("drop table if exists bdat.",i,sep=""))
+    sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
+
+     # Ajout d'un commentaire
+     Comment <- paste("Statistiques de la médiane du troisième quartile des teneurs en CO (corgox) des analyses de la BDAT ré-échantillonnées. Différence entre la période ",comp1," et la période ",comp2,sep="")
+
+    print(sqlQuery(loc,paste("
+      COMMENT ON TABLE bdat.",i," IS \'",Comment,".\';",sep="")))
   }
 ```
-
-
-
-
-
 ## Les données de l'European Soil Data Centre (ESDAC)
 
 
