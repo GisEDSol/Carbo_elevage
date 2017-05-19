@@ -1,7 +1,7 @@
 ---
 title: "Création des données élaborées de la BDAT"
 author: "Jean-Baptiste Paroissien"
-date: "16/05/2017"
+date: "19/05/2017"
 output:
   html_document:
     toc: yes
@@ -36,64 +36,72 @@ Ici, les médianes et 3ème quartile des teneurs en CO (corgox) ré-échantillon
 ### Les teneurs en carbone organique
 
 ```{r,highlight=TRUE,eval=FALSE}
+
+# Lecture des tables de métadonnées
+nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""),sep=",",colClasses = "character")
+Nom_champs <- read.csv(paste(repmetadonnees,"Convention_nommage_bdat.csv",sep=""),sep=";",colClasses = "character")
+
 # Paramètres
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
 period <- c("9094","9599","0004","0509","1014")
 schema <- "bdat"
 stats <- c("med","dqua")
-commentstats <- c("Médiane","3ème quartile")
 
-nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""),sep=",",colClasses = "character")
+for(s in stats){
+  for(i in period){
+    sel <- list()
+    # Sélection des comparaisons où la période est exploitée
+    test <- nomdiff[(nomdiff$Periode1 %in% i)|(nomdiff$Periode2 %in% i),]$Code
 
-stat <- "med"
-for(i in period){
-  sel <- list()
-  # Sélection des comparaisons où la période est exploitée
-  test <- nomdiff[(nomdiff$Periode1 %in% i)|(nomdiff$Periode2 %in% i),]$Code
-
-  # Sélection des tables et calcul de la médiane des valeurs pour les 4 comparaisons 
-  ## Lecture de toutes les tables puis jointures
-  cpt <- 0
-  for(x in test){
-    cpt <- cpt + 1
-    print(cpt)
-    toto <- sqlQuery(loc,paste("select med_",i," as med_",i,"_",cpt,",canton
-      from bdat.corgox_",stat,"_",x,"_canton",sep=""))
-  if(cpt==1){
-    corgoxtable <- toto
-    }else{
-      # Ajout à chaque itération de la variable (i)
-    corgoxtable <- merge(corgoxtable,toto, by.x="canton", by.y="canton",all.x=TRUE,all.y=TRUE)
+    # Sélection des tables et calcul de la médiane des valeurs pour les 4 comparaisons 
+    ## Lecture de toutes les tables puis jointures
+    cpt <- 0
+    for(x in test){
+      cpt <- cpt + 1
+      print(cpt)
+      toto <- sqlQuery(loc,paste("select ",s,"_",i," as ",s,"_",i,"_",cpt,",canton
+        from bdat.corgox_",s,"_",x,"_canton",sep=""))
+    if(cpt==1){
+      corgoxtable <- toto
+      }else{
+        # Ajout à chaque itération de la variable (i)
+        corgoxtable <- merge(corgoxtable,toto, by.x="canton", by.y="canton",all.x=TRUE,all.y=TRUE)
+      }
     }
-  }
 
-  ## Calcul de la médiane
-  var_variable <- paste("med_corgox_",i,sep="")
-  corgoxtable[var_variable] <- apply(corgoxtable[,2:5],1,function(x){median(x,na.rm=TRUE)})
+    ## Calcul de la médiane
+    var_variable <- paste(s,"_corgox_",i,sep="")
+        
+    corgoxtable[var_variable] <- apply(corgoxtable[,2:5],1,function(x){median(x,na.rm=TRUE)})
 
-  ## Jointure vers dm_vecteurs.canton
+    ## Jointure vers dm_vecteurs.canton
 
-  # Création d'une table provisoire pour jointure
-  sqlSave(loc,corgoxtable[,c("canton",var_variable)],tablename="dm_vecteurs.tmp")
+    # Création d'une table provisoire pour jointure
+    sqlSave(loc,corgoxtable[,c("canton",var_variable)],tablename="dm_vecteurs.tmp")
     
-  # Jointure 
-  sqlQuery(loc,paste("alter table ",table_dm,"
+    # Jointure 
+    sqlQuery(loc,paste("alter table ",table_dm,"
                       drop column if exists ",var_variable,sep=""))
   
-  sqlQuery(loc,paste("alter table ",table_dm,"
-                      add column ",var_variable," numeric;
-                      update ",table_dm,"
-                      SET ",var_variable," = s1.",var_variable," from(
-                      select ",var_variable,",canton
-                      from dm_vecteurs.tmp) as s1
-                      where ",table_dm,".code_canton=s1.canton",sep=""))
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        add column ",var_variable," numeric;
+                        update ",table_dm,"
+                        SET ",var_variable," = s1.",var_variable," from(
+                        select ",var_variable,",canton
+                        from dm_vecteurs.tmp) as s1
+                        where ",table_dm,".code_canton=s1.canton",sep=""))
     
-  # Suppression de la table temporaire
-  sqlQuery(loc,"drop table if exists dm_vecteurs.tmp")
+    # Suppression de la table temporaire
+    sqlQuery(loc,"drop table if exists dm_vecteurs.tmp")
 
-  # Ajout d'un commentaire sur la nouvelle colonne créée
-  #print(sqlQuery(loc,paste("
-  #COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'""teneurs en carbone organique après ré-échantillonnage pour la période ",i,".\';",sep="")))
+    Commentaire <- Nom_champs[Nom_champs$Type %in% "Période",]
+    Commentaire$Nom_colonne <- gsub2("XXXX",i,Commentaire$Nom_colonne)
+    Commentairestats <- paste(Commentaire[Commentaire$Nom_colonne %in% var_variable,"Description"],i,sep=" ")
+
+    # Ajout d'un commentaire sur la nouvelle colonne créée
+    print(sqlQuery(loc,paste("
+    COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'",Commentairestats,".\';",sep="")))
+  }
 }
 ```
 
@@ -129,36 +137,38 @@ for(i in period){
 ### Les résultats des tests statistiques des différences de teneur en carbone organique
 
 ```{r,highlight=TRUE,eval=FALSE}
+
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
 period <- c("12","13","14","15","23","24","25","34","35","45")
 schema <- "bdat"
+stats <- c("med","dqua")
+
+Nom_champs <- read.csv(paste(repmetadonnees,"Convention_nommage_bdat.csv",sep=""),sep=";",colClasses = "character")
+type <- c("numeric","numeric","text")
 
 for(i in period){
-  for(v in c("diff","diffmedian")){
-  
-  var_variable <- paste(v,i,sep="")
-  
-  tableBDAT <- paste("bdat_canton_corgequiv_comp_",i,sep="")
-  
-  sqlQuery(loc,paste("alter table ",table_dm,"
-                      drop column if exists ",var_variable,sep=""))
-  
-  if(v=="diff"){
-  sqlQuery(loc,paste("alter table ",table_dm,"
-                      add column ",var_variable," text;
-                      update ",table_dm,"
-                      SET ",var_variable," = s1.diff from(
-                      select diff,canton
-                      from ",schema,".",tableBDAT,") as s1
-                      where ",table_dm,".code_canton=s1.canton::text",sep=""))
+  cpt <- 0
+  for(v in c("diff_XX_","diff_XX_pourcent_","evol_XX_")){
+    cpt <- cpt + 1
+    type_column <- type[cpt]
+    for(b in stats){
+
+    diffstats <- gsub2("XX",b,v)
+    var_variable <- paste(diffstats,i,sep="")
     
-      # Ajout d'un commentaire sur la nouvelle colonne créée
-      print(sqlQuery(loc,paste("
-      COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Résultat du test de significacité de la différence de la médiane des teneurs en carbone organique au niveau du canton.\';",sep="")))
-    
-  }else{
+    tableBDAT <- paste("corgox_",b,"_",i,"_canton",sep="")
+
     sqlQuery(loc,paste("alter table ",table_dm,"
-                      add column ",var_variable," numeric;
+                        drop column if exists ",var_variable,sep=""))
+  
+    Commentaire <- Nom_champs[Nom_champs$Type %in% "Différence",]
+    
+    Commentaire$Nom_colonne <- gsub2("XX",i,Commentaire$Nom_colonne)
+
+    Commentairestats <- paste(Commentaire[Commentaire$Nom_colonne %in% var_variable,"Description"],i,sep=" ")
+
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                      add column ",var_variable," ",type_column,";
                       update ",table_dm,"
                       SET ",var_variable," = s1.",var_variable," from(
                       select ",var_variable,",canton
@@ -167,39 +177,11 @@ for(i in period){
     
       # Ajout d'un commentaire sur la nouvelle colonne créée
       print(sqlQuery(loc,paste("
-      COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'Pourcentage d évolution de la médiane des teneurs en carbone organique par canton ((medA-medB)/medB))*100 avec B une période antérieure à A.\';",sep="")))
+      COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'",Commentairestats,".\';",sep="")))
     }
   }
 }
 ```
-A la suite de cette intégration, les différences relatives entre les différentes périodes sont calculées selont la formule suivante : ((period2-period1])/period1)*100
-
-```{r,highlight=TRUE,eval=FALSE}
-## En cours (06/04/17) ## Voir avec le travail un peu plus bas similaire. Attendre les résultats envoyés par Laetitia. Revoir l'organisation de ces données.
-
-table_dm <- "dm_vecteurs.canton" 
-period <- c("12","13","14","15","23","24","25","34","35","45")
-schema <- "bdat"
-
-nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""),sep=",",colClasses = "character")
-
-for(i in period){
-  diffname <- paste("reladiff",x,sep="")
-  period1 <- paste(coname,nomdiff[nomdiff$Code %in% x,"Periode1"],sep="")
-  period2 <- paste(coname,nomdiff[nomdiff$Code %in% x,"Periode2"],sep="")
-  dcast.bdat[diffname] <- ((dcast.bdat[,period2]-dcast.bdat[,period1])/dcast.bdat[,period1])*100
-}
-
-```
-
-
-
-
-
-
-
-
-
 
 ## Intégration des analyses par type de détermination (teneurs + effectifs)
 
@@ -251,7 +233,7 @@ for(m in methodo){
   }
 }
 ```
-### Intégrations des effefifs par type de méthode
+### Intégrations des effectifs par type de méthode
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
@@ -265,7 +247,7 @@ cpt <- 0
 for(m in methodo){
   cpt <- cpt + 1
   for(i in period){
-    var_variable <- paste("eff_",m,i,sep="")
+    var_variable <- paste("eff_",m,"_",i,sep="")
     tableBDAT <- paste("bdat_canton_",m,"_",i,sep="")
 
     sqlQuery(loc,paste("alter table ",table_dm,"
@@ -372,41 +354,6 @@ periodoccup <- c("1970","1979","1988","2000","2010")
 id_class <- apply(expand.grid(variaoccup,periodoccup),1, function(x){paste("classe_",x[1],x[2],sep="")})
 id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean","mat11",id_class) #Nom des identifiants
 
-
-# Boucle pour séparer l'année du nom de la variable étudiée
-
-cpt <- 0
-for(i in varia){
-
-## En cours ##
-
-
-
-
-
-
-## En cours ##
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ```
 ## Intégration des données texturales
 
@@ -489,188 +436,9 @@ for(i in vpedo){
   }  
 ```
 
-# Création des tables de travail au format "long" 
-
-## Intégration des teneurs en carbone organique
-
-Les données de la BDAT sont ré-organisées pour faciliter les traitements statistiques et la production de graphiques. La fonction `melt` est utilisée pour transformer les données d'un format "large" à un format "long". Deux tables sont créées : 
-
-- `dm_traitements.melted.bdat` : table des valeurs des médianes teneurs en carbone organique
-- `dm_traitements.melted_bdatdiff` : table des valeurs de différences des teneurs en carbone organique entre plusieurs périodes.
-
-**Important :** La création de ces tables nécessite le lancement de plusieurs scripts au préalable : `FS_bdd_brute.Rmd`,`FS_bdd_elab_climat.Rmd`,`FS_bdd_elab_ra.Rmd` et `FS_bdd_elab_clc.Rmd`.
-
-```{r,highlight=TRUE,eval=FALSE}
-# Paramètres
-table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
-# Lecture de la table dm_vecteurs.canton
-mapcanton <- sqlQuery(loc,paste("select * from ",table_dm,sep=""))
-
-varia_eff <- c("eff_coox","eff_corgox","eff_corgco") # Variable à analyser test
-variaCO <- c("corgox","corgco")
-stats <- c("pdec","pqua","dqua","ddec")
-varia_stats <- apply(expand.grid(variaCO,stats),1, function(x){paste(x[1],"_",x[2],sep="")})
-varia_stats <- c(varia_stats,"corg_pdecequiv","corg_pquaequiv","corg_medequiv","corg_dquaequiv","corg_ddecequiv")
-varia <- c(varia_stats,varia_eff,variaCO)
- 
-variaoccup <- c("p_sth","p_sfp","p_prairie","p_cop","p_c")
-#id_class <- apply(expand.grid(varia,period), 1, paste, collapse="")
-periodoccup <- c("1970","1979","1988","2000","2010")
-id_class <- apply(expand.grid(variaoccup,periodoccup),1, function(x){paste("classe_",x[1],x[2],sep="")})
-id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean","mat11","classe_sabt_med","classe_argi_med",id_class) #Nom des identifiants
-
-
-# Boucle pour séparer l'année du nom de la variable étudiée
-
-cpt <- 0
-for(i in varia){
-  if(grepl("corgco",i)==TRUE){
-    period <- c("9599","0004","0509","1014")
-  }else{period <- c("9094","9599","0004","0509","1014")}
-
-  cpt <- cpt + 1
-  variaperiod <- paste(i,period,sep="")  
-  
-  stats.canton <- mapcanton[,c(id,variaperiod)]
-
-  # Modification de la structure de la table
-  stats.canton <- melt(data=stats.canton,id.vars=id)
-  
-  # Extraction de l'année et renommage des colonnes
-  stats.canton[,"variable"] <- as.character(unlist(regmatches(stats.canton[,"variable"],gregexpr('[0-9]+.[0-9]+',stats.canton[,"variable"]))))
-  colnames(stats.canton)[(length(id)+1):(length(id)+2)] <- c("annees",i)
-    
-  if(cpt==1){
-    # Construction de la première table
-    melt.canton <- stats.canton
-  }else{
-    # Ajout à chaque itération de la variable (i)
-    melt.canton <- merge(melt.canton,stats.canton, by.x=c(id,"annees"), by.y=c(id,"annees"),all.x=TRUE,all.y=TRUE)
-  }
-}
-
-# Création finale de la table
-melted.bdat <- melt(data=melt.canton,id.vars=c(id,"annees"))
-melted.bdat$annees <- as.character(melted.bdat$annees)
-melted.bdat$typo_clim <- as.factor(melted.bdat$typo_clim)
-
-# Enregistrement dans le schema dm_traitements  
-tablename <- paste("dm_traitements.","melted_bdat",sep="")
-sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
-sqlSave(loc,melted.bdat,tablename=tablename)
-
-# Ajout de quelques commentaires
-print(sqlQuery(loc,paste("
-COMMENT ON COLUMN ",tablename,".value IS \'Statistiques des teneurs en carbone organique et les effectifs après ré-échantillonnage sur l\''ensemble des périodes et les différentes méthodes de mesure. med : median,pqua : 25% precentile,dqua : 75% precentile,pdec : 10% precentile,ddec : 90% precentile\';",sep="")))
-
-print(sqlQuery(loc,paste("
-COMMENT ON COLUMN ",tablename,".annees IS \'Périodes d\''analyse des teneurs en carbone organique.\';",sep="")))
-
-print(sqlQuery(loc,paste("
-COMMENT ON COLUMN ",tablename,".variable IS \'Type de méthode de mesure des teneurs en carbone organique et les effectifs (corgox:oxydation humide; corgco:combustion sèche; corg_medequiv:corgox+corgco; eff_corgox:effectif pour la méthode corgox; eff_corgco:effectif pour la méthode corgco; eff_coox:effectif pour les méthodes méthodes corgox+corgco.\';",sep="")))
-
-```
-
-## Intégration des résultats de l'évolution des teneurs en carbone organique dans une table au format long
-
-```{r,highlight=TRUE,eval=FALSE}
-# Paramètres
-table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
-varia <- c("diffmedian","diff","diff_corgox","diff") # Préfixe de la variable à intégrer (varia+period)
-variaoccup <- c("sth","sfp","prairie","c","mf","cop")
-periodra <- c("1970","1979","1988","2000","2010")
-# Classes d'occupation du sol
-id_class <- apply(expand.grid(variaoccup,periodra),1,function(x){paste("classe_p_",x[1],x[2],sep="")})
-
-## Variables associées aux changements d'occupation du sol
-
-p_variable <- c("sth","c","sfp","mf","prairie","cop")
-periodref_ra <- c("1988","2010","2000")#c("2010","2000","1988")
-period_ra <- c("1988","1979","2000")
-id_varclass <- apply(expand.grid(p_variable,period_ra,periodref_ra),1, function(x){paste("classe_var_",x[1],x[2],"_",x[3],sep="")})
-id_varclass <- id_varclass[1:(length(id_varclass)-length(variaoccup))] # Ici, on supprime les dernières combinaisons représentant une différence 2000-2000
-id_varclass <- id_varclass[(length(variaoccup)+1):length(id_varclass)] # Ici, on supprime les premières combinaisons représentant une différence 1988-1988
-#
-
-id_diff <- apply(expand.grid(p_variable,period_ra,periodref_ra),1, function(x){paste("diff_var_",x[1],x[2],"_",x[3],sep="")})
-id_diff <- id_diff[1:(length(id_diff)-length(variaoccup))]# Ici, on supprime les dernières combinaisons représentant une différence 2000-2000
-id_diff <- id_diff[(length(variaoccup)+1):length(id_diff)] # Ici, on supprime les premières combinaisons représentant une différence 1988-1988
-
-id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean","mat11","classe_sabt_med","classe_argi_med",id_class,id_diff,id_varclass)
-
-# Lecture de la table dm_vecteurs.canton
-mapcanton <- sqlQuery(loc,paste("select * from ",table_dm,sep=""))
-#mapcanton <- sqlQuery(loc,paste("select ",paste(id,collapse=","),",",paste(variaperiod,collapse=",")," from ",table_dm,sep=""))
-
-# Boucle pour séparer les périodes analysées du nom de la variable étudiée
-
-methodo <- c("","corgox")#,"corgco") 
-cpt <- 0
-for(m in methodo){
-  cpt <- cpt + 1
-  if(m=="corgco"){
-    period <- c("23","24","34","35","45")
-}else{
-  period <- c("12","13","14","15","23","24","25","34","35","45")
-}
-
-  if(m==""){
-    varia <- c("diffmedian","diff")
-    }else{
-      varia <- c(paste("diffmedian_",m,sep=""),paste("diff_",m,sep=""))
-  }
-  print(varia)
-
-  for(i in varia){
-    variaperiod <- paste(i,period,sep="")  
-    stats.canton <- mapcanton[,c(id,variaperiod)]
-
-    # Modification de la structure de la table
-    stats.canton <- melt(data=stats.canton,id.vars=id)
-
-    # Extraction de l'année et renommage des colonnes
-    stats.canton[,"variable"] <- as.character(unlist(regmatches(stats.canton[,"variable"],gregexpr('[0-9]+.',stats.canton[,"variable"]))))
-    colnames(stats.canton)[(length(id)+1):(length(id)+2)] <- c("period",i) #revoir la sélection de ces colonnes
-    
-    if(cpt==1){
-      # Construction de la première table
-      melt.canton <- stats.canton
-    }else{
-      # Ajout à chaque itération de la variable (i)
-      melt.canton <- merge(melt.canton,stats.canton, by.x=c(id,"period"), by.y=c(id,"period"),all.x=TRUE,all.y=TRUE)
-      
-    }
-  }
-}
-
-# Création finale de la table
-melted.bdatdiff <- melt.canton
-melted.bdatdiff$typo_clim <- as.factor(melted.bdatdiff$typo_clim)
-
-# Enregistrement dans le schéma dm_traitements
-tablename <- paste("dm_traitements.","melted_bdatdiff",sep="")
-sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
-sqlSave(loc,melted.bdatdiff,tablename=tablename)
-
-print(sqlQuery(loc,paste("
-COMMENT ON COLUMN ",tablename,".period IS \'Périodes comparées des teneurs en carbone organique.\';",sep="")))
-
-print(sqlQuery(loc,paste("
-COMMENT ON COLUMN ",tablename,".diffmedian IS \'Différences des teneurs en carbone organique entre deux périodes. Toutes méthodes de mesure confondues (corgox+corgco).\';",sep="")))
-
-print(sqlQuery(loc,paste("
-COMMENT ON COLUMN ",tablename,".diffmedian_corgox IS \'Différences des teneurs en carbone organique entre deux périodes. Méthode de mesure oxydation humide (corgox).\';",sep="")))
-
-print(sqlQuery(loc,paste("
-COMMENT ON COLUMN ",tablename,".diff IS \'Résultat du test statistique de différence des teneurs en carbone organique entre deux périodes (test de Wilcoxon). Toutes méthodes de mesure confondues (corgox+corgco).\';",sep="")))
-
-print(sqlQuery(loc,paste("
-COMMENT ON COLUMN ",tablename,".diff_corgox IS \'Résultat du test statistique de différence des teneurs en carbone organique entre deux périodes (test de Wilcoxon). Méthode de mesure oxydation humide (corgox).\';",sep="")))
-```
-
 # Création d'une table de travail de données complète
 
-Ici, la table `dm_vecteurs.canton` est dupliquée et filtrée pour un travail basé uniquement sur un nombre de canton ayant des analyses sur l'ensemble de période étudiée. Deux tables tables sont crées. Elles serviront de base pour la création de tables au format long.
+Ici, la table `dm_vecteurs.canton` est dupliquée et filtrée pour un travail basé uniquement sur un nombre de canton ayant des analyses sur l'ensemble des périodes étudiées. Deux tables tables sont créées. Elles serviront de base pour la création de tables au format long.
 
 - **canton_9014** pour toutes les périodes
 - **canton_9514** pour l'exclusion de la première période
@@ -683,136 +451,201 @@ sqlQuery(loc,"DROP TABLE IF EXISTS dm_vecteurs.canton_9014")
 sqlQuery(loc,"CREATE TABLE dm_vecteurs.canton_9014 as
 SELECT *
 FROM dm_vecteurs.canton
-where corgox9094 is not null and corgox9599 is not null and corgox0004 is not null
-and corgox0509 is not null and corgox1014 is not null
+where med_corgox_9094 is not null and med_corgox_9599 is not null and med_corgox_0004 is not null
+and med_corgox_0509 is not null and med_corgox_1014 is not null
 ")
 
 sqlQuery(loc,"DROP TABLE IF EXISTS dm_vecteurs.canton_9514")
 sqlQuery(loc,"CREATE TABLE dm_vecteurs.canton_9514 as
 SELECT *
 FROM dm_vecteurs.canton
-where corgox9599 is not null and corgox0004 is not null
-and corgox0509 is not null and corgox1014 is not null
+where med_corgox_9599 is not null and med_corgox_0004 is not null
+and med_corgox_0509 is not null and med_corgox_1014 is not null
 ")
-
 ```
 
-## Format long
+# Création des tables de travail au format "long" 
 
-Pour le canton_9014
+## Format long pour les teneurs en carbone organique (dm_traitement.melted.bdatXXXX)
 
-```{r,highlight=TRUE,eval=FALSE}
-# Paramètres
-table_dm <- "dm_vecteurs.canton_9014" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+Les données de la BDAT sont ré-organisées pour faciliter les traitements statistiques et la production de graphiques. La fonction `melt` est utilisée pour transformer les données d'un format "large" à un format "long". Deux tables sont créées : 
 
-varia_eff <- "eff_corgox" # Variable à analyser test
+- `dm_traitements.melted.bdat` : table des valeurs des médianes teneurs en carbone organique
+- `dm_traitements.melted_bdatdiff` : table des valeurs de différences des teneurs en carbone organique entre plusieurs périodes.
+
+**Important :** La création de ces tables nécessite le lancement de plusieurs scripts au préalable : `FS_bdd_brute.Rmd`,`FS_bdd_elab_climat.Rmd`,`FS_bdd_elab_ra.Rmd` et `FS_bdd_elab_clc.Rmd`.
+
+Ci-dessous, la création du nom des variables à rajouter dans les tables au format long
+
+```{r,eval=FALSE,echo=FALSE}
 variaCO <- "corgox"
-stats <- c("pdec","pqua","dqua","ddec")
-varia_stats <- apply(expand.grid(variaCO,stats),1, function(x){paste(x[1],"_",x[2],sep="")})
-varia <- c(varia_stats,varia_eff,variaCO)
-
+stats <- c("med","dqua","eff")
+varia <- apply(expand.grid(variaCO,stats),1, function(x){paste(x[2],"_",x[1],sep="")})
 period <- c("9094","9599","0004","0509","1014")
+
 variaoccup <- c("p_sth","p_sfp","p_prairie","p_cop","p_c")
-#id_class <- apply(expand.grid(varia,period), 1, paste, collapse="")
 periodoccup <- c("1970","1979","1988","2000","2010")
 id_class <- apply(expand.grid(variaoccup,periodoccup),1, function(x){paste("classe_",x[1],x[2],sep="")})
-id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean","mat11","classe_sabt_med","classe_argi_med",id_class) #Nom des identifiants
 
-# Lecture de la table dm_vecteurs.canton
-mapcanton <- sqlQuery(loc,paste("select * from ",table_dm,sep=""))
-
-# Boucle pour séparer l'année du nom de la variable étudiée
-cpt <- 0
-for(i in varia){
-  cpt <- cpt + 1
-  variaperiod <- paste(i,period,sep="")  
-  
-  stats.canton <- mapcanton[,c(id,variaperiod)]
-
-  # Modification de la structure de la table
-  stats.canton <- melt(data=stats.canton,id.vars=id)
-  
-  # Extraction de l'année et renommage des colonnes
-  stats.canton[,"variable"] <- as.character(unlist(regmatches(stats.canton[,"variable"],gregexpr('[0-9]+.[0-9]+',stats.canton[,"variable"]))))
-  colnames(stats.canton)[(length(id)+1):(length(id)+2)] <- c("annees",i)
-    
-  if(cpt==1){
-    # Construction de la première table
-    melt.canton <- stats.canton
-  }else{
-    # Ajout à chaque itération de la variable (i)
-    melt.canton <- merge(melt.canton,stats.canton, by.x=c(id,"annees"), by.y=c(id,"annees"),all.x=TRUE,all.y=TRUE)
-  }
-}
-
-# Création finale de la table
-melted.bdat <- melt(data=melt.canton,id.vars=c(id,"annees"))
-melted.bdat$annees <- as.character(melted.bdat$annees)
-melted.bdat$code_canton <- as.character(melted.bdat$code_canton)
-melted.bdat$typo_clim <- as.factor(melted.bdat$typo_clim)
-
-# Enregistrement dans le schema dm_traitements  
-tablename <- paste("dm_traitements.","melted_bdat_9014",sep="")
-sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
-sqlSave(loc,melted.bdat,tablename=tablename)
+# Nom des identifiants
+id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean","mat11","classe_sabt_med","classe_argi_med",id_class)
 ```
 
-Pour canton_9504
- 
 ```{r,highlight=TRUE,eval=FALSE}
-# Paramètres
-table_dm <- "dm_vecteurs.canton_9514" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
-
-varia_eff <- "eff_corgox" # Variable à analyser test
-variaCO <- "corgox"
-stats <- c("pdec","pqua","dqua","ddec")
-varia_stats <- apply(expand.grid(variaCO,stats),1, function(x){paste(x[1],"_",x[2],sep="")})
-varia <- c(varia_stats,varia_eff,variaCO)
-
-period <- c("9599","0004","0509","1014")
-variaoccup <- c("p_sth","p_sfp","p_prairie","p_cop","p_c")
-#id_class <- apply(expand.grid(varia,period), 1, paste, collapse="")
-periodoccup <- c("1970","1979","1988","2000","2010")
-id_class <- apply(expand.grid(variaoccup,periodoccup),1, function(x){paste("classe_",x[1],x[2],sep="")})
-id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean","mat11","classe_sabt_med","classe_argi_med",id_class) #Nom des identifiants
-
-# Lecture de la table dm_vecteurs.canton
-mapcanton <- sqlQuery(loc,paste("select * from ",table_dm,sep=""))
-
-# Boucle pour séparer l'année du nom de la variable étudiée
+tables <- c("","_9014","_9514")
 cpt <- 0
-for(i in varia){
+for(tt in tables){
   cpt <- cpt + 1
-  variaperiod <- paste(i,period,sep="")  
-  
-  stats.canton <- mapcanton[,c(id,variaperiod)]
+  if(cpt==3){period <-c("9599","0004","0509","1014")}else{}
 
-  # Modification de la structure de la table
-  stats.canton <- melt(data=stats.canton,id.vars=id)
+  # voir pour changer période
+  # Paramètres
+  table_dm <- paste("dm_vecteurs.canton",tt,sep="") # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+
+  # Lecture de la table dm_vecteurs.canton
+  mapcanton <- sqlQuery(loc,paste("select * from ",table_dm,sep=""))
+
+  # Boucle pour séparer l'année du nom de la variable étudiée
+  cpt <- 0
+  for(i in varia){
+    cpt <- cpt + 1
+    variaperiod <- paste(i,"_",period,sep="")  
+    stats.canton <- mapcanton[,c(id,variaperiod)]
+
+    # Modification de la structure de la table
+    stats.canton <- melt(data=stats.canton,id.vars=id)
   
-  # Extraction de l'année et renommage des colonnes
-  stats.canton[,"variable"] <- as.character(unlist(regmatches(stats.canton[,"variable"],gregexpr('[0-9]+.[0-9]+',stats.canton[,"variable"]))))
-  colnames(stats.canton)[(length(id)+1):(length(id)+2)] <- c("annees",i)
+    # Extraction de l'année et renommage des colonnes
+    stats.canton[,"variable"] <- as.character(unlist(regmatches(stats.canton[,"variable"],gregexpr('[0-9]+.[0-9]+',stats.canton[,"variable"]))))
+    colnames(stats.canton)[(length(id)+1):(length(id)+2)] <- c("annees",i)
     
-  if(cpt==1){
-    # Construction de la première table
-    melt.canton <- stats.canton
-  }else{
-    # Ajout à chaque itération de la variable (i)
-    melt.canton <- merge(melt.canton,stats.canton, by.x=c(id,"annees"), by.y=c(id,"annees"),all.x=TRUE,all.y=TRUE)
+    if(cpt==1){
+      # Construction de la première table
+      melt.canton <- stats.canton
+    }else{
+      # Ajout à chaque itération de la variable (i)
+      melt.canton <- merge(melt.canton,stats.canton, by.x=c(id,"annees"), by.y=c(id,"annees"),all.x=TRUE,all.y=TRUE)
+    }
   }
+
+  # Création finale de la table
+  melted.bdat <- melt(data=melt.canton,id.vars=c(id,"annees"))
+  melted.bdat$annees <- as.character(melted.bdat$annees)
+  melted.bdat$typo_clim <- as.factor(melted.bdat$typo_clim)
+
+  # Enregistrement dans le schema dm_traitements  
+  tablename <- paste("dm_traitements.","melted_bdat",tt,sep="")
+  sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
+  sqlSave(loc,melted.bdat,tablename=tablename)
+
+  # Ajout de quelques commentaires
+  #print(sqlQuery(loc,paste("
+  #COMMENT ON COLUMN ",tablename,".value IS \'Statistiques des teneurs en carbone organique et les effectifs après ré-échantillonnage sur l\''ensemble des périodes et les différentes méthodes de mesure. med : median,pqua : 25% precentile,dqua : 75% precentile,pdec : 10% precentile,ddec : 90% precentile\';",sep="")))
+
+#  print(sqlQuery(loc,paste("
+ # COMMENT ON COLUMN ",tablename,".annees IS \'Périodes d\''analyse des teneurs en carbone organique.\';",sep="")))
+
+  #print(sqlQuery(loc,paste("
+  #COMMENT ON COLUMN ",tablename,".variable IS \'Type de méthode de mesure des teneurs en carbone organique et les effectifs (corgox:oxydation humide; corgco:combustion sèche; corg_medequiv:corgox+corgco; eff_corgox:effectif pour la méthode corgox; eff_corgco:effectif pour la méthode corgco; eff_coox:effectif pour les méthodes méthodes corgox+corgco.\';",sep="")))
 }
-
-# Création finale de la table
-melted.bdat <- melt(data=melt.canton,id.vars=c(id,"annees"))
-melted.bdat$annees <- as.character(melted.bdat$annees)
-melted.bdat$code_canton <- as.character(melted.bdat$code_canton)
-melted.bdat$typo_clim <- as.factor(melted.bdat$typo_clim)
-
-# Enregistrement dans le schema dm_traitements  
-tablename <- paste("dm_traitements.","melted_bdat_9514",sep="")
-sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
-sqlSave(loc,melted.bdat,tablename=tablename)
 ```
 
+## Intégration des résultats de l'évolution des teneurs en carbone organique dans une table au format long
+
+
+### Création des variables à intégrer dans les tables au format long
+
+```{r,eval=FALSE,echo=FALSE}
+variaoccup <- c("sth","sfp","prairie","c","mf","cop")
+periodra <- c("1970","1979","1988","2000","2010")
+# Classes d'occupation du sol
+id_class <- apply(expand.grid(variaoccup,periodra),1,function(x){paste("classe_p_",x[1],x[2],sep="")})
+
+## Variables associées aux changements d'occupation du sol
+p_variable <- c("sth","c","sfp","mf","prairie","cop")
+periodref_ra <- c("1988","2010","2000")
+period_ra <- c("1988","1979","2000")
+id_varclass <- apply(expand.grid(p_variable,period_ra,periodref_ra),1, function(x){paste("classe_var_",x[1],x[2],"_",x[3],sep="")})
+id_varclass <- id_varclass[1:(length(id_varclass)-length(variaoccup))] # Ici, on supprime les dernières combinaisons représentant une différence 2000-2000
+id_varclass <- id_varclass[(length(variaoccup)+1):length(id_varclass)] # Ici, on supprime les premières combinaisons représentant une différence 1988-1988
+#
+id_diff <- apply(expand.grid(p_variable,period_ra,periodref_ra),1, function(x){paste("diff_var_",x[1],x[2],"_",x[3],sep="")})
+id_diff <- id_diff[1:(length(id_diff)-length(variaoccup))]# Ici, on supprime les dernières combinaisons représentant une différence 2000-2000
+id_diff <- id_diff[(length(variaoccup)+1):length(id_diff)] # Ici, on supprime les premières combinaisons représentant une différence 1988-1988
+
+id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean","mat11","classe_sabt_med","classe_argi_med",id_class,id_diff,id_varclass)
+```
+
+
+```{r,highlight=TRUE,eval=FALSE}
+tables <- c("","_9014","_9514")
+cpt <- 0
+for(tt in tables){
+  cpt <- cpt + 1
+    if(cpt==3){period <-c("9599","0004","0509","1014")}else{}
+  # Paramètres
+  table_dm <- paste("dm_vecteurs.canton",tt,sep="") # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+
+  # Lecture de la table dm_vecteurs.canton
+  mapcanton <- sqlQuery(loc,paste("select * from ",table_dm,sep=""))
+
+  # Boucle pour séparer les périodes analysées du nom de la variable étudiée
+  methodo <- "corgox"
+  stats <- c("med","dqua")
+  period <- c("12","13","14","15","23","24","25","34","35","45")
+
+  cpt <- 0
+  for(m in methodo){  
+    for(v in c("diff_XX_","diff_XX_pourcent_","evol_XX_")){    
+      for(s in stats){
+        cpt <- cpt + 1
+        diffstats <- gsub2("XX",s,v)
+        varia <- paste(diffstats,period,sep="")
+
+        stats.canton <- mapcanton[,c(id,varia)]
+
+        # Modification de la structure de la table
+        stats.canton <- melt(data=stats.canton,id.vars=id)
+
+        # Extraction de l'année et renommage des colonnes
+        stats.canton[,"variable"] <- as.character(unlist(regmatches(stats.canton[,"variable"],gregexpr('[0-9]+.',stats.canton[,"variable"]))))
+        colnames(stats.canton)[(length(id)+1):(length(id)+2)] <- c("period",diffstats) 
+    
+        if(cpt==1){
+          # Construction de la première table
+          melt.canton <- stats.canton
+        }else{
+          # Ajout à chaque itération de la variable (i)
+          melt.canton <- merge(melt.canton,stats.canton, by.x=c(id,"period"), by.y=c(id,"period"),all.x=TRUE,all.y=TRUE)
+        }
+      }
+    }
+  }
+
+  # Création finale de la table
+  melted.bdatdiff <- melt.canton
+  melted.bdatdiff$typo_clim <- as.factor(melted.bdatdiff$typo_clim)
+
+  # Enregistrement dans le schéma dm_traitements
+  tablename <- paste("dm_traitements.","melted_bdatdiff",tt,sep="")
+  sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
+  sqlSave(loc,melted.bdatdiff,tablename=tablename)
+
+  #print(sqlQuery(loc,paste("
+  #COMMENT ON COLUMN ",tablename,".period IS \'Périodes comparées des teneurs en carbone organique.\';",sep="")))
+
+#  print(sqlQuery(loc,paste("
+ # COMMENT ON COLUMN ",tablename,".diffmedian IS \'Différences des teneurs en carbone organique entre deux périodes. Toutes méthodes de mesure confondues (corgox+corgco).\';",sep="")))
+
+#  print(sqlQuery(loc,paste("
+  #COMMENT ON COLUMN ",tablename,".diffmedian_corgox IS \'Différences des teneurs en carbone organique entre deux périodes. Méthode de mesure oxydation humide (corgox).\';",sep="")))
+
+  #print(sqlQuery(loc,paste("
+  #COMMENT ON COLUMN ",tablename,".diff IS \'Résultat du test statistique de différence des teneurs en carbone organique entre deux périodes (test de Wilcoxon). Toutes méthodes de mesure confondues (corgox+corgco).\';",sep="")))
+
+  #print(sqlQuery(loc,paste("
+  #COMMENT ON COLUMN ",tablename,".diff_corgox IS \'Résultat du test statistique de différence des teneurs en carbone organique entre deux périodes (test de Wilcoxon). Méthode de mesure oxydation humide (corgox).\';",sep="")))
+}
+
+```
 

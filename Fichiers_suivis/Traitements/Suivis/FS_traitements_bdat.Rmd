@@ -81,24 +81,22 @@ raw_mo_url <- "https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Mo
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE}
 # Jeu de données sur 4 périodes de temps
 bdat9514 <- sqlQuery(loc,paste("select * from dm_vecteurs.canton_9514",sep=""))
-
 melted.9514 <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdat_9514"),stringsAsFactors=TRUE,as.is=TRUE)
 melted.9514$value <- as.numeric(melted.9514$value)
 melted.9514 <- melted.9514[complete.cases(melted.9514$value),]
 melted.9514$annees <- factor(melted.9514$annees,levels=c("9599","0004","0509","1014"))
 
 # Sélection des teneurs mesurées avec la méthode OX (médiane)
-melted.9514 <- melted.9514[melted.9514$variable %in% c("corgox","corgox_ddec","corgox_dqua","corgox_pdec","corgox_pqua"),]#,eff_corgox 
-# Changement du nom des tables pour l'exploitation rapide dans le fichier de suivi
 dcast.bdat <- bdat9514
 melted.bdat <- melted.9514 
 
-# Sélection uniquement des médianes et du 90 centile
-melted.bdat <- melted.bdat[melted.bdat$variable %in% c("corgox","corgox_ddec"),]
-melted.bdat$variable <- ordered(melted.bdat$variable, levels = c("corgox","corgox_ddec"))
+# Sélection uniquement des médianes et du 3ème quartile
+melted.bdat <- melted.bdat[melted.bdat$variable %in% c("med_corgox","dqua_corgox"),]
 levels(melted.bdat$variable) <- c("Médiane","75% centile")
-#melted.bdat$variable <- ordered(melted.bdat$variable, levels = c("corgox_pdec","corgox_pqua","corgox","corgox_dqua","corgox_ddec"))
-#levels(melted.bdat$variable) <- c("10% centile","25% centile","Médiane","75% centile","90% centile")
+
+# En attendant les corrections de Laetitia, on travaille sur les médianes
+melted.bdat <- melted.bdat[melted.bdat$variable %in% "med_corgox",]
+
 ```
 
 # Objectifs
@@ -119,12 +117,12 @@ La cartographie du nombre d'analyse de la BDAT par canton pour les teneurs en CO
 
 Les variabilité sont également marquées dans le temps. La période 9094 ne comporte pas d'analyse dans plusieurs régions comme la Normandie. Les autres périodes présentent une distribution des analyses plus stables.
 
-> **Compte-tenu du manque de donnée observée dans la première période 9094, celle-ci ne sera pas prise en compte dans les analyses des teneurs en CO à l'échelle de la France.** 
+> **Compte-tenu du manque de données observée dans la première période 9094, celle-ci ne sera pas prise en compte dans les analyses des teneurs en CO à l'échelle de la France.** 
 
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE}
 # Paramètres #################
 tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
-variable <- "eff_corgox  "
+variable <- "eff_corgox_"
 period <- c("9094","9599","0004","0509","1014") #
 variablecarto <- paste(variable,period,sep="")#variables à cartographier
 nclasse <- 5 
@@ -152,15 +150,16 @@ La cartographie montre une distribution spatiale organisée et globalement simil
 
 tablecarto <- "dm_vecteurs.canton_9514" #Nom de la table utilisée pour la cartographie (table postgis)
 period <- c("9599","0004","0509","1014") #
-stats <- c("pdec","pqua","med","dqua","ddec")
+stats <- c("med","dqua")
+
 for(i in stats){
-  if(i=="med"){variablecarto <- paste("corgox",period,sep="")}else{variablecarto <- paste("corgox_",i,period,sep="")}
+  variablecarto <- paste(i,"_corgox_",period,sep="")
   #variables à cartographier
   nclasse <- 5 
   style_classe <- "quantile"#Nombre de classes de valeurs pour la cartographie
   couleur <- brewer.pal(nclasse,"YlOrRd") #Nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
   l_variable <- "Teneur en carbone organique (g/kg)" #label de la variable
-  nomfichier <- paste("corgox_period_",i,sep="") #Nom du fichier
+  nomfichier <- paste("corgox_period_2",i,sep="") #Nom du fichier
   titleperiod <- c("1995-1999","2000-2004","2005-2009","2010-2014")
   title <- paste(i,"_",titleperiod,sep="")
   
@@ -174,92 +173,6 @@ fichiers <- paste(repsortie,"corgox_period_fr.png",sep="")
 cat(paste("![](",fichiers,")",sep=""))
 ```
 
-## Préparation des données (en cours, test et questionnement sur l'intérêt)
-
-```{r echo=FALSE,eval=FALSE,warning=FALSE,error=FALSE}
-dcast.bdat
-
-melted.test <- melted.bdat[melted.bdat$variable %in% "Médiane",]
-melted.test$winsorize <- winsorize(melted.test[,"value"])
-melted.test$diff <- melted.test$winsorize-melted.test$value
-outliers_canton <- unique(as.character(melted.test[melted.test$diff!=0,"code_canton"]))
-
-melted.test <- melted.bdat[melted.bdat$variable %in% "Médiane",]
-# Dans l'idéal, il serait intéressant d'identifier les zones équettées...Quid de la Bretagne, Haut de France ?
-
-
-paste(pbl,collapse="|")
-
-
-
-
-# Revoir la discussion sur les outliers (https://www.researchgate.net/post/Should_outliers_be_removed_before_or_after_data_transformation)
-# Sinon, on peut supprimer les outliers et regarder l'effet sur la dynamique globale dans l'évolution des teneurs en CO.? et comparer avec les valeurs initiales.?
-
-test <- outlier(test)apply(melted.test["value"],2, function(x) tapply(x, melted.test["annees"],outlier))
-
-
-
-melted.test$logvalue <- log(melted.test$value)
-shapirobdat <- apply(melted.test["logvalue"],2, function(x) tapply(x, melted.test["annees"],shapiro.test))
-# Avec ou sans le log, la distribution des valeurs n'est pas normale, autant conserver les vrais valeurs plutôt que les logs.
-
-
-
-
-
-
-
-## Load Pennsylvania Lung Cancer Data
-library(SpatialEpi)
-
-map <- dbReadSpatial(con, schemaname="dm_vecteurs", tablename="canton_9514", geomcol="geom")
-data <- map@data
-## Process geographical information and convert to grid
-geo <- coordinates(map)
-geo <- latlong2grid(geo)
-
-## Get aggregated counts of population and cases for each county
-population <- tapply(data$population,data$county,sum)
-cases <- tapply(data$cases,data$county,sum)
-
-data(pennLC)
-data <- pennLC$data
-## Process geographical information and convert to grid
-geo <- pennLC$geo[,2:3]
-geo <- latlong2grid(geo)
-
-## Get aggregated counts of population and cases for each county
-population <- tapply(data$population,data$county,sum)
-cases <- tapply(data$cases,data$county,sum)
-
-## Based on the 16 strata levels, computed expected numbers of disease
-n.strata <- 16
-expected.cases <- expected(data$population, data$cases, n.strata)
-
-## Set Parameters
-pop.upper.bound <- 0.5
-n.simulations <- 999
-alpha.level <- 0.05
-plot <- TRUE
-
-## Kulldorff using Binomial likelihoods
-binomial <- kulldorff(geo, cases, population, NULL, pop.upper.bound, n.simulations,
-alpha.level, plot)
-cluster <- binomial$most.likely.cluster$location.IDs.included
-## plot
-plot(pennLC$spatial.polygon,axes=TRUE)
-plot(pennLC$spatial.polygon[cluster],add=TRUE,col="red")
-title("Most Likely Cluster")
-## Kulldorff using Poisson likelihoods
-poisson <- kulldorff(geo, cases, population, expected.cases, pop.upper.bound,
-n.simulations, alpha.level, plot)
-cluster <- poisson$most.likely.cluster$location.IDs.included
-## plot
-plot(pennLC$spatial.polygon,axes=TRUE)
-plot(pennLC$spatial.polygon[cluster],add=TRUE,col="red")
-title("Most Likely Cluster Controlling for Strata")
-```
 ## Statistiques descriptives
 
 La figure `r fig$ref("cdf_fr",link=TRUE)` présente les courbes de fréquences cumulées des teneurs en carbone organique distribuées pour les 4 périodes identifiées. Les courbes de fréquences des 4 périodes présentent la même forme en "S" et s'individualisent juste avant le plateau, présentant une différence affectant les sols riches en teneurs organiques (entre 17 et 45 g/kg). Sur cette zone (figure à droite), la figure montre un décalage des courbes des périodes 2000-2004, 2005-2009 et 2010-2014 vers des valeurs plus faibles. Parmi ces 3 périodes, la période 2005-2009 est celle qui se décale le plus vers des teneurs plus faible tandis que la période 2010-2014 se rapproche des valeurs de 1995-1999, présentant ainsi une inversion de la tendance observée.

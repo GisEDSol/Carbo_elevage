@@ -1,0 +1,12 @@
+Nom_colonne;Type;Description
+diff_med_XX;Différence;Différence absolue de la médiane cantonale entre deux périodes
+diff_med_pourcent_XX;Différence;Différence relative (%) de la médiane cantonale entre deux périodes
+evol_med_XX;Différence;Résultats du test de wilcoxon de l’évolution de la médiane cantonale entre deux périodes
+evolution_med_XX;Différence;Résultats du test de wilcoxon de l’évolution de la médiane cantonale entre deux périodes
+diff_dqua_XX;Différence;Différence absolue du 3ème quartile cantonale entre deux périodes
+diff_dqua_pourcent_XX;Différence;Différence relative (%) du 3ème quartile cantonale entre deux périodes
+evol_dqua_XX;Différence;Résultats du test de wilcoxon de l’évolution du 3ème quartile cantonale entre deux périodes
+evolution_dqua_XX;Différence;Résultats du test de wilcoxon de l’évolution entre deux périodes
+med_corgox_XXXX;Période;Médiane cantonale pour la période 
+eff_XXXX;Période;Nombre d’analyse par canton pour la période
+dqua_corgox_XXXX;Période;3ème quartile cantonal pour la période

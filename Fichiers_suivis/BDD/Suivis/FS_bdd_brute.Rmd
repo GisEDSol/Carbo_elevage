@@ -154,7 +154,7 @@ Deux types de données sont intégrés dans la base de données. Dans un premier
 
 Le deuxième jeu de données intégré prend en compte ce biais par un ré-échantillonnage artificiel des analyses afin d'assurer le calcul de statistiques descriptives basées sur un même nombre d'effectif. Ces données sont exploitées pour analyser l'évolution des teneurs en carbone organique dans les sols. 
 
-### Importation des données de la BDAT non harmonisées 
+### Importation des données de la BDAT non ré-échantillonnées
 
 Ces données sont uniquement utilisées pour les analyses pédologiques où les variations temporelles sont minimes. Pour le moment, seules les analyses sur la texture du sol sont exploitées (taux d'argile notamment). Les données ont été téléchargées à cette [adresse](http://www.gissol.fr/wp-content/uploads/2015/04/bdat.zip).
 
@@ -199,7 +199,7 @@ La liste d'instructions suivante intègre les analyses des teneurs de la BDAT r�
 ```{r importBDAT_harmomethodes, eval=FALSE}
 nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""),sep=",",colClasses = "character")
 
-ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/mediane/",sep=""),pattern="\\.csv$"))
+ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/mediane2/",sep=""),pattern="\\.csv$"))
 
 for(i in ListBDAT){
     print(i)
@@ -210,7 +210,7 @@ for(i in ListBDAT){
     comp2 <- nomdiff[nomdiff$Code %in% comp,"Periode2"]
 
     # Lecture du fichier
-    txtBDAT <- read.csv(paste(repBDAT,"BDAT_harmonisee/mediane/",i,".csv",sep=""),sep=";",header=TRUE,colClasses=c("Canton"="character"),encoding = "latin1")
+    txtBDAT <- read.csv(paste(repBDAT,"BDAT_harmonisee/mediane2/",i,".csv",sep=""),sep=";",header=TRUE,colClasses=c("Canton"="character"),encoding = "latin1")
 
     # Intégration dans la bdd
 
@@ -230,7 +230,7 @@ for(i in ListBDAT){
 ```{r importBDAT_harmomethodes, eval=FALSE}
 nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""),sep=",",colClasses = "character")
 
-ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/dquartile/",sep=""),pattern="\\.csv$"))
+ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/dquartile2/",sep=""),pattern="\\.csv$"))
 
   for(i in ListBDAT){
     print(i)
@@ -241,7 +241,7 @@ ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/dquartil
     comp2 <- nomdiff[nomdiff$Code %in% comp,"Periode2"]
 
     # Lecture du fichier
-    txtBDAT <- read.csv(paste(repBDAT,"BDAT_harmonisee/dquartile/",i,".csv",sep=""),sep=";",header=TRUE,colClasses=c("Canton"="character"),encoding = "latin1")
+    txtBDAT <- read.csv(paste(repBDAT,"BDAT_harmonisee/dquartile2/",i,".csv",sep=""),sep=";",header=TRUE,colClasses=c("Canton"="character"),encoding = "latin1")
 
     # Intégration dans la bdd
 
@@ -255,6 +255,7 @@ ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/dquartil
       COMMENT ON TABLE bdat.",i," IS \'",Comment,".\';",sep="")))
   }
 ```
+
 ## Les données de l'European Soil Data Centre (ESDAC)
 
 
