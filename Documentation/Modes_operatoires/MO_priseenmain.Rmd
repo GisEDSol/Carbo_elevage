@@ -1,7 +1,7 @@
 ---
 title: "Mode opératoire pour prendre en main le projet Carbo_elevage"
 author: "Jean-Baptiste Paroissien"
-date: "06/03/2017"
+date: "22/05/2017"
 output:
   html_document:
     toc: yes
@@ -39,7 +39,7 @@ L'ensemble des scripts développés dans le projet est développé en `R+markdow
 
 L'utilisation de ce type de langage permet de bien documenter les scripts et d'assurer la reproductibilité des différents scripts. Ainsi, la création de la base de données ainsi que l'ensemble des traitements associés (figures, résultats statistiques, cartographie) sont **reproductibles**.
 
-## L'organisation
+## L'organisation et convention de nommage des fichiers
 
 L'organisation des fichiers suit la chaine de traitement générale présentée dans la figure ci-dessous (ou en dynamique à cette [adresse](https://rawgit.com/Rosalien/GISEDSol/master/Documentation/Modes_operatoires/Figures/workflow.html)).
 
@@ -51,7 +51,7 @@ Ce schéma décrit l'organisation générale des scripts et leur lien avec la ba
 - Plusieurs scripts exploitent ces tables brutes pour générer des indicateurs à l'échelle du canton. Ils portent le nom de la donnée manipulée. L'ensemble de ces scripts permet d'alimenter les tables de travail appelé data_mart (préfixe `dm`),
 - Ces tables de travail sont exploitées pour analyser les teneurs et les évolutions des teneurs en carbone organique. L'analyse de ces données a lieu dans les scripts portant le nom du traitement réalisé.
 
-Pour faciliter la navigation dans l'arborescence et le contenu des fichiers, le nom des scripts (type .Rmd) est nommé selon la règle suivante :
+Pour faciliter la navigation dans l'arborescence et le contenu des fichiers, le nom des scripts (type .Rmd) suit la convention de nommage suivante :
 
 - Répertoire Mode_opératoire : préfixe `MO_`
 - Répertoire Fonctions : préfixe `F_`
@@ -124,7 +124,7 @@ L'organisation du dépôt est décrit dans le fichier [Readme.md](https://github
 │   └── Readme.md
 └── Readme.md
 ```
-**Important :** pour faciliter la navigation dans l'arborescence du projet, plusieurs fichier `Readme.md` sont présents, il est important de les maintenir à jour.
+**Important :** pour faciliter la navigation dans l'arborescence du projet, plusieurs fichier appelés `Readme.md` décrivent le contenu de chacun des répertoires et des fichiers présents. **Il est important de maintenir à jour ces fichiers.**
 
 # Etape 2 : Importation de la base de données
 
@@ -143,7 +143,7 @@ Deux formats de système de gestion de base de données sont proposées :
 
 *Pour une création de base de données sous windows, vous pouvez consulter ce [mode opératoire](http://www.supinfo.com/articles/single/977-creer-une-base-donnees-avec-postgresql-windows)*
 
-L'imporation de la base de données sous le format PostgreSQL/PostGIS nécessite la création d'un serveur dédié. Celui-ci peut être créé en local ou être déposé sur un serveur à distance.
+L'importation de la base de données sous le format PostgreSQL/PostGIS nécessite la création d'un serveur dédié. Celui-ci peut être créé en local ou être déposé sur un serveur à distance.
 Les commandes suivantes permettent d'installer un serveur postgreSQL et de le configurer pour importer la base de données :
 
 - Copier/coller ces commandes pour l'installation des paquets postgreSQL/postGIS, du logiciel pgadmin3 ainsi que des librairies ODBC :

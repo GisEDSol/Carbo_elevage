@@ -34,12 +34,8 @@ bdat,bdat_cantonXXXX,Analyses cantonales de la BDAT provenant du datapaper
 bdat,bdat_depart_XXXX,Analyses départementales de la BDAT provenant du datapaper
 bdat,bdat_pra_XXXX,Analyses par petites régions agricoles de la BDAT provenant du datapaper
 bdat,bdat_region_XXXX,Analyses régionales de la BDAT provenant du datapaper
-bdat,bdat_canton_corgco_XXXX,Analyses après ré-échantillonnage des teneurs en carbone organique issues de la méthode combustion sèche (co)
-bdat,bdat_canton_corgco_compXX,Comparaison entre deux périodes de la médiane des teneurs en carbone organique  après ré-échantillonnage pour la méthode combustion sèche (co)
-bdat,bdat_canton_corgequivXXXX,Analyses après ré-échantillonnage des teneurs en carbone organique issues des deux méthodes (ox et co)
-bdat,bdat_canton_corgequiv_comp_XX,Comparaison entre deux périodes de la médiane des teneurs en carbone organique  après ré-échantillonnage pour les deux méthodes (ox et co)
-bdat,bdat_canton_corgox_XXXX,Analyses après ré-échantillonnage des teneurs en carbone organique issues de la méthode oxydation humide (ox)
-bdat,bdat_canton_corgox_comp_XX,Comparaison entre deux périodes de la médiane des teneurs en carbone organique  après ré-échantillonnage pour la méthode oxydation humide (ox)
+bdat,bdat.corgox_med_XX_canton,Statistiques de la médiane des médianes des teneurs en CO (corgox) des analyses de la BDAT ré-échantillonnées. Différence entre deux périodes
+bdat,bdat.corgox_dqua_XX_canton,Statistiques de la médiane du troisième quartile des teneurs en CO (corgox) des analyses de la BDAT ré-échantillonnées. Différence entre deux périodes
 climat,climatjoly,Base de données climatiques à l’échelle communale (Joly et al. 2010)
 dm_vecteurs,canton,Vecteur postgis du Geofla à l’échelle du canton (table de travail)
 dm_vecteurs,commune,Vecteur postgis du Geofla à l’échelle de la commune (uniquement données  administratives)

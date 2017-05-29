@@ -1,0 +1,14 @@
+Nom_colonne,Type,Unité,Description
+canton,Autre,Code,Code du canton
+departement,Autre,Code,Code département
+region,Autre,Nom,Nom de la région (avant 2016)
+dqua_XXXX,Période,g/kg,3ème quartile cantonal pour la période
+med_XXXX,Période,g/kg,Médiane cantonale pour la période 
+diff_dqua_XX,Différence,g/kg,Différence absolue du 3ème quartile cantonale entre deux périodes
+diff_dqua_pourcent_XX,Différence,%,Différence relative (%) du 3ème quartile cantonale entre deux périodes
+diff_med_XX,Différence,g/kg,Différence absolue de la médiane cantonale entre deux périodes
+diff_med_pourcent_XX,Différence,%,Différence relative (%) de la médiane cantonale entre deux périodes
+evolution_dqua_XX,Différence,A:augmentation ; D:diminution ; I :indéterminé ; EI : éléments insuffisants,Résultats du test de wilcoxon de l’évolution entre deux périodes pour le troisième quartile
+evolution_med_XX,Différence,A:augmentation ; D:diminution ; I :indéterminé ; EI : éléments insuffisants,Résultats du test de wilcoxon de l’évolution entre deux périodes pour la médiane
+eff_XXXX,Autre,Nombre,Nombre d’échantillon par canton (avant ré-échantillonnage)
+sau,Autre,ha,Surface agricole utile (en ha)

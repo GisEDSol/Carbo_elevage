@@ -39,7 +39,7 @@ Ici, les médianes et 3ème quartile des teneurs en CO (corgox) ré-échantillon
 
 # Lecture des tables de métadonnées
 nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""),sep=",",colClasses = "character")
-Nom_champs <- read.csv(paste(repmetadonnees,"Convention_nommage_bdat.csv",sep=""),sep=";",colClasses = "character")
+Nom_champs <- read.csv(paste(repmetadonnees,"Convention_nommage_dm_bdat.csv",sep=""),sep=",",colClasses = "character")
 
 # Paramètres
 table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
@@ -143,7 +143,7 @@ period <- c("12","13","14","15","23","24","25","34","35","45")
 schema <- "bdat"
 stats <- c("med","dqua")
 
-Nom_champs <- read.csv(paste(repmetadonnees,"Convention_nommage_bdat.csv",sep=""),sep=";",colClasses = "character")
+Nom_champs <- read.csv(paste(repmetadonnees,"Convention_nommage_dm_bdat.csv",sep=""),sep=",",colClasses = "character")
 type <- c("numeric","numeric","text")
 
 for(i in period){
@@ -596,11 +596,11 @@ for(tt in tables){
 
   cpt <- 0
   for(m in methodo){  
-    for(v in c("diff_XX_","diff_XX_pourcent_","evol_XX_")){    
+    for(v in c("diff_XX","diff_XX_pourcent","evol_XX")){    
       for(s in stats){
         cpt <- cpt + 1
         diffstats <- gsub2("XX",s,v)
-        varia <- paste(diffstats,period,sep="")
+        varia <- paste(diffstats,"_",period,sep="")
 
         stats.canton <- mapcanton[,c(id,varia)]
 

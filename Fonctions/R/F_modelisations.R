@@ -24,7 +24,8 @@ cv_datamining <- function(
                         trControl,
                         select,
                         yname,
-                        repsortie
+                        repsortie,
+                        type
                         )
 {
 
