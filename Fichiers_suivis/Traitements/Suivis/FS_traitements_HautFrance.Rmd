@@ -663,3 +663,49 @@ for(i in vNames){
 do.call(grid_arrange_shared_legend,c(p,list(nrow=1,ncol=1,position="bottom")))
 ```
 
+```{r,echo=FALSE,eval=FALSE}
+
+##19/06 : OKTEST SUR LE HAUT DE FRANCE ##
+
+reg_focus <- c("31","22")
+d <- dcast.bdat[(dcast.bdat$code_reg %in% reg_focus),]
+Rcovar <- c("var_mf1988_2010","p_mf1988_2010")
+vNames <- "diff_med_14"
+colors <- brewer.pal(4,"Set1")
+
+i <- "var_mf1988_2000"
+p <- ggplot(d, aes_string(i,vNames[1])) +
+                geom_point(aes(colour = factor(evol_med_14)),alpha = 0.8, size = 1) +
+                scale_color_manual(values=colors,name="Test statistique")+
+                scale_x_continuous(i)+scale_y_continuous("Différence teneur en carbone organique (14)")+
+                theme(plot.title = element_text(size = 14, face = "bold"), 
+                text = element_text(size = 12),
+                axis.title = element_text(face="bold"),
+                axis.text.x=element_text(size = 11))+ labs(title=i)+
+                annotate("text", x=0, y=5, label=lm_eqn(lm(d[,vNames[1]]~d[,i], d)), parse=TRUE)+
+                geom_smooth(method = "lm", se = FALSE,color="black") +
+                theme_perso()
+p  
+
+ggsave(p,file = paste(repsortie,"R2_hautfrance_evolC.png",sep=""), width = 10, height = 10)
+
+xlabel <- "Teneur en carbone organique initiale (g/kg)"
+ylabel <- "Différence des teneurs en carbone organique (14) (g/kg)"
+
+d <- d[complete.cases(d[,c("med_corgox_9094","evol_med_14","diff_med_14")]),]
+
+p <- ggplot(d, aes_string("med_corgox_9094","diff_med_14")) +
+            geom_point(aes(colour = factor(evol_med_14)),alpha = 0.8, size = 1) +
+            scale_color_manual(values=colors,name="Test statistique")+
+            scale_x_continuous(xlabel)+scale_y_continuous(ylabel)+
+            theme(plot.title = element_text(size = 14, face = "bold"), 
+            text = element_text(size = 12),
+            axis.title = element_text(face="bold"),
+            axis.text.x=element_text(size = 11))+ labs(title="")+
+            annotate("text", x=20, y=10, label=lm_eqn(lm(d[,"diff_med_14"]~d[,"med_corgox_9094"], d,na.rm=TRUE)), parse=TRUE)+
+            geom_smooth(method = "lm", se = FALSE,color="black")+theme_perso()
+p
+
+ggsave(p,file = paste(repsortie,"R2_Cinitiale_evolC.png",sep=""), width = 10, height = 10)
+
+```

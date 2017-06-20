@@ -1,7 +1,7 @@
 ---
 title: "Mode opératoire pour prendre en main le projet Carbo_elevage"
 author: "Jean-Baptiste Paroissien"
-date: "22/05/2017"
+date: "15/06/2017"
 output:
   html_document:
     toc: yes
@@ -24,7 +24,7 @@ Ce document présente la démarche et l'organisation du projet appelé par facil
 - La construction d'une base de données regroupant des données sols (essentiellement la BDAT) et les facteurs potentiellement explicatifs de la distribution spatiale et temporelle des teneurs en carbone organique et des évolutions associées,
 - L'analyse statistique de la distribution des teneurs en carbone organique et de ces évolutions.
  
-L'objectif du document est de fournir l'ensemble des éléments pratiques pour reprendre le projet en 4 étapes :
+L'objectif de ce document est de fournir l'ensemble des éléments pratiques pour reprendre le projet en 4 étapes :
 
 - **Etape 1** Accès aux scripts de travail
 - **Etape 2** Accès à la base de données
@@ -35,7 +35,7 @@ L'objectif du document est de fournir l'ensemble des éléments pratiques pour r
 
 ## Le choix des scripts en R+markdown
 
-L'ensemble des scripts développés dans le projet est développé en `R+markdown` (ou **Rmd**). Il s'agit d'un langage en balisage léger qui offre une syntaxe facile à lire et à écrire (comme le langage wiki) et permet d'y inclure le code R. Pour plus d'informations, [voir](https://rstudio-pubs-static.s3.amazonaws.com/32239_0956f02cef24443abd9525551368ef12.html#1) cette présentation. 
+Les scripts de ce projet sont essentiellement développés en `R+markdown` (ou **Rmd**). Il s'agit d'un langage en balisage léger qui offre une syntaxe facile à lire et à écrire (comme le langage wiki) et permet d'y inclure le code R. Pour plus d'informations, [voir](https://rstudio-pubs-static.s3.amazonaws.com/32239_0956f02cef24443abd9525551368ef12.html#1) cette présentation. 
 
 L'utilisation de ce type de langage permet de bien documenter les scripts et d'assurer la reproductibilité des différents scripts. Ainsi, la création de la base de données ainsi que l'ensemble des traitements associés (figures, résultats statistiques, cartographie) sont **reproductibles**.
 

@@ -330,7 +330,7 @@ for(i in periodUGB){
 
 # Calcul des évolutions et jointure vers la table `dm_vecteurs.canton`
 
-Les évolutions d'occupation du sol et de la densité d'UGB sont calculées entre 1970-2010, 1979-2010 et 1988-2010. Le calcul de l'évolution se base sur la relation suivante  : test avec (occupA/SAUA)-(occupB/SAUB) avec A l'année la plus récente et B l'année la plus ancienne. (A priori, plus intéressant car la sau peut également évoluer...)
+Les évolutions d'occupation du sol et de la densité d'UGB sont calculées entre 1970-2010, 1979-2010 et 1988-2010. Le calcul de l'évolution se base sur la relation suivante  : test avec (occupA/SAUA)-(occupB/SAUB) avec A l'année la plus récente et B l'année la plus ancienne.
 
 ## Evolution pour l'occupation du sol
 
@@ -549,7 +549,6 @@ for(i in varia){
     sqlQuery(loc,"drop table if exists dm_vecteurs.tmp")
 
     # Commentaires
-
     print(sqlQuery(loc,paste("
        COMMENT ON COLUMN ",table_dm,".",v," IS \'",comment[cpt],".\';",sep="")))
     }

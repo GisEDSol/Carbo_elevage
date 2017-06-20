@@ -1,6 +1,7 @@
 ---
 title: "Préparation des données Corine Land Cover"
 author: "Jean-Baptiste Paroissien"
+date: "22/02/2017"
 output:
   html_document:
     toc: yes
@@ -84,9 +85,9 @@ for(i in versionclc){
 
 Voir pour l'ajout des changemente calculés sur les données de corine land cover
 Pour la représentation cartographique et l'analyse, on pourra calculer la somme des surfaces initiales en prairie "retournée" par canton.
-voir https://halshs.archives-ouvertes.fr/tel-00636846v2/file/soutenance_ppt_sparfel.pdf pour le développement d'indicateur de changement d'occupation du sol
 
 ```{r,highlight=TRUE,eval=FALSE}
+#voir https://halshs.archives-ouvertes.fr/tel-00636846v2/file/soutenance_ppt_sparfel.pdf pour le développement d'indicateur de changement d'occupation du sol
 
 meta_clc <- read.csv(paste(repmetadonnees,"Nomenclature_clc.csv",sep=""),sep=";",header=TRUE)
 variables <- c("21","22","23") # Nom des champs à type d'occupation du sol à importer (21	Terres arables,22	Cultures permanentes, 23	Prairies)

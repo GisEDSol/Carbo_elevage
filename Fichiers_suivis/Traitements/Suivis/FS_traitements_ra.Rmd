@@ -1,15 +1,15 @@
 ---
 title: "Analyse des données du recencement agricole"
 author: "Jean-Baptiste Paroissien"
-date: "17/01/2017"
+date: "19/06/2017"
 output:
-  github_document:
-    toc: true
-    toc_depth: 2
-    fig_width: 10
-    fig_height: 10
-    dev: png
-    md_extensions: +autolink_bare_uris+hard_line_breaks+header_attributes+line_blocks+table_captions
+  html_document:
+    toc: yes
+    toc_float: yes
+    fig_caption: yes
+    highlight: kate
+    number_sections: yes
+    theme: spacelab   
 ---
 
 ```{r setup, include=FALSE,eval=TRUE}
@@ -24,18 +24,20 @@ repsortie <- paste(repmaster,"Fichiers_suivis/Traitements/Fichiers/",sep="") #r�
 # Lecture des tables de travail
 tablename <- paste("dm_traitements.","melted_ra",sep="")
 melted.ra <- sqlQuery(loc,paste("select * from ",tablename,sep=""))
-dcast.ra <- sqlQuery(loc,paste("select * from dm_vecteurs.canton",sep=""))
 melted.radiff <- sqlQuery(loc,paste("select * from ",tablename,"diff",sep=""))
 melted.radiff <- melted.radiff[complete.cases(melted.radiff$value) & complete.cases(melted.radiff$zonage_simple) & complete.cases(melted.radiff$zonage_cplt),]
 melted.ra <- melted.ra[complete.cases(melted.ra$value) & complete.cases(melted.ra$zonage_simple) & complete.cases(melted.ra$zonage_cplt),]
 melted.ra$annees <- factor(melted.ra$annees)
+
+dcast.ra <- sqlQuery(loc,paste("select * from dm_vecteurs.canton",sep=""))
+reg_elevage <- c("A","B","C","D","E","F","G")
 ```
 
 # Objectifs
 
 Dans ce travail, les données du recensement agricole construites avec les scripts d'intégration de [FS_bdd_elab_ra.Rmd](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/BDD/Suivis/FS_bdd_elab_ra.Rmd) sont analysées pour porter un regard sur la distribution spatiale et l'évolution de plusieurs variables d'occupation du sol en lien avec l'activité d'élevage. Cette étude exploratoire a pour objectif d'identifier les principales tendances des changements d'occupation du sol pour faciliter l'analyse de l'évolution des teneurs en carbone organique (voir [FS_traitements_bdat.Rmd](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdat.Rmd) et [FS_traitements_bdatdiff.Rmd](https://github.com/Rosalien/GISEDSol/tree/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdat.Rmd)).
 
-Dans un premier temps, plusieurs cartographies des variables à analyser sont réalisées. Des statistiques descriptives sont ensuite développées. Celle-ci sont portées à l'échelle de la France et sur différents niveaux géographiques (classes de type de sol, principales grandes région d'élevage).
+Dans un premier temps, plusieurs cartographies des variables à analyser sont réalisées. Des statistiques descriptives sont ensuite développées. Celle-ci sont portées à l'échelle de la France et sur différents niveaux géographiques (classes de type de sol, principales grandes régions d'élevage).
 
 # Cartographie
 
@@ -43,38 +45,46 @@ Pour ce travail, les cartes ont été générées avec le paquet **`ggplot2`** e
 
 ## Occupation du sol
 
-Commenter les figures et rajouter les figures sur les variations.
-Voir pour rajouter d'autres cartes...
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres ###########################
+
 tablecarto <- "dm_vecteurs.canton" 
 period <- c("1970","1979","1988","2000","2010") #Périodes de temps prise en compte
-variablecarto <- c("p_prairie","p_sth","p_sfp","p_mf","p_c")#variable(s) à cartographier
-#variablecarto <- "p_prairie"
-l_legend <- c("Prairie/SAU (%)","STH/SAU (STH)", "SFP/SAU (%)", "MFL/SAU (%)","Céréale/SAU (%)")# Nom des labels associés aux variables à cartographier. Vecteur utilisé pour les titres des cartes
+variablecarto <- c("p_prairie","p_sth","p_sfp","p_c")#variable(s) à cartographier
+l_legend <- c("Prairie/SAU (%)","STH/SAU (STH)", "SFP/SAU (%)","Céréale/SAU (%)")# 
 
-nclasse <- 5 #Nombre de classes de valeurs pour la cartographie
-style_classe <- "pretty" #"pretty"#"jenks"
-couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
-
-# Lancement
 cpt <- 0
 for(v in variablecarto){
-  cpt <- cpt + 1
+  #variables à cartographier
+  variablecarto <- paste(v,period,sep="")
+  nclasse <- 6
+  style_classe <- "pretty"#Nombre de classes de valeurs pour la cartographie
+  couleur <- viridis(nclasse)
+  l_variable <- l_legend[cpt]
   nomfichier <- paste(v,style_classe,sep="")
-  l_legendvaria <- l_legend[cpt]
-  variableperiod <- paste(v,period,sep="")
+  titleperiod <- variablecarto
 
-  carto(dsn,tablecarto,variableperiod,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=5,position="bottom",ggsaveheight=5,ggsavewidth=20)  
+  carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,title=titleperiod,caption="",dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=5,position="bottom",ggsaveheight=5,ggsavewidth=20)
 }
+
+# Ajout du maïs fourrage
+l_variable <- "MF/SAU (%)"
+period <- c("1970","1979","1988","2000","2010") #Périodes de temps prise en compte
+variablecarto <- paste("p_mf",period,sep="")
+nclasse <- 7
+style_classe <- "pretty"#Nombre de classes de valeurs pour la cartographie
+couleur <- viridis(nclasse)
+nomfichier <- paste("p_mf",style_classe,sep="")
+titleperiod <- variablecarto
+
+carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,title=titleperiod,caption="",dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=5,position="bottom",ggsaveheight=5,ggsavewidth=20)
 ```
 
 ```{r occuplot, echo = F, results = 'asis'}
 period <- c("1970","1979","1988","2000","2010") #Période de temps prise en compte
-variablecarto <- c("p_prairie","p_sth","p_sfp","p_mf","p_c")#variable(s) à cartographier
+variablecarto <- c("p_prairie","p_sth","p_sfp","p_c","p_mf")#variable(s) à cartographier
 style_classe <- "pretty" #"pretty"#"jenks"
-#fichiers <- paste(github_url,"Fichiers_suivis/Traitements/Fichiers/",variablecarto,style_classe,".png",sep="")
 fichiers <- paste(repsortie,variablecarto,style_classe,".png",sep="")
 cat(paste("![](",fichiers,")",sep=""))
 ```
@@ -91,7 +101,7 @@ l_legend <- "Densité d'UGBTA (UGBTA/SAU)" # Nom des labels associés aux variab
 
 nclasse <- 5 #Nombre de classes de valeurs pour la cartographie
 style_classe <- "quantile" #"pretty"#"jenks"
-couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+couleur <- viridis(nclasse)
 
 # Lancement
 cpt <- 0
@@ -101,7 +111,7 @@ for(v in variablecarto){
   l_legendvaria <- l_legend[cpt]
   variableperiod <- paste(v,period,sep="")
 
-  carto(dsn,tablecarto,variableperiod,nclasse,style_classe,couleur,l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=3,position="bottom",ggsavewidth=18,ggsaveheight=5)  
+  carto(dsn,tablecarto,variableperiod,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,title=period,caption="",dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=3,position="bottom",ggsaveheight=5,ggsavewidth=18)  
 }
 ```
 
@@ -109,7 +119,6 @@ for(v in variablecarto){
 period <- c("1988","2000","2010") #Période de temps prise en compte
 variablecarto <- "ugbta"
 style_classe <- "quantile" #"pretty"#"jenks"
-#fichiers <- paste(github_url,"Fichiers_suivis/Traitements/Fichiers/",variablecarto,style_classe,".png",sep="")
 fichiers <- paste(repsortie,variablecarto,style_classe,".png",sep="")
 cat(paste("![](",fichiers,")",sep=""))
 ```
@@ -125,8 +134,8 @@ variablecarto <- c("elevage","polyelevage","grdcultures","elevagehorsol")#variab
 l_legend <- c("OTEX en élevage (%)","OTEX en polyélevage (%)", "OTEX en grandes cultures (%)", "OTEX en élevage hors sol (%)")# Nom des labels associés aux variables à cartographier. Vecteur utilisé pour les titres des cartes
 
 nclasse <- 5 #Nombre de classes de valeurs pour la cartographie
-style_classe <- "pretty" #"pretty"#"jenks"
-couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
+style_classe <- "quantile" #"pretty"#"jenks"
+couleur <- viridis(nclasse)
 
 # Lancement
 cpt <- 0
@@ -136,13 +145,13 @@ for(v in variablecarto){
   l_legendvaria <- l_legend[cpt]
   variableperiod <- paste(v,period,sep="")
 
-  carto(dsn,tablecarto,variableperiod,nclasse,style_classe,couleur,l_legendvaria,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=3,position="bottom",ggsaveheight=5,ggsavewidth=15)  
+  carto(dsn,tablecarto,variableperiod,nclasse,style_classe,couleur,l_legend=l_legendvaria,repsortie,nomfichier,title=period,caption="",dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=3,position="bottom",ggsaveheight=5,ggsavewidth=15)  
 }
 ```
 
 ```{r otexplot, echo = F, results = 'asis'}
-variablecarto <- c("elevage","polyelevage","grdcultures","elevagehorsol")
-style_classe <- "pretty" #"pretty"#"jenks"
+variablecarto <- c("elevage","grdcultures","elevagehorsol")
+style_classe <- "quantile" #"pretty"#"jenks"
 #fichiers <- paste(github_url,"Fichiers_suivis/Traitements/Fichiers/",variablecarto,style_classe,".png",sep="")
 fichiers <- paste(repsortie,variablecarto,style_classe,".png",sep="")
 cat(paste("![](",fichiers,")",sep=""))
@@ -211,6 +220,7 @@ ra_summary<- data.frame(ra_summary[[1]])
 ra_summary <- lapply(ra_summary, do.call, what = rbind)
 for(i in levels(melted.ra[,"variable"])){
   knitr::kable(ra_summary[i])
+  pander(ra_summary[i])
 }
 
 ```
@@ -301,14 +311,14 @@ A la suite de ces observations, les zones B, C, D et E semblent intéressantes �
 ## Analyse des différences d'occupation
 Cette figure présente le nombre de canton impacté par des évolutions d'occupation du sol pour les différentes régions d'élevage. Ces évolutions sont classées en deux catégories selon les règles suivantes :
 
-- Augmentation : le pourcentage d'évolution toutes années confondues est supérieur à 10%
-- Diminution : le pourcentage d'évolution toutes années confondues est inférieur à -10%
+- Augmentation : le pourcentage d'évolution toutes années confondues est supérieur à 5%
+- Diminution : le pourcentage d'évolution toutes années confondues est inférieur à -5%
 
 Cette figure est difficilement commentable...voir si c'est intéressant de la conserver.(à conserver, l'autre figure est bien mieux)
 
 ```{r ,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=5, fig.width=8}
 # Création de deux classes (diminution et augmentation)
-melted.radiff$classe <- ifelse(melted.radiff$value > 10,"Aug",ifelse(melted.radiff$value < -10,"Dim","Pas d'évolution"))
+melted.radiff$classe <- ifelse(melted.radiff$value > 5,"Aug",ifelse(melted.radiff$value < -5,"Dim","Pas d'évolution"))
 melted.radiff$classe <- as.factor(melted.radiff$classe)
 melted.radiff$periode <- as.factor(melted.radiff$periode)
 # Sélection des évolutions > 10% ou < -10%
@@ -344,36 +354,10 @@ ggplot(melted.radiff_select[(melted.radiff_select$variable %in% c("prairie","sth
 
 tablera <- melted.radiff_select[(melted.radiff_select$variable %in% c("prairie","sth","c","mf")) & (melted.radiff_select$zonage_cplt %in% zone_elevage),]
 
-histo_ra <- count(tablera,c("classe","nom_region","variable","periode"))
-histo_raorder <- histo_ra[order(-histo_ra[,"freq"]),]
-
-
-
 # test pour une cartographie des principales évolutions par classe, voir http://stackoverflow.com/questions/10368180/plotting-pie-graphs-on-map-in-ggplot
 ```       
 
-## Analyse des différentes périodes d'évolution en fonction des zones d'élevage
-
-```{r,echo=FALSE,eval=TRUE}
-periodetud <- c("14","24","15","25","13","35")
-bdatdiff <- bdatdiff[(bdatdiff$period %in% periodetud) & bdatdiff$zonage_simple != "H" & bdatdiff$zonage_simple != "G" & bdatdiff$zonage_simple != "F", ]
-bdatdiff$diff <- as.factor(bdatdiff$diff)
-
-histo_regelevage <- ggplot(bdatdiff,aes(diff,fill=zonage_cplt)) + geom_bar() + facet_wrap(~ period)+
-                    scale_fill_brewer(palette = 'Paired',name="Zones d'élevage")+
-                    xlab("Classe d'évolution des teneurs en carbone organique")+ylab("Nombre de canton")+
-                    theme(plot.title = element_text(size = 14, face = "bold"), 
-                    text = element_text(size = 12),
-                    axis.title = element_text(face="bold"),
-                    axis.text.x=element_text(size = 11))    
-                    #geom_bar(position="dodge")
-histo_regelevage
-
-```
-
 ## Zoom sur les principales régions concernées par les évolutions
-
-Pas besoin de la commenter. Cette figure est un simple zoom. Elle confirme les observations déjà évoquées...
 
 ```{r ,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=5, fig.width=10}
 # wpf : windows presentation fundation
@@ -390,29 +374,6 @@ p <- ggplot(melted.ra_zonage) +
                   text = element_text(size = 12),
                   axis.title = element_text(face="bold"),
                   axis.text.x=element_text(size = 11))
-p  
-```
-
-```{r ,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,message=FALSE,error=FALSE,fig.height=3, fig.width=6}
-# Pbl lors de la compilation
-#Quitting from lines 359-374 (FS_traitements_ra.Rmd) 
-#Erreur : Faceting variables must have at least one value
-
-
-melted.ra_zonage_ugbta <- melted.ra[melted.ra$zonage_cplt %in% c("A","B1","C1","D","E1") & melted.ra$variable %in% "ugbta",]
-ylim1 <- boxplot.stats(melted.ra_zonage_ugbta$value)$stats[c(1,5)]
-
-p <- ggplot(melted.ra_zonage_ugbta) +
-            geom_boxplot(aes(x=annees,y=value),outlier.shape = NA,outlier.size=NA)+#,col=zonage_simple))+
-            facet_wrap(~zonage_cplt,scales="free")+
-#            geom_smooth(aes(x=as.integer(annees),y=value,method=loess)+
-            #scale_color_manual(values=colors,name="Années")+
-            scale_x_discrete("Périodes")+scale_y_continuous("UGBTA/ha(SAU)")+
-            theme(plot.title = element_text(size = 14, face = "bold"), 
-                  text = element_text(size = 12),
-                  axis.title = element_text(face="bold"),
-                  axis.text.x=element_text(size = 11))+
-            coord_cartesian(ylim = ylim1*1.7)
 p  
 ```
 
@@ -447,34 +408,40 @@ for(i in p_variable){
   #ggsave(tt, file = paste("map_",reg,"_",v,".png",sep=""), width = 10, height = 10)  
 ```
 
-# Différentes cartographies
+# Cartographie de l'évolution des classes d'occupation du sol
 
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE,fig.height=5, fig.width=8}
-
+## Cartographie à la volée de l'évolution de l'occupation du sol (exemple entre 79-00)
 tablecarto <- "dm_vecteurs.canton" 
-period <- c("1979","1988","2000","2010") #Périodes de temps prise en compte
-variablecarto <- c("p_prairie","p_sth","p_sfp","p_mf","p_c","p_cop")#variable(s) à cartographier
-#variablecarto <- "p_prairie"
-l_legend <- c("Prairie/SAU (%)","STH/SAU (STH)", "SFP/SAU (%)", "MF/SAU (%)","Céréale/SAU (%)","COP/SAU (%)")# Nom des labels associés aux variables à cartographier. Vecteur utilisé pour les titres des cartes
+variaoccup <- c("sfp","prairie","c","mf","cop")
+periodref_ra <- c("1988","2010","2000")
+period_ra <- c("1988","1979","2000")
+id_diff <- apply(expand.grid(variaoccup,period_ra,periodref_ra),1, function(x){paste("diff_var_",x[1],x[2],"_",x[3],sep="")})
+id_diff <- id_diff[1:(length(id_diff)-length(variaoccup))]# Ici, on supprime les dernières combinaisons représentant une différence 2000-2000
+id_diff <- id_diff[(length(variaoccup)+1):length(id_diff)] # Ici, on supprime les premières combinaisons représentant une différence 1988-1988
 
-nclasse <- 5 #Nombre de classes de valeurs pour la cartographie
-style_classe <- "pretty" #"pretty"#"jenks"
-couleur <- "Spectral"#nom de la palette couleur (selon RColorBrewer)display.brewer.all() pour connaître les différentes palettes
-
-# Lancement
-cpt <- 0
-for(v in variablecarto){
-  cpt <- cpt + 1
-  nomfichier <- paste(v,style_classe,"_2",sep="")
-  l_legendvaria <- l_legend[cpt]
-  variableperiod <- paste(v,period,sep="")
-
-  carto(dsn,tablecarto,variableperiod,nclasse,style_classe,couleur,l_legend=l_legendvaria,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=2,ncollayout=2,position="bottom",ggsaveheight=8,ggsavewidth=8)  
+for(i in id_diff){
+  variablecarto <- i
+  titre <- paste(gsub("^diff_var_*","",i),sep="")
+  l_legend <- "Classe d'évolution de l'occupation du sol"
+  nclasse <- 3 #Nombre de classes de valeurs pour la cartographie
+  style_classe <- "fixed" #"pretty"#"jenks","fixed"
+  couleur <- c("#4DAF4A","#E41A1C","#377EB8")#FDE725FF
+  nomfichier <- titre
+  caption <- ""
+  carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,title=titre,caption=caption,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=3,position="bottom",ggsaveheight=5,ggsavewidth=12)
 }
+```
 
-## Variation 
-tablecarto <- "dm_vecteurs.canton"  #Nom de la table utilisée pour la cartographie (table postgis)
-variablecarto <- "var_prairie1979_2010"
-l_variable <- "Evolution prairie/SAU entre 1979 et 2010 (%)"
-nomfichier <- "var_prairie1979_2010"
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_variable,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=1,position="bottom",ggsaveheight=7,ggsavewidth=10)  
+```{r, echo = F, results = 'asis'}
+tablecarto <- "dm_vecteurs.canton" 
+variaoccup <- c("sfp","prairie","c","mf","cop")
+periodref_ra <- c("1988","2010","2000")
+period_ra <- c("1988","1979","2000")
+id_diff <- apply(expand.grid(variaoccup,period_ra,periodref_ra),1, function(x){paste("diff_var_",x[1],x[2],"_",x[3],sep="")})
+id_diff <- id_diff[1:(length(id_diff)-length(variaoccup))]# Ici, on supprime les dernières combinaisons représentant une différence 2000-2000
+id_diff <- id_diff[(length(variaoccup)+1):length(id_diff)] # Ici, on supprime les premières combinaisons représentant une différence 1988-1988
+id_diff <- paste(gsub("^diff_var_*","",id_diff),sep="")
+fichiers <- paste(repsortie,id_diff,".png",sep="")
+cat(paste("![](",fichiers,")",sep=""))
+```

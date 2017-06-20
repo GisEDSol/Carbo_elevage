@@ -1,9 +1,0 @@
-Nom_champs,Description
-eff ,Nombre d’analyse par unité administrative
-moy ,Moyenne
-ec ,Ecart-type
-med ,Médiane
-pqua , 25% centile
-dqua ,75% centile
-pdec ,10% centile
-ddec ,90% centile

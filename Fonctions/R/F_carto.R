@@ -113,7 +113,7 @@ theme_map <- function(...) {
     axis.title.x = element_blank(),
     axis.title.y = element_blank(),
     # panel.grid.minor = element_line(color = "#ebebe5", size = 0.2),
-    panel.grid.major = element_line(color = "#ebebe5", size = 0.2),
+    panel.grid.major = element_line(color = "#f5f5f2", size = 0),#Couleur de la grille. Initialement (#ebebe5)
     panel.grid.minor = element_blank(),
     plot.background = element_rect(fill = "#f5f5f2", color = NA), 
     panel.background = element_rect(fill = "#f5f5f2", color = NA), 
@@ -211,8 +211,11 @@ table <- gsub2(".*\\.", "", unlist(tablecarto))
 
 if((is.character(dept)==FALSE) & (is.character(reg)==FALSE)){
   map <- dbReadSpatial(con, schemaname=schema, tablename=table, geomcol="geom")
-  dep <- dbReadSpatial(con, schemaname=schema, tablename="departement", geomcol="geom")
+  dep <- dbReadSpatial(con, schemaname=schema, tablename="zonage_simple", geomcol="geom")
+#  dep <- dbReadSpatial(con, schemaname=schema, tablename="departement", geomcol="geom")
+
   }else{}
+
 
 if(is.character(dept)==TRUE){
   # Sélection de la zone d'étude
@@ -293,7 +296,8 @@ if(reg!=FALSE){# Sélection de la zone d'étude
   
 # Conversion des spatialdataframe pour la cartographie sous ggpplot2
 gpclibPermit()
-cartodep <- fortify(dep,region=id)
+#cartodep <- fortify(dep,region=id)
+cartodep <- fortify(dep,region="zonage_simple")
 
 # Représentation cartographique
 if(length(variablecarto)==1){

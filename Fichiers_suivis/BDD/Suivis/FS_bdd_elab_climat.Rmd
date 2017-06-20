@@ -31,11 +31,11 @@ L'objectif de ce fichier de suivi est de stocker l'ensemble des traitements asso
 - moyenne dans le cas de variables continues,
 - valeur majoritaire (surface la plus importante) si la variable est qualitative (comme le type de climat par exemple).
 
-**Important** Rajouter une fiche nomenclature pour le climat afin de faciliter la création des métadonnées dans la base.
 
 # Calcul de différentes statistiques jointes vers la table `dm_vecteurs.canton`
 
 ## Aggrégation par la moyenne à l'échelle du canton
+
 ```{r,highlight=TRUE,eval=FALSE}
 # Calcul de la moyenne par canton
 
@@ -127,29 +127,6 @@ for(i in variablecarto){
 
   carto(dsn,tablecarto,i,nclasse,style_classe,couleur,l_legend=l_variable_i,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=1,position="bottom",ggsaveheight=7,ggsavewidth=10)  
 }
-
-tablecarto <- "dm_vecteurs.canton" #Nom de la table utilisée pour la cartographie (table postgis)
-variablecarto <- "argi_med"
-l_legend <- "Médiane du taux d'argile (g/kg)"
-nomfichier <- "argi_medBDAT"
-style_classe <- "quantile"
-carto(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,l_legend=l_legend,repsortie,nomfichier,dept=FALSE,reg=FALSE,nrowlayout=1,ncollayout=1,position="bottom",ggsaveheight=7,ggsavewidth=10)  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ```
 

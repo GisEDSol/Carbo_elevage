@@ -1,0 +1,18 @@
+Nom_variable,Description
+sfp,Surface fourragère principale (prairies+fourrages annuels)
+prairie,"Prairies artificielles, temporaires et permanentes"
+sth,Prairies permanentes
+mf,Maïs fourrage
+c,Céréales
+cop,Céréales + Oléagineux + Protéagineux
+protea,Protéagineux
+olea,Oléagineux
+polyelevage,Otex polyculture-élevage
+elevagehorsol,Otex elevage hors sol
+ugbta,UGB tous aliments
+ugbh,UGB herbivore
+p_sfpXXXX,Pourcentage de surface par rapport à la SAU pour une occupation du sol donnée (sfp) et une période donnée (XXXX)
+classe_p_sfpXXXX,Classe d’occupation du sol de p_sfpXXXX
+var_sfpXXXX_XXXX,Evolution du pourcentage de surface par rapport à la SAU d’une occupation du sol (sfp) entre deux périodes (XXXX_XXXX)
+classe_var_sthXXXX_XXXX,Classe d’évolution de l’occupation du sol
+diff_var_sfpXXXX_XXXX,"Type d’évolution de l’occupation du sol (>5 % Augmentation, <-5 % Diminution)"

@@ -1,7 +1,7 @@
 ---
 title: "Création des données élaborées de la BDAT"
 author: "Jean-Baptiste Paroissien"
-date: "19/05/2017"
+date: "15/06/2017"
 output:
   html_document:
     toc: yes
@@ -30,8 +30,9 @@ Ce fichier permet de créer les tables de données de la BDAT utilisables pour l
 
 ## Intégration de la médiane et 3ème quartile des teneurs en carbone organique par canton (teneurs + effectifs)
 
-Ici, les médianes et 3ème quartile des teneurs en CO (corgox) ré-échantillonnées par canton sont intégrées dans intégrées dans le fichier `dm_vecteurs.canton`. L'intégration est effectuée sur la médiane des médianes des statistiques ré-échantillonnése.
+Ici, les médianes et 3ème quartile des teneurs en CO (corgox) ré-échantillonnées par canton sont intégrées dans le fichier `dm_vecteurs.canton`. L'intégration est effectuée sur la médiane des médianes des statistiques ré-échantillonnées.
 
+**Attention** Plusieurs traitements sont obsolètes et sont conservées uniquement pour une future utilisation potentielle. Ces traitments sont signalés par la balise **[Obsolète]**.
 
 ### Les teneurs en carbone organique
 
@@ -183,11 +184,11 @@ for(i in period){
 }
 ```
 
-## Intégration des analyses par type de détermination (teneurs + effectifs)
+## Intégration des analyses par type de détermination (teneurs + effectifs) [Obsolète]
 
 Même démarche que précédemment. Ci-dessous, les analyses des teneurs en C par type de mesures sont intégrées dans la table `dm_vecteurs.canon`. Les analyses réalisées avec la méthode oxydation humide sont nommée `corgox` et les analyses mesurées avec la méthode combustion sèche `corgco`
 
-### Intégrations des teneurs
+### Intégrations des teneurs [Obsolète]
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
@@ -233,7 +234,8 @@ for(m in methodo){
   }
 }
 ```
-### Intégrations des effectifs par type de méthode
+
+### Intégrations des effectifs par type de méthode [Obsolète]
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres
@@ -268,7 +270,7 @@ for(m in methodo){
 }
 ```
 
-### Les résultats des tests statistiques des différences de teneur en carbone organique par type de méthode
+### Les résultats des tests statistiques des différences de teneur en carbone organique par type de méthode [Obsolète]
 
 Ci-dessous, les différences des teneurs en carbone organique par type de méthode et pour les différentes statistiques cantonales sont calculées.
 
@@ -389,6 +391,135 @@ for(i in vpedo){
 }
 ```
 
+### Evolution de l'argile et des limons totaux
+
+Relancer pour mettre les commentaires
+
+```{r,highlight=TRUE,eval=FALSE}
+# Lecture des tables de métadonnées
+nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""),sep=",",colClasses = "character")
+Nom_champs <- read.csv(paste(repmetadonnees,"Convention_nommage_dm_bdat.csv",sep=""),sep=",",colClasses = "character")
+
+# Paramètres
+table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+period <- c("9094","9599","0004","0509","1014")
+schema <- "bdat"
+stats <- "med"
+variable <- c("argi","limt")
+
+for(v in variable){
+for(s in stats){
+  for(i in period){
+    sel <- list()
+    # Sélection des comparaisons où la période est exploitée
+    test <- nomdiff[(nomdiff$Periode1 %in% i)|(nomdiff$Periode2 %in% i),]$Code
+
+    # Sélection des tables et calcul de la médiane des valeurs pour les 4 comparaisons 
+    ## Lecture de toutes les tables puis jointures
+    cpt <- 0
+    for(x in test){
+      cpt <- cpt + 1
+      print(cpt)
+      toto <- sqlQuery(loc,paste("select ",s,"_",i," as ",s,"_",i,"_",cpt,",canton
+        from bdat.",v,"_",s,"_",x,"_canton",sep=""))
+    
+    if(cpt==1){
+      corgoxtable <- toto
+      }else{
+        # Ajout à chaque itération de la variable (i)
+        corgoxtable <- merge(corgoxtable,toto, by.x="canton", by.y="canton",all.x=TRUE,all.y=TRUE)
+      }
+    }
+
+    ## Calcul de la médiane
+    var_variable <- paste(s,"_",v,"_",i,sep="")
+        
+    corgoxtable[var_variable] <- apply(corgoxtable[,2:5],1,function(x){median(x,na.rm=TRUE)})
+
+    ## Jointure vers dm_vecteurs.canton
+
+    # Création d'une table provisoire pour jointure
+    sqlSave(loc,corgoxtable[,c("canton",var_variable)],tablename="dm_vecteurs.tmp")
+    
+    # Jointure 
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                      drop column if exists ",var_variable,sep=""))
+  
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        add column ",var_variable," numeric;
+                        update ",table_dm,"
+                        SET ",var_variable," = s1.",var_variable," from(
+                        select ",var_variable,",canton
+                        from dm_vecteurs.tmp) as s1
+                        where ",table_dm,".code_canton=s1.canton",sep=""))
+    
+    # Suppression de la table temporaire
+    sqlQuery(loc,"drop table if exists dm_vecteurs.tmp")
+
+    Commentaire <- Nom_champs[Nom_champs$Type %in% "Période",]
+    Commentaire$Nom_colonne <- gsub2("XXXX",i,Commentaire$Nom_colonne)
+    Commentairestats <- paste(Commentaire[Commentaire$Nom_colonne %in% var_variable,"Description"],i,sep=" ")
+
+    # Ajout d'un commentaire sur la nouvelle colonne créée
+    print(sqlQuery(loc,paste("
+    COMMENT ON COLUMN ",table_dm,".",var_variable," IS \'",Commentairestats,".\';",sep="")))
+  }
+}
+}
+
+```
+
+```{r,eval=FALSE,echo=FALSE}
+table_dm <- "dm_vecteurs.canton" # Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)
+period <- c("12","13","14","15","23","24","25","34","35","45")
+schema <- "bdat"
+stats <- "med"
+variable <- c("argi","limt")
+
+Nom_champs <- read.csv(paste(repmetadonnees,"Convention_nommage_dm_bdat.csv",sep=""),sep=",",colClasses = "character")
+type <- c("numeric","numeric","text")
+
+for(varia in variable){
+for(i in period){
+  cpt <- 0
+  for(v in c("diff_XX_","diff_XX_pourcent_","evol_XX_")){
+    cpt <- cpt + 1
+    type_column <- type[cpt]
+    for(b in stats){
+
+    diffstats <- gsub2("XX",b,v)
+    var_variable1 <- paste(diffstats,i,sep="")
+    var_variable2 <- paste(varia,"_",diffstats,i,sep="")
+
+    tableBDAT <- paste(varia,"_",b,"_",i,"_canton",sep="")
+
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                        drop column if exists ",var_variable,sep=""))
+  
+    Commentaire <- Nom_champs[Nom_champs$Type %in% "Différence",]
+    
+    Commentaire$Nom_colonne <- gsub2("XX",i,Commentaire$Nom_colonne)
+
+    Commentairestats <- paste(Commentaire[Commentaire$Nom_colonne %in% var_variable,"Description"],i,sep=" ")
+
+    sqlQuery(loc,paste("alter table ",table_dm,"
+                      add column ",var_variable2," ",type_column,";
+                      update ",table_dm,"
+                      SET ",var_variable2," = s1.",var_variable1," from(
+                      select ",var_variable1,",canton
+                      from ",schema,".",tableBDAT,") as s1
+                      where ",table_dm,".code_canton=s1.canton::text",sep=""))
+    
+    # Ajout d'un commentaire sur la nouvelle colonne créée
+    print(sqlQuery(loc,paste("
+    COMMENT ON COLUMN ",table_dm,".",var_variable2," IS \'",Commentairestats,".\';",sep="")))
+    }
+  }
+}
+}
+
+```
+
 ### Classes de valeurs par canton
 
 ```{r,highlight=TRUE,eval=FALSE}
@@ -438,7 +569,7 @@ for(i in vpedo){
 
 # Création d'une table de travail de données complète
 
-Ici, la table `dm_vecteurs.canton` est dupliquée et filtrée pour un travail basé uniquement sur un nombre de canton ayant des analyses sur l'ensemble des périodes étudiées. Deux tables tables sont créées. Elles serviront de base pour la création de tables au format long.
+Ici, la table `dm_vecteurs.canton` est dupliquée et filtrée pour un travail basé uniquement sur un nombre de canton ayant des analyses sur l'ensemble des périodes étudiées. Deux tables sont créées. Elles serviront de base pour la création de tables au format long.
 
 - **canton_9014** pour toutes les périodes
 - **canton_9514** pour l'exclusion de la première période
@@ -475,7 +606,7 @@ Les données de la BDAT sont ré-organisées pour faciliter les traitements stat
 
 **Important :** La création de ces tables nécessite le lancement de plusieurs scripts au préalable : `FS_bdd_brute.Rmd`,`FS_bdd_elab_climat.Rmd`,`FS_bdd_elab_ra.Rmd` et `FS_bdd_elab_clc.Rmd`.
 
-Ci-dessous, la création du nom des variables à rajouter dans les tables au format long
+Ci-dessous, la création du nom des variables à rajouter dans les tables au format long.
 
 ```{r,eval=FALSE,echo=FALSE}
 variaCO <- "corgox"
@@ -539,14 +670,14 @@ for(tt in tables){
   sqlSave(loc,melted.bdat,tablename=tablename)
 
   # Ajout de quelques commentaires
-  #print(sqlQuery(loc,paste("
-  #COMMENT ON COLUMN ",tablename,".value IS \'Statistiques des teneurs en carbone organique et les effectifs après ré-échantillonnage sur l\''ensemble des périodes et les différentes méthodes de mesure. med : median,pqua : 25% precentile,dqua : 75% precentile,pdec : 10% precentile,ddec : 90% precentile\';",sep="")))
+  print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",tablename,".value IS \'Statistiques des teneurs en carbone organique et les effectifs après ré-échantillonnage sur l\''ensemble des périodes et les différentes méthodes de mesure. med:median;dqua:75% precentile\';",sep="")))
 
-#  print(sqlQuery(loc,paste("
- # COMMENT ON COLUMN ",tablename,".annees IS \'Périodes d\''analyse des teneurs en carbone organique.\';",sep="")))
+  print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",tablename,".annees IS \'Périodes d\''analyse des teneurs en carbone organique.\';",sep="")))
 
-  #print(sqlQuery(loc,paste("
-  #COMMENT ON COLUMN ",tablename,".variable IS \'Type de méthode de mesure des teneurs en carbone organique et les effectifs (corgox:oxydation humide; corgco:combustion sèche; corg_medequiv:corgox+corgco; eff_corgox:effectif pour la méthode corgox; eff_corgco:effectif pour la méthode corgco; eff_coox:effectif pour les méthodes méthodes corgox+corgco.\';",sep="")))
+  print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",tablename,".variable IS \'Type de statistiques des teneurs en carbone organique et les effectifs dans les cantons; med_corgox:médiane des médianes;dqua_corgox:médiane du troisième quartile;eff_corgox:effectif pour la méthode corgox.\';",sep="")))
 }
 ```
 
@@ -631,20 +762,26 @@ for(tt in tables){
   sqlQuery(loc,paste("drop table if exists ",tablename,sep=""))
   sqlSave(loc,melted.bdatdiff,tablename=tablename)
 
-  #print(sqlQuery(loc,paste("
-  #COMMENT ON COLUMN ",tablename,".period IS \'Périodes comparées des teneurs en carbone organique.\';",sep="")))
+  print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",tablename,".period IS \'Périodes comparées des teneurs en carbone organique.\';",sep="")))
 
-#  print(sqlQuery(loc,paste("
- # COMMENT ON COLUMN ",tablename,".diffmedian IS \'Différences des teneurs en carbone organique entre deux périodes. Toutes méthodes de mesure confondues (corgox+corgco).\';",sep="")))
+  print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",tablename,".diff_med IS \'Différences relatives des médianes des teneurs en carbone organique entre deux périodes.\';",sep="")))
 
-#  print(sqlQuery(loc,paste("
-  #COMMENT ON COLUMN ",tablename,".diffmedian_corgox IS \'Différences des teneurs en carbone organique entre deux périodes. Méthode de mesure oxydation humide (corgox).\';",sep="")))
+  print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",tablename,".diff_dqua IS \'Différences relatives du troisième quartile des teneurs en carbone organique entre deux périodes.\';",sep="")))
 
-  #print(sqlQuery(loc,paste("
-  #COMMENT ON COLUMN ",tablename,".diff IS \'Résultat du test statistique de différence des teneurs en carbone organique entre deux périodes (test de Wilcoxon). Toutes méthodes de mesure confondues (corgox+corgco).\';",sep="")))
+  print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",tablename,".diff_med_pourcent IS \'Différences absolues des médianes des teneurs en carbone organique entre deux périodes.\';",sep="")))
 
-  #print(sqlQuery(loc,paste("
-  #COMMENT ON COLUMN ",tablename,".diff_corgox IS \'Résultat du test statistique de différence des teneurs en carbone organique entre deux périodes (test de Wilcoxon). Méthode de mesure oxydation humide (corgox).\';",sep="")))
+  print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",tablename,".diff_dqua_pourcent IS \'Différences absolues du troisième quartile des teneurs en carbone organique entre deux périodes.\';",sep="")))
+
+  print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",tablename,".evol_dqua IS \'Résultat du test statistique de différence du troisième quartile des teneurs en carbone organique entre deux périodes (test de Wilcoxon).\';",sep="")))
+
+  print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",tablename,".evol_med IS \'Résultat du test statistique de différence des médianes de teneurs en carbone organique entre deux périodes (test de Wilcoxon).).\';",sep="")))
 }
 
 ```

@@ -1,7 +1,7 @@
 ---
 title: "Fichier de suivi de la création de la base de données"
 author: "Jean-Baptiste Paroissien"
-date: "22/05/2017"
+date: "15/07/2017"
 output:
   html_document:
     toc: yes
@@ -28,9 +28,9 @@ L'objectif de ce document est de centraliser dans un même fichier la création 
 
 La documentation de cette base de données s'articule autour d'un document général consultable à cette [adresse](https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Modes_operatoires/MO_bdd.html).
 
-# Création de la base
+# Création de la base de données (bdd)
 
-La création de la base postgresql/postgis est réalisée selon la procédure suivante :
+La bdd est basée sur postgresql/postgis et a été construite selon la procédure suivante :
 
 ```{r, engine='bash',highlight=TRUE,eval=FALSE}
 sudo -i -u postgres
@@ -46,6 +46,7 @@ psql sol_elevage
 CREATE EXTENSION postgis;
 CREATE EXTENSION postgis_topology;
 ```    
+
 # Les données de bases
 
 Les données dites de "bases" concernent les données administratives utilisées pour agréger certaines variables environnementales. Dans ce travail, les contours des communes, des cantons et des petites régions agricoles sont les principales échelles de travail utilisées. Elles ont été récupérées de la manière suivante :
@@ -55,7 +56,7 @@ Les données dites de "bases" concernent les données administratives utilisées
 
 ```{r,highlight=TRUE,eval=FALSE}
 
-schema <- "dm_vecteurs"#nom du schéma pour intégrer les vecteurs
+schema <- "dm_vecteurs" #nom du schéma pour intégrer les vecteurs
 
 # Intégration des données communales et cantonnales dans la base
 for(i in c("DEPARTEMENTS","CANTON","COMMUNE")){
@@ -150,7 +151,7 @@ for(i in variablepra){
 
 ## La BDAT
 
-Deux types de données sont intégrés dans la base de données. Dans un premier temps, les données BDAT disponibles sur le site du [GISSol](http://www.gissol.fr/wp-content/uploads/2015/04/bdat.zip) sont intégrées. Il s'agit de statistiques descriptives agrégées à l'échelle du canton. Ces données ne sont pas exploitables dans le cadre d'une étude sur l'évolution temporelle car le nombre d'effectif n'est pas le même d'une année à l'autre. Ce jeu de données est utilisé pour l'analyse de variable "stable" dans le temps, comme la texture du sol par exemple.
+Deux types de données sont intégrés dans la base de données. Dans un premier temps, les données BDAT disponibles sur le site du [Pangea](http://doi.pangaea.de/10013/epic.43358.d001) sont intégrées. Il s'agit de statistiques descriptives agrégées à l'échelle du canton. Ces données ne sont pas exploitables dans le cadre d'une étude sur l'évolution temporelle car le nombre d'effectif n'est pas le même d'une année à l'autre. Ce jeu de données est utilisé pour l'analyse de variable "stable" dans le temps, comme la texture du sol par exemple.
 
 Le deuxième jeu de données intégré prend en compte ce biais par un ré-échantillonnage artificiel des analyses afin d'assurer le calcul de statistiques descriptives basées sur un même nombre d'effectif. Ces données sont exploitées pour analyser l'évolution des teneurs en carbone organique dans les sols. 
 
@@ -192,7 +193,7 @@ for(i in ListBDAT){
 ```
 ### Importation des données de la BDAT ré-échantillonnées
 
-La liste d'instructions suivante intègre les analyses des teneurs de la BDAT ré-échantillonnées dans la base de données.
+Les instructions suivantes permettent d'intègrer les analyses des teneurs de la BDAT ré-échantillonnées dans la base de données. 2 types de statistiques sont intégrées, la médiane et le 3ème quartile.
 
 #### Médianes
 
@@ -254,6 +255,74 @@ ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/dquartil
     print(sqlQuery(loc,paste("
       COMMENT ON TABLE bdat.",i," IS \'",Comment,".\';",sep="")))
   }
+```
+
+### Données de texture
+
+L'évolution du taux d'argile et du taux de limon peut potentiellement indiquer un biais d'échantillonnage. L'évolution de la texture est intégrée dans la BDD selon les instructions suivantes :
+
+```{r importBDAT_harmomethodes, eval=FALSE}
+nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""),sep=",",colClasses = "character")
+
+ListBDAT <- gsub("\\.csv$","",list.files(paste(repBDAT,"BDAT_harmonisee/texture/",sep=""),pattern="\\.csv$"))
+
+  for(i in ListBDAT){
+    print(i)
+    # Extraction de la valeur numérique
+    comp <- unlist(regmatches(i,gregexpr('[0-9]+',i)))
+    
+    comp1 <- nomdiff[nomdiff$Code %in% comp,"Periode1"]
+    comp2 <- nomdiff[nomdiff$Code %in% comp,"Periode2"]
+
+    # Lecture du fichier
+    txtBDAT <- read.csv(paste(repBDAT,"BDAT_harmonisee/texture/",i,".csv",sep=""),sep=";",header=TRUE,colClasses=c("Canton"="character"),encoding = "latin1")
+
+    # Intégration dans la bdd
+
+    sqlQuery(loc,paste("drop table if exists bdat.",i,sep=""))
+    sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
+
+    # Ajout d'un commentaire
+    Comment <- paste("Statistiques de la médiane des médianes pour une donnée texturale des analyses de la BDAT ré-échantillonnées. Différence entre la période ",comp1," et la période ",comp2,sep="")
+
+    print(sqlQuery(loc,paste("
+      COMMENT ON TABLE bdat.",i," IS \'",Comment,".\';",sep="")))
+  }
+```
+
+## La BDETM
+
+Les données de la BDETM ont été téléchargées sur le site du gissol à cette [adresse](http://www.gissol.fr/wp-content/uploads/2015/06/bdetm.zip). L'intégration de ces données dans la base de données est réalisée avec les instructions suivantes : 
+
+```{r importBDETM, eval=FALSE}
+
+# Selection des fichiers à importer
+ListBDETM <- gsub("\\.csv$","",list.files(paste(repBDETM,sep=""),pattern="\\.csv$"))
+
+for(i in ListBDETM){
+  print(i)
+  # Lecture du fichier
+  txtBDETM <- read.table(paste(repBDETM,i,".csv",sep=""),sep=";",header=TRUE)
+  txtBDETM[,"pra"] <- as.character(txtBDETM[,"pra"])
+  
+  # Intégration dans la bdd
+  sqlQuery(loc,paste("drop table if exists bdetm.",i,sep=""))
+  sqlSave(loc,txtBDETM,tablename=paste("bdetm.",i,sep=""))
+}
+
+# Ajout des données texturales (médianes sur les années 1990-2009)
+ListBDETM <- c("bdat_pra_9009","bdat_canton_9009")
+
+for(i in ListBDAT){
+  print(i)
+  # Lecture du fichier
+  txtBDAT <- read.table(paste(repBDAT,"BDAT_datapaper/",i,".txt",sep=""),sep="\t",header=TRUE)
+  txtBDAT[,2] <- as.character(txtBDAT[,2])
+  
+  # Intégration dans la bdd
+  sqlQuery(loc,paste("drop table if exists bdat.",i,sep=""))
+  sqlSave(loc,txtBDAT,tablename=paste("bdat.",i,sep=""))
+}
 ```
 
 ## Les données de l'European Soil Data Centre (ESDAC)
@@ -486,6 +555,16 @@ for(i in c("zonage_simple","zonage_cplt")){
  print(sqlQuery(loc,paste("
   COMMENT ON COLUMN ",table_dm,".",i," IS \'",i," des principales régions d élevage par canton. La valeur est issue des données communales (",schema,".regelevage) et représente la valeur majoritaire par canton. La table ",schema,".regelevage présente la signification des codes utilisés pour le zonage. Source DG AGRI RICA UE 2012 - traitement IDELE\';",sep="")))
 }
+
+# Création d'un vecteur région d'élevage
+sqlQuery(loc,"DROP TABLE IF EXISTS dm_vecteurs.zonage_simple")
+sqlQuery(loc,"create table dm_vecteurs.zonage_simple as
+              SELECT zonage_simple,ST_Multi(ST_Union(geom)) as geom
+              FROM dm_vecteurs.canton
+              GROUP BY zonage_simple")
+
+sqlQuery(loc,"COMMENT ON TABLE dm_vecteurs.zonage_simple IS 'Principales régions d\''élevage (zonage simple)';")
+
 ```
 
 # Les données climatiques
@@ -653,7 +732,6 @@ Deux formats sont proposés pour exploiter la base de données :
 
 L'export de la base sous forme SQLite/Spatialite offre l'opportunité d'exploiter la base rapidement à travers l'ouverture du fichier directement connectable avec des clients de données géographiques (comme QGIS) ou de base de données (sqlitebrower). Lors de la conversion, l'arborescence des tables n'est pas maintenue et les commentaires des champs faisant office de métadonnées ont disparu.
 Le fichier est néanmoins utile pour visualiser rapidement les données géographiques.
-Rajouter lien vers des modes opératoires pour lire les données vers qgis.
 
 ```{r,eval=FALSE}
 # Vérification (selon http://gis.stackexchange.com/questions/168819/fixing-ogr2ogr-without-spatialite-support)

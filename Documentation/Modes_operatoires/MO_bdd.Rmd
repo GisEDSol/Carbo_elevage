@@ -1,7 +1,7 @@
 ---
 title: "Mode opératoire pour exploiter la base de données"
 author: "Jean-Baptiste Paroissien"
-date: "22/05/2017"
+date: "15/06/2017"
 output:
   html_document:
     toc: yes
@@ -28,7 +28,7 @@ importparametres(repmaster=repmaster,repdata=repdata,dsn="PG:dbname='sol_elevage
 
 # Objectif et domaine d'application
 
-L'objectif de ce document est de fournir les informations nécessaires pour utiliser la base de données appelée `sol_elevage`. Le document présente l'organisation des données et les explications pour son exploitation.
+L'objectif de ce document est de fournir les informations nécessaires pour utiliser la base de données appelée `sol_elevage`. Le document présente l'organisation des données et les explications pour faciliter son exploitation.
 
 # L'architecture et l'organisation de la base de données
 
@@ -62,7 +62,7 @@ pander(tt,caption = "Liste des schémas contenant des data marts",justify = c('l
 
 # Les données brutes
 
-Dans cette section, les tables brutes sont présentées. *Pour plus de détails sur la construction de ces tables, le lecteur intéressé peut consulter le [fichier de suivi](`r fs_url`BDD/Suivis/FS_bdd_Brute.Rmd) d'intégration de ces données.*
+Dans cette section, les tables brutes sont présentées. *Pour plus de détails sur la construction de ces tables, le lecteur intéressé peut consulter le [fichier de suivi](`r fs_url`BDD/Suivis/FS_bdd_brute.Rmd) d'intégration de ces données.*
 
 ## Les tables de la BDAT
 
@@ -74,9 +74,14 @@ La description des tables brutes de la BDAT est décrit dans le tableau ci-desso
 - 4: 2005-2009
 - 5: 2010-2014
 
-Les `XX` correspondent aux numéros des périodes comparées entre elles. Par exemple, **12** correspond à la comparaison des teneurs en carbone organique entre 1990-1994 et 1995-1999.
+Les `XX` correspondent aux numéros des périodes comparées entre elles. Par exemple, **12** correspond à la comparaison des teneurs en carbone organique entre 1990-1994 et 1995-1999. La table ci-dessous est utilisée dans les scripts pour gérer les correspondances :
 
-**Nota** les données provenant du datapaper sont téléchargeables à cette [adresse](http://www.gissol.fr/wp-content/uploads/2015/04/bdat.zip)
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,results = 'asis',warning=FALSE,message=FALSE}
+evolbdat <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""),sep=",",colClasses = "character")
+pander(evolbdat,caption="Correspondance entre le code de comparaison et les périodes comparées")
+```
+
+**Nota** les données provenant du datapaper sont téléchargeables à cette [adresse](http://doi.pangaea.de/10013/epic.43358.d001)
 
 ```{r,evaL=TRUE,echo=FALSE}
 metatable <- read.csv(paste(repmetadonnees,"Catalogue_table.csv",sep=""),sep=",")
@@ -85,9 +90,11 @@ rownames(tt) <- 1:nrow(tt)
 pander(tt,caption = "Liste des tables brutes de la BDAT",justify = c('left', 'left'),split.cells = c("35%", "65%"),use.hyphening = TRUE)
 ```
 
+La table [Convention_nommage_brute_bdat.csv](https://github.com/GisEDSol/Carbo_elevage/blob/master/Documentation/Metadonnees/Convention_nommage_brute_bdat.csv) décrit le nom des champs des tables brutes de la BDAT pour les analyses ré-échantillonées. Pour les données brutes issues du datapaper, un fichier `readMeGB.txt` présente une description des champs des tables.
+
 ```{r,evaL=TRUE,echo=FALSE}
-metatable <- read.csv(paste(repmetadonnees,"Nomenclature_variables_bdat.csv",sep=""),sep=",")
-pander(metatable,caption = "Description des champs des tables de la BDAT",justify = c('left', 'left'),split.cells = c("35%", "65%"),use.hyphening = TRUE)
+metatable <- read.csv(paste(repmetadonnees,"Convention_nommage_brute_bdat.csv",sep=""),sep=",")[,c("Nom_colonne","Description")]
+pander(metatable,caption = "Description des champs des tables de la BDAT aux analyses ré-échantillonnées",justify = c('left', 'left'),split.cells = c("35%", "65%"),use.hyphening = TRUE)
 ```
 
 ## Les tables de la Base de données Géographique des Sols de France (BDGSF)
@@ -125,6 +132,10 @@ tt <- metatable[metatable[,"Schéma"] %in% "clc",][,c("Table","Description")][,1
 rownames(tt) <- 1:nrow(tt)
 pander(tt,caption = "Liste des tables brutes de Corine Land Cover",justify = c('left', 'left'),split.cells = c("30%", "70%"),use.hyphening = TRUE)
 ```
+
+## Les tables associées aux données climatiques
+
+Pour le moment, seule la table du travail de [Joly et al., 2010](http://cybergeo.revues.org/26894?file=1) a été exploitée. Cette table est stockée dans le schéma `climat` de la base de données et une description des champs est consultable à cette [adresse](http://cybergeo.revues.org/23155)
 
 # Les data_mart
 
@@ -196,7 +207,7 @@ Plusieurs variables catégorielles ont une nomenclature spécifiques qu'il est i
 Le tableau ci-dessous présente la nomenclature utilisée pour l'utilisation des données liées aux régions d'élevage.
 
 ```{r,evaL=TRUE,echo=FALSE}
-metatable <- read.csv(paste(repmetadonnees,"Nomenclature_regionelevage.csv",sep=""),sep=",")
+metatable <- read.csv(paste(repmetadonnees,"Nomenclature_regionelevage.csv",sep=""),sep=",")[,1:4]
 colnames(metatable) <- c("Code simple","Code cplt","Description simple","Description cplt")
 pander(metatable,caption = "Description des régions d'élevage",justify = c('left','left','left','left'),split.cells = c("0.05%","0.05%","4.9%","95%"),use.hyphening = TRUE,split.table = Inf)
 ```
@@ -206,7 +217,7 @@ pander(metatable,caption = "Description des régions d'élevage",justify = c('le
 La description des différents types de climat est présentée dans le tableau ci-dessous.
 
 ```{r,evaL=TRUE,echo=FALSE}
-metatable <- read.csv(paste(repmetadonnees,"Nomenclature_typeclimat.csv",sep=""),sep=",")
+metatable <- read.csv(paste(repmetadonnees,"Nomenclature_typeclimat.csv",sep=""),sep=",")[,1:2]
 pander(metatable,caption = "Description des types de climats",justify = c('left','left'),split.cells = c("40%","60%"),use.hyphening = TRUE)
 ```
 
@@ -217,4 +228,13 @@ La description des différents types de climat est présentée dans le tableau c
 ```{r,evaL=TRUE,echo=FALSE}
 metatable <- read.csv(paste(repmetadonnees,"Nomenclature_clc.csv",sep=""),sep=",")
 pander(metatable,caption = "Description du code de niveau 2 de Corine Land Cover",justify = c('left','left'),split.cells = c("40%","60%"),use.hyphening = TRUE)
+```
+
+## Les données du Recencement agricole
+
+Dans le travail d'analyse, les variables élaborées créées avec les données du RA suivent la convention de nommage suivante :
+
+```{r,evaL=TRUE,echo=FALSE}
+metatable <- read.csv(paste(repmetadonnees,"Convention_nommage_dm_ra.csv",sep=""),sep=",")
+pander(metatable,caption = "Description du nom des variables élaborées issues du RA",justify = c('left','left'),split.cells = c("40%","60%"),use.hyphening = TRUE)
 ```

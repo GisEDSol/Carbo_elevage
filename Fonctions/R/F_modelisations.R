@@ -153,7 +153,7 @@ if (model == "cubist"){
     varimport$variable <- reorder(varimport$variable, varimport$importance)
     varimport$type <- gsub2(as.character(Rcovar),type,as.character(varimport$variable))
 
-    return(list(varimp=varimp,meanvarimport=varimport,qualityindex=meanqualityindex,R2=qualityindex$R2,RMSE=qualityindex$RMSE,MSE=qualityindex$MSE))
+    return(list(mdata_miningbst=mdata_miningbst,varimp=varimp,meanvarimport=varimport,qualityindex=meanqualityindex,R2=qualityindex$R2,RMSE=qualityindex$RMSE,MSE=qualityindex$MSE))
   }else{
   return(list(formulabstmodel=formulabstmodel,qualityindex=meanqualityindex,R2=qualityindex$R2,RMSE=qualityindex$RMSE,MSE=qualityindex$MSE))  
   }

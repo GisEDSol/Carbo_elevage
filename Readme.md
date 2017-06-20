@@ -1,6 +1,6 @@
 # Le projet "Carbo_elevage"
 
-> Ce dépôt rassemble l'ensemble des scripts développés pour analyser les évolutions des teneurs en carbone organique dans les sols en lien avec les changements d'occupation du sol liés à l'élevage. Le dépôt rassemble les scripts associés à la création d'une base de données composée de données sur les sols et l'élevage et les différents traitements statistiques associés. Il est organisé selon l'arborescence suivante :
+> Ce dépôt rassemble l'ensemble des scripts développés pour analyser l'évolution des teneurs en carbone organique dans les sols en lien avec l'élevage. Le dépôt rassemble les scripts associés à la création (1) d'une base de données composée de données sur les sols, le climat et l'occupation du sol et (2) les traitements statistiques associés. Il est organisé selon l'arborescence suivante :
 
 * **[Fichiers_suivis](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis)** Répertoire de stockage des fichiers de suivis associés à la création de la base de données et aux traitements statistiques des données. Ce répertoire est constitué des sous-répertoires suivants :
 	* [BDD](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/BDD) Répertoire de stockage des fichiers de suivis liés à la création de la base de données. Le répertoire est constitué du [script](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/BDD/FS_bdd_brute.Rmd) de création de la bdd brute et de plusieurs fichiers décrivant la création de données élaborées, directement exploitables pour les traitements, les analyses et la cartographie.
@@ -8,17 +8,15 @@
 
 * **[Fonctions](https://github.com/GisEDSol/Carbo_elevage/tree/master/Fonctions)** Regroupe des fonctions communes, utilisées dans plusieurs traitements. 
 
-* **[Documentation](https://github.com/GisEDSol/Carbo_elevage/tree/master/Documentation)** Comporte l'ensemble de la documentation du projet (description du workflow général, de la base de données et des principaux traitements). Ce répertoire est constitué :
+* **[Documentation](https://github.com/GisEDSol/Carbo_elevage/tree/master/Documentation)** Comporte l'ensemble de la documentation du projet (description de la chaîne de traitement générale, de la base de données et des principaux traitements). Ce répertoire est constitué :
 	* De plusieurs [métadonnées](https://github.com/GisEDSol/Carbo_elevage/tree/master/Documentation/Metadonnees) présentées sous forme de tableaux,
-	* De différents modes opératoires, dont notamment :
+	* De modes opératoires :
 		* un [mode opératoire](https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Modes_operatoires/MO_priseenmain.html) pour prendre en main le projet (importation du projet, importation de la base de données et paramètres de connexion),
 		* un [mode opératoire](https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Modes_operatoires/MO_bdd.html) sur la base de données (organisation des données et métadonnées),
-		* un mode opératoire pour la rédaction des fichiers de suivis et des fonctions R,
-		* un mode opératoire présentant les logiciels utilisés et la configuration nécessaire pour reprendre le projet.
 
 ----
 
-### Document de travail en cours
+### Document de travail
 
 Pour une lecture aisée des traitements et résultats en cours sur l'analyse des teneurs en carbone organique, le lecteur intéressé peut consulter :
 
@@ -26,11 +24,11 @@ Pour une lecture aisée des traitements et résultats en cours sur l'analyse des
 * **[l'analyse des teneurs en carbone organique pour différentes périodes](https://rawgit.com/GisEDSol/Carbo_elevage/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdat.html)**
 * **[l'analyse de l'évolution des teneurs en carbone organique](https://rawgit.com/GisEDSol/Carbo_elevage/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_bdatdiff.html)**
 
-Une synthèse des résultats est en cours de préparation : 
+La synthèse des résultats en vue d'une publication est consultable :
 * **[Synthèse des résultats](https://rawgit.com/GisEDSol/Carbo_elevage/master/Fichiers_suivis/Traitements/Suivis/FS_synthese.html)**
 
-Pour aller plus loin, plusieurs documents détaillent l'analyse à l'échelle régionale :
-* **[Nord Pas de Calais et la Picardie](https://rawgit.com/GisEDSol/Carbo_elevage/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_NPCPicardie.html)**
+Pour aller plus loin, plusieurs documents détaillent des analyses sur plusieurs régions :
+* **[Les Hauts-de-France](https://rawgit.com/GisEDSol/Carbo_elevage/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_NPCPicardie.html)**
 * **[Bretagne](https://rawgit.com/GisEDSol/Carbo_elevage/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_Bretagne.html)**
 * **[Région Centre](https://rawgit.com/GisEDSol/Carbo_elevage/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_Centre.html)**
 

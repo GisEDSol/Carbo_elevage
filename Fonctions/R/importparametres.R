@@ -30,7 +30,7 @@ ipak <- function(pkg){
 # Chargement des librairies
 listpaquets <- c("RODBC","gdata","fields","stringr","ggplot2","rgdal","maptools","RColorBrewer","classInt","devtools","reshape2","Hmisc","gridExtra","mapproj","wesanderson","FactoMineR",
 	"knitr","pander","GGally","factoextra","caret","plyr","doMC","sp","raster","RPostgreSQL","corrplot","MASS","foreign","doParallel","scales","viridis","mgcv","dplyr","car","fmsb"
-  ,"multcompView","outliers") 
+  ,"multcompView","outliers","xtable","debug") 
 ipak(listpaquets)
 #new.packages <- listpaquets[!(listpaquets %in% installed.packages()[,"Package"])]
 #if(length(new.packages)) install.packages(new.packages)
@@ -114,6 +114,7 @@ assign("repfonctions",paste(repmaster,"Fonctions/",sep=""),.GlobalEnv)
 assign("repLucas",paste(repdata,"Sol/ESDAC/Lucas/",sep=""),.GlobalEnv)
 assign("repCLC",paste(repdata,"Vegetation_Occup/CLC/",sep=""),.GlobalEnv)
 assign("repBDAT",paste(repdata,"Sol/bdat/",sep=""),.GlobalEnv)
+assign("repBDETM",paste(repdata,"Sol/bdetm/",sep=""),.GlobalEnv)
 assign("repBase",paste(repdata,"Base/",sep=""),.GlobalEnv)
 assign("repagreste",paste(repdata,"Vegetation_Occup/Agreste/Disar/",sep=""),.GlobalEnv)
 #########################################

@@ -1,8 +1,6 @@
 #' @title generate_label_df
 #'
-#' @description Lancer gbm ou cubist en parallèle sur plusieurs itérations et différents jeux de données d'apprentissage.
-#' selon (https://fabiomarroni.wordpress.com/2017/03/25/perform-pairwise-wilcoxon-test-classify-groups-by-significance-and-plot-results/#comments et http://www.r-graph-gallery.com/84-tukey-test/,http://stackoverflow.com/questions/18771516/is-there-a-function-to-add-aov-post-hoc-testing-results-to-ggplot2-boxplot)
-#'
+#' @description Permet de créer les labels d'un test statistiques (ici wilcoxon, à adapter pour d'autre test) + nbr analyse par groupe
 #' @param lev : nom des groupes dont on souhaite tester la différence significative
 #' @param db : nom de la base de données
 #' @param value : nom du champs contenant les valeurs à évaluer
@@ -38,19 +36,23 @@ generate_label_df <- function(
 {
   wilcotest <- pairwise.wilcox.test(db[,value], db[,lev])$p.value
   mymat <- tri.to.squ(wilcotest)
-  myletters <- multcompLetters(mymat,compare="<=",threshold=0.05,Letters=letter)
+  myletters <- multcompLetters(mymat,compare="<=",threshold=0.05,Letters=letters)
   plot.labels <- names(myletters[['Letters']])
   
   #changement $value par [value]
   boxplot.df <- ddply(db, lev, function (x) quantile(x[value],position,na.rm=TRUE) + 0.2)
-
   colnames(boxplot.df) <- c("lev","V1")
+
+  nbranalyse.df <- ddply(db, lev, function (x) nrow(x[value]))
+  colnames(nbranalyse.df) <- c("lev","Nbr_analyse")
+  
   # Create a data frame out of the factor levels and Tukey's homogenous group letters
   plot.levels <- data.frame(plot.labels, labels = myletters[['Letters']],
      stringsAsFactors = FALSE)
 
-  # Merge it with the labels
+  # Jointure
   labels.df <- merge(plot.levels, boxplot.df, by.x = 'plot.labels', by.y = "lev", sort = FALSE)
+  labels.df <- merge(labels.df, nbranalyse.df, by.x = 'plot.labels', by.y = "lev", sort = FALSE)
 
   return(labels.df)
 }

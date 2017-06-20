@@ -1,7 +1,7 @@
 ---
 title: "Traitement des données de la BDAT : Evolution des teneurs en carbone organique"
 author: "Jean-Baptiste Paroissien"
-date: "22/05/2017"
+date: "16/06/2017"
 output:
   html_document:
     toc: yes
@@ -111,7 +111,7 @@ Dans cette section, les évolutions des teneurs en CO à l'échelle nationale so
 ## Etat des lieux général
 
 La figure ci-dessous présente pour toutes les périodes comparées, la proportion du type d'évolution des teneurs en CO par canton.
-Sur toutes les périodes comparées, la proportion de canton ayant une évolution significative des teneurs en CO (augmentation ou diminution) est inférieure à 30%. Dans cette part, il y a quasiment autant de canton enregistrant une augmentation qu'une diminution des teneurs (`r table(melted.bdatdiff[,"diff_corgox"])[[1]]` et `table(melted.bdatdiff[,"diff_corgox"])[[2]]` respectivement). **Une large part des cantons (plus de 70%) n'a donc pas enregistrés d'évolution significative des teneurs en CO.**
+Sur toutes les périodes comparées, la proportion de canton ayant une évolution significative des teneurs en CO (augmentation ou diminution) est inférieure à 30%. Dans cette part, il y a quasiment autant de canton enregistrant une augmentation qu'une diminution des teneurs (`r table(melted.bdatdiff[,"evol_med"])[[1]]` et `table(melted.bdatdiff[,"evol_med"])[[2]]` respectivement). **Une large part des cantons (plus de 70%) n'a donc pas enregistrés d'évolution significative des teneurs en CO.**
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=10,fig.cap = fig$cap("histo_evolution",""),fig.align="center"}
 bdatdiff <- melted.bdatdiff
@@ -195,7 +195,7 @@ periodetud <- c(periodetud,enplus)
 
 bdatdiff <- bdatdiff[bdatdiff$period %in% periodetud, ]
 bdatdiff$evol_med <- as.factor(bdatdiff$evol_med)
-bdatdiff$classe_var_prairie1970_2010 <- ordered(bdatdiff$classe_var_prairie1970_2010, levels = c("[-97.8,-21.4]","(-21.4,-11.8]","(-11.8,-4.19]","(-4.19,4.5]","(4.5,73]"))
+#bdatdiff$classe_var_prairie1970_2010 <- ordered(bdatdiff$classe_var_prairie1970_2010, levels = c("[-97.8,-21.4]","(-21.4,-11.8]","(-11.8,-4.19]","(-4.19,4.5]","(4.5,73]"))
 
 #fill=classe_var_prairie1970_2010(dans aes)
 histo_period <- ggplot(bdatdiff,aes(evol_med)) + geom_bar() + facet_wrap(~ period)+
@@ -240,6 +240,8 @@ histo_regionadmin <- ggplot(bdatdiff_classe,aes(evol_med,fill=nom_region)) + geo
                     axis.title = element_text(face="bold"),
                     axis.text.x=element_text(size = 11),
                     legend.position="bottom")                      
+
+#histo_regionadmin
 #ggsave(histo_regionadmin,file = paste(repsortie,"histo_regionadmin.jpg",sep=""), width = 14, height = 5)  
 ```
 De la figure ci-dessus, les 10 principales régions touchées par des évolutions significatives sont présentées dans le tableau ci-dessous.
@@ -247,7 +249,7 @@ De la figure ci-dessus, les 10 principales régions touchées par des évolution
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,results='asis'}
 # Sélection
 count <- plyr::count # Pour sélectionner la fonction du paquet plyr
-histo_table <- count(bdatdiff_classe,c("diff","nom_region","period"))
+histo_table <- count(bdatdiff_classe,c("diff_med","nom_region","period"))
 histo <- histo_table[order(-histo_table[,"freq"]),][1:10,]
 pander(histo,style = "rmarkdown",caption = "Principales régions touchées par des évolutions significatives")
 ```
@@ -319,21 +321,27 @@ nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""
 coname <- "corgox"
 periodetud <- c("14","24","15","25","13","35")
 p <- list()
-r2 <- list()
 rest <- list()
-
 for(s in periodetud){
         y <- paste("diff_med_",s,sep="")
         teststats <- paste("evol_med_",s,sep="")
         x <- paste("med_corgox_",nomdiff[nomdiff$Code %in% s,"Periode1"],sep="")
         xyNames <- c(x,y,teststats)
+        
 
-        for(i in c("D","A","I")){
+        periode_co=periodetud
+        stats <- array(NA, dim = c(3, 2),list(Diff = c("D","A","I"), mod = c("r2","coeff")))
+
+        for(i in c("D","A","I")){        
 
           dd <- dcast.bdat[complete.cases(dcast.bdat[,xyNames]) & dcast.bdat[,teststats] %in% i,][,xyNames]    
-          
+
+          #dd <- dcast.bdat[complete.cases(dcast.bdat[,xyNames]) & dcast.bdat[,teststats] != "I",][,xyNames]    
+
           if(nrow(dd) < 15){
+            print("test")
             next
+
           }else{}
 
           xlabel <- paste("CO ",x,sep="")
@@ -348,12 +356,16 @@ for(s in periodetud){
                   axis.text.x=element_text(size = 11))+ labs(title=i)+
                   annotate("text", x=20, y=10, label=lm_eqn(lm(dd[,y]~dd[,x], dd)), parse=TRUE)+
                   geom_smooth(method = "lm", se = FALSE,color="black")
-          r2[[i]] <- summary(lm(dd[,y]~dd[,x]))$r.squared
+
+          stats[i,"r2"] <- summary(lm(dd[,y]~dd[,x]))$r.squared
+          stats[i,"coeff"] <- summary(lm(dd[,y]~dd[,x]))$coefficients[,"Estimate"][[2]]
         }
 
-      stats_r2 <- as.data.frame(melt(r2))
-      colnames(stats_r2) <- c("R2","Type")
-      rest[[s]] <- stats_r2
+      #stats_r2 <- as.data.frame(cbind(melt(r2),melt(coeff_direc)))
+      stats_r2 <- as.data.frame(stats)
+      stats_r2$Type <- rownames(stats_r2)
+      rest[[s]] <- stats_r2      
+
 }
 
 save(rest,file=paste(repsortie,"diff_initial_frR2.RData",sep=""))
@@ -361,14 +373,12 @@ save(rest,file=paste(repsortie,"diff_initial_frR2.RData",sep=""))
 
 ```{r,eval=TRUE,echo=FALSE}
 load(paste(repsortie,"diff_initial_frR2.RData",sep=""))
+test2 <- melt(rest,id=c("r2","coeff","Type"))
 
-test2 <- melt(rest)
 colnames(test2)[4] <- "Period"
-ggplot(test2, aes(x=Period,y=value,colour=Type)) + geom_boxplot() +
+ggplot(test2, aes(x=Period,y=r2,colour=Type)) + geom_boxplot() +
   scale_x_discrete("Périodes comparées")+scale_y_continuous("Coefficient de détermination non-ajusté (R2)")+theme_perso()  
 ```
-
-
 
 ## Analyse par strates
 
@@ -450,7 +460,6 @@ nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""
 periodetud <- c("14","24","15","25","13","35")
 #reg_elevage <- c("A","B1","B2","C1","C2","D","E1","E2","F2")
 reg_elevage <- c("A","B","C","D","E","F","G")
-coname <- "corgox"
 
 rest <- list()
 for(s in reg_elevage){
@@ -461,14 +470,14 @@ for(s in reg_elevage){
     
     for(i in periodetud){
       print(i)
-        y <- paste("diff_med_",coname,"_",i,sep="")
-        teststats <- paste("evol_med_",coname,"_",i,sep="")
+        y <- paste("diff_med_",i,sep="")
+        teststats <- paste("evol_med_",i,sep="")
         x <- paste("med_corgox_",nomdiff[nomdiff$Code %in% i,"Periode1"],sep="")
         xyNames <- c(x,y,teststats)
 
         #dd <- d_typo[complete.cases(d_typo[,xyNames]),][,xyNames]    
         dd <- d_typo[complete.cases(d_typo[,xyNames]) & d_typo[,teststats] %in% "D",][,xyNames]    
-        if(nrow(dd) < 15){
+        if(nrow(dd) < 5){
             print("Pas assez de données")
             next
         }else{}
@@ -1007,7 +1016,7 @@ pander(rest_lmclim,caption="Résultats des régressions linéaires pour les diff
 
 
 
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE}
+```{r,highlight=TRUE,eval=FALSE,echo=FALSE}
 # IMPORTANT : graphique intéressant à creuser. Revoir en calculant les différences relatives et revoir pour les autres occupations du sol !!!
 
 melted.bdatdiff <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdatdiff",sep=""))
@@ -1040,7 +1049,7 @@ datatest <- datatest[complete.cases(datatest[occupsol]),]
 wilcotest <- generate_label_df(db=datatest,value="diffmedian_corgox",lev=occupsol,letters,position=0.5)
 lablex <- labelx
 labley <- "Différences des teneurs en CO (g/kg)"
-p <- ggplot(datatest,aes_string(y="diffmedian_corgox",x=occupsol
+p <- ggplot(datatest,aes_string(y="diff_med",x=occupsol
 ))+
             geom_boxplot() + coord_flip() + geom_hline(yintercept = 0,color="red") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = labels)) + scale_x_discrete(lablex)+scale_y_continuous(labley)+theme_perso()
 p
@@ -1089,9 +1098,6 @@ ggsave(tt,file = paste(repsortie,"boxplot_diff_occup_",x,"_pourcent.png",sep="")
 }
 
 
-
-
-
 ###Ci-dessous ok### 
 occup <- c("classe_var_sfp1988_2010","classe_var_prairie1988_2010","classe_var_mf1988_2010","classe_var_sth1988_2000","classe_var_cop1988_2000","classe_argi_med")
 
@@ -1101,25 +1107,18 @@ for(i in occup){
   cpt <- cpt + 1
   datatest <- bdatdiff[complete.cases(bdatdiff[i]) & bdatdiff$period=="15",] 
 
-  wilcotest <- generate_label_df(db=datatest,value="diffmedian_corgox",lev=i,letters,position=0.5)
+  wilcotest <- generate_label_df(db=datatest,value="diff_med",lev=i,letters,position=0.5)
 
   lablex <- ""#legendx[cpt]
   labley <- "Différences des teneurs en CO (g/kg)"
   
-  p[[i]] <- ggplot(datatest,aes_string(y="diffmedian_corgox",x=i
+  p[[i]] <- ggplot(datatest,aes_string(y="diff_med",x=i
 ))+
             geom_boxplot() + coord_flip() + geom_hline(yintercept = 0,color="red") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = labels)) + scale_x_discrete(lablex)+scale_y_continuous(labley)+theme_perso()+labs(title=i)
 }
 tt <- do.call(grid.arrange,p)
 
-
-
-
-
 ## Idem, avec les différences relatives
-
-ggsave(tt,file = paste(repsortie,"boxplot_diff_occup.png",sep=""), width = 17, height = 10)  
-
 occupsol <- "classe_p_prairie1988"
 labelx <- ""
 p <- list()
@@ -1132,7 +1131,7 @@ for(i in reg_elevage){
   datatest <- bdatdiff[bdatdiff$zonage_simple %in% i,]
   datatest <- datatest[complete.cases(datatest[occupsol]),] 
 
-  wilcotest <- generate_label_df(db=datatest,value="diffmedian_corgox",lev=occupsol,letters,position=0.5)
+  wilcotest <- generate_label_df(db=datatest,value="diff_med",lev=occupsol,letters,position=0.5)
 
   if(cpt==4){
     lablex <- labelx
@@ -1142,7 +1141,7 @@ for(i in reg_elevage){
     labley <- "Différences des teneurs en CO (g/kg)"
   }else{labley <- ""}
 
-  p[[i]] <- ggplot(datatest,aes_string(y="diffmedian_corgox",x=occupsol
+  p[[i]] <- ggplot(datatest,aes_string(y="diff_med",x=occupsol
 ))+geom_boxplot() + coord_flip() + geom_hline(yintercept = 0,color="red") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = labels)) + scale_x_discrete(lablex)+scale_y_continuous(labley)+theme_perso()+labs(title=i)
 }
 
@@ -1158,7 +1157,7 @@ for(i in reg_elevage){
   datatest <- bdatdiff[bdatdiff$zonage_cplt %in% i,]
   datatest <- datatest[complete.cases(datatest$classe_var_mf1988_2010),] 
 
-  wilcotest <- generate_label_df(db=datatest,value="diffmedian_corgox",lev="classe_var_mf1988_2010",letters,position=0.5)
+  wilcotest <- generate_label_df(db=datatest,value="diff_med",lev="classe_var_mf1988_2010",letters,position=0.5)
 
   if(cpt==4){
     print("test")
@@ -1184,7 +1183,7 @@ for(i in reg_elevage){
   datatest <- bdatdiff[bdatdiff$zonage_cplt %in% i,]
   datatest <- datatest[complete.cases(datatest$classe_var_prairie1988_2010),] 
 
-  wilcotest <- generate_label_df(db=datatest,value="diffmedian_corgox",lev="classe_var_prairie1988_2010",letters,position=0.5)
+  wilcotest <- generate_label_df(db=datatest,value="diff_med",lev="classe_var_prairie1988_2010",letters,position=0.5)
 
   if(cpt==4){
     print("test")
@@ -1210,7 +1209,7 @@ for(i in reg_elevage){
   datatest <- bdatdiff[bdatdiff$zonage_cplt %in% i,]
   datatest <- datatest[complete.cases(datatest$classe_p_prairie2000),] 
 
-  wilcotest <- generate_label_df(db=datatest,value="diffmedian_corgox",lev="classe_p_prairie2000",letters,position=0.5)
+  wilcotest <- generate_label_df(db=datatest,value="diff_med",lev="classe_p_prairie2000",letters,position=0.5)
 
   if(cpt==4){
     print("test")
@@ -1239,7 +1238,7 @@ for(i in reg_elevage){
   datatest <- bdatdiff[bdatdiff$zonage_cplt %in% i,]
   datatest <- datatest[complete.cases(datatest[occupsol]),] 
 
-  wilcotest <- generate_label_df(db=datatest,value="diffmedian_corgox",lev=occupsol,letters,position=0.5)
+  wilcotest <- generate_label_df(db=datatest,value="diff_med",lev=occupsol,letters,position=0.5)
 
   if(cpt==4){
     print("test")
@@ -1250,39 +1249,12 @@ for(i in reg_elevage){
     labley <- "Différences des teneurs en CO (g/kg)"
   }else{labley <- ""}
 
-  p[[i]] <- ggplot(datatest,aes_string(y="diffmedian_corgox",x=occupsol
+  p[[i]] <- ggplot(datatest,aes_string(y="diff_med",x=occupsol
 ))+
             geom_boxplot() + coord_flip() + geom_hline(yintercept = 0,color="red") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = labels)) + scale_x_discrete(lablex)+scale_y_continuous(labley)+theme_perso()+labs(title=i)
 }
 tt <- do.call(grid.arrange,p)
 ggsave(tt,file = paste(repsortie,"boxplot_diffregelevage",occupsol,".png",sep=""), width = 17, height = 10)  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ## ## ##
 
@@ -1294,7 +1266,7 @@ for(i in reg_elevage){
   datatest <- bdatdiff[bdatdiff$zonage_cplt %in% i,]
   datatest <- datatest[complete.cases(datatest$classe_var_sfp1988_2010),] 
 
-  wilcotest <- generate_label_df(db=datatest,value="diffmedian_corgox",lev="classe_var_sfp1988_2010",letters,position=0.5)
+  wilcotest <- generate_label_df(db=datatest,value="diff_med",lev="classe_var_sfp1988_2010",letters,position=0.5)
 
   if(cpt==4){
     print("test")
@@ -1311,41 +1283,11 @@ for(i in reg_elevage){
 tt <- do.call(grid.arrange,p)
 ggsave(tt,file = paste(repsortie,"boxplot_diffregelevage_sfp.png",sep=""), width = 17, height = 10)  
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ################
 
 ## Avec facet_wrap
 
-ggplot(bdatdiff,aes(y=diffmedian_corgox,x=classe_var_mf1988_2010))+
+ggplot(bdatdiff,aes(y=diff_med,x=classe_var_mf1988_2010))+
  geom_boxplot() + facet_wrap(~ zonage_cplt)  + xlab("Variation du maïs fourrage entre 1988-2010 (%)")+ylab("Différences des teneurs en CO")+ coord_flip() + geom_hline(yintercept = 0,color="red")# stat_summary(fun.y=median, geom="line",size = 1,aes(group=1)) #scale_fill_brewer(palette = 'Paired',name="Evolution des prairies % (1970-2010)")
                  # 
 
@@ -1360,20 +1302,3 @@ ggplot(test,aes(y=diffmedian_corgox,x=classe_argi_med))+
  geom_boxplot() + xlab("Taux d'argile (g/kg)")+ylab("Différences des teneurs en CO")+ coord_flip() + geom_hline(yintercept = 0,color="red") + geom_text(data = wilcotest, vjust=0,aes(x = plot.labels, y = V1, label = labels))
 
 ```
-
-# Test du nombre d'effectif (test en cours)
-
-```{r,highlight=TRUE,eval=TRUE,echo=FALSE}
-dcast.bdat <- sqlQuery(loc,paste("select * from dm_vecteurs.canton",sep=""))
-
-id <- c("code_dept","code_canton")
-bdat_effectif <- dcast.bdat[,c(id,"eff_corgox9094","eff_corgox9599","eff_corgco0004","eff_corgox0509","eff_corgox1014")]
-melt_effectif <- melt(data=bdat_effectif,id.vars=id)
-
-id <- c("code_dept","code_canton")
-bdat_diff <- dcast.bdat[,c(id,"diff_corgox12","diff_corgox13","diff_corgox14","diff_corgox15","diff_corgox23","diff_corgox24","diff_corgox25","diff_corgox34","diff_corgox35","diff_corgox45")]
-melt_diff <- melt(data=bdat_diff,id.vars=id)
-
-# Calcul du nombre d'effectif par canton en moyenne
-
-melt.canton <- merge(melt_diff,melt_effectif, by.x=id, by.y=id,all.x=TRUE,all.y=TRUE)
