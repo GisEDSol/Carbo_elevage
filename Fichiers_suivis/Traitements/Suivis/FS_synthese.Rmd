@@ -50,7 +50,7 @@ melted.bdat <- melted.9514
 melted.bdat <- melted.bdat[melted.bdat$variable %in% c("med_corgox","dqua_corgox"),]
 levels(melted.bdat$variable) <- c("Médiane","75% centile")
 
-# En attendant les corrections de Laetitia, on travaille sur les médianes
+# Travail uniquement sur les médianes
 melted.bdat <- melted.bdat[melted.bdat$variable %in% "med_corgox",]
 ```
 
@@ -256,11 +256,12 @@ wilcotest <- generate_label_df(db=melted.bdat_regelevage,value="value",lev="zona
 
 p <- ggplot(melted.bdat_regelevage) +
             geom_boxplot(aes(x=zonage_simple,y=value,fill=zonage_simple))+
-            scale_fill_manual(values=couleur,name="") + scale_x_discrete("Grandes régions d'élevage")+scale_y_continuous("Teneur en carbone organique (g/kg)")+ theme_perso("") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = labels))
+            scale_fill_manual(values=couleur,name="") + scale_x_discrete("Grandes régions d'élevage")+scale_y_continuous("Teneur en carbone organique (g/kg)")+ theme_perso("") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = paste(labels,"/",Nbr_analyse,sep="")))
             
 p 
 ggsave(p,file = paste(reppapier,"boxplotbdat_zonage_simple.png",sep=""), width = 12, height = 6)
 ggsave(p,file = paste(repsortie,"boxplotbdat_zonage_simple.png",sep=""), width = 12, height = 6)  
+
 ```
 
 
@@ -519,6 +520,7 @@ Ci-dessous, les figures présentent l'effet des principales types de variables s
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,error=FALSE}
 # Chargement des variables utilisées
+set.seed(157) #Pour la reproductibilité
 Rcovarclimato <- c("hpluie_an","jfroids_an","ampli_t_juil_janv","pluie_ecart_janv","pluie_ecart_juil","jpluie_janv","jpluie_juil","ttemp_an","jchauds_an")
 typeclimato <- replicate(length(Rcovarclimato), "climat")
 
@@ -551,13 +553,14 @@ for(i in Variay){
   cpt <- cpt + 1
   ra_occupyears <- apply(expand.grid(ra_occup,periodra[indexperiod[[cpt]]]),1, function(x){paste(x[1],x[2],sep="")})
 
-  # Suppression p_protea1970 (inexistant en 1970!)
-  #ra_occupyears <- ra_occupyears[!ra_occupyears %in% "p_protea1970"]
-
   Rcovaroccup <- c(ra_otex,ra_occupyears)
   
   # Ajout des effectifs
   Rcovar <- c(Rcovartopo,Rcovarpedo,Rcovaroccup,Rcovarclimato,Rcovarstrates,effectif[cpt])
+
+  # Construction de la variable "type"
+  typeoccup <- replicate(length(Rcovaroccup), "occup")
+  type <- c(typetopo,typepedo,typeoccup,typeclimato,typestrates,"strates")
 
   # Construction du vecteur des variables du modèle. 
   vNames <- c(i,Rcovar)
@@ -662,6 +665,52 @@ for(i in Variay){
   saveRDS(mcubist_fr,file=paste(repsortie,"mcubist_fr_",i,"_",nbr,"_bis.rds",sep=""))
 }
 ```
+
+```{r,eval=TRUE,echo=FALSE}
+# Test d'endogénéité (REVOIR)
+# selon http://eclr.humanities.manchester.ac.uk/index.php/IV_in_R
+library(AER,lmtest)
+endo <- c("p_sfp2000","p_sfp2010","p_prairie2000","p_prairie2010","p_mf2000","p_mf2010","p_sth2000","p_sth2010","p_c2000","p_c2010")
+
+# Ensemble des variables exogènes (climat+topo+pédo)
+exo <- c("altimean","hpluie_an","jchauds_an","jfroids_an","pluie_ecart_janv","std_pluie_juil","std_temp_janv","std_temp_juil","argi_med","sabt_med")
+exoplus <- paste(exo,collapse="+")
+variamodel <- c(endo,exo)
+
+# Instrument (teneur en carbone sur deux périodes antérieures aux occupations du sol(<2000))
+instru <- c("med_corgox_9599","med_corgox_9094")
+instruplus <- paste(instru,collapse="+")
+
+vNames <- unique(c("med_corgox_0509",instru,variamodel))
+d <- dcast.bdat[complete.cases(dcast.bdat[vNames]),vNames]
+
+# Test des instruments et de l'endogénéité
+intrutest <- list()
+HausWu <- list()
+for(i in endo){
+  varia <- variamodel[!variamodel %in% i]
+  
+  # Régression linéaire entre la variable endogène et les instrus et les variables exogènes
+  first_stage <- lm(paste(i, " ~ ", paste(c(exoplus,instruplus),collapse="+"),sep=""),data=d)
+  
+  instrHausWutest <- waldtest(first_stage,.~.-med_corgox_9599-med_corgox_9094)
+  intrutest[[i]] <- instrHausWutest[2,4]#Sargan
+
+  # Régression linéaire du carbone (1995-1999) avec les variables exogènes et le résidu de la première régression linéaire
+  Hausman_reg <- lm(paste(vNames[1], " ~ ", paste(exo,collapse="+"),"+first_stage$residuals",sep=""),data=d)#Ajout des résidus au modèle de base
+  
+  # Comparaison des deux modèles 
+  HausWutest <- waldtest(Hausman_reg,.~.-first_stage$residuals)
+  HausWu[[i]] <- HausWutest[2,4]
+}
+
+rest <- cbind.data.frame(melt(intrutest),melt(HausWu))[,1:3]
+colnames(rest) <- c("Sargan_test","Variables","Hausman_test")
+pander(rest,caption="Résutlats des tests d'endogénéité (test de Wu-Hausman)")
+#print(xtable(rest),include.rownames=FALSE)
+```
+
+
 
 ```{r,eval=TRUE,echo=FALSE,message=FALSE,warning=FALSE,error=FALSE}
 restbis <- array(NA, dim = c(length(Variay), 3),list(Period_co = Variay, mod = c("r2","MSE","RMSE")))
@@ -776,21 +825,22 @@ test2 <- as.data.frame(test %>%
 group_by(period,type) %>% 
 mutate(perctype=round(sum(value),1)))
 
-test2$positionperc <- as.numeric(c(rep("80",11),rep("45",30)))
+test2$positionperc <- as.numeric(c(rep("82",10),rep("49",32)))
 #test3 <- unique(test2[,c("period","type","type2","perc","perctype")])
 
 ###################################
+
+couleur <- c("#60C233E6","#394AA7E6","#F79A39E6","#F1ED0AE6")
 pp <- ggplot(test2,aes(x=period,y=value,fill=type,label=paste(covariable,":",round(value),"%",sep="")))+geom_col(width = 0.7) +
 geom_text(size = 3, position = position_stack(vjust = 0.5)) +
 geom_text(data = test2,aes(x = period, y = positionperc,colour=type2,label = paste(perc,"%",sep="")),size = 5) +
 scale_colour_manual(values = c('Naturelle' = 'red', 'Anthropique' = 'black'),name="Origine") +
 scale_fill_manual(values=couleur,name="Type") +
 theme_perso() + xlab("")+ylab("Pourcentage d'importance")
-
 pp
+
 ggsave(pp,file = paste(repsortie,"ImpVariable_cubist.png",sep=""), width = 11, height = 9)  
 ggsave(pp,file = paste(reppapier,"ImpVariable_cubist.png",sep=""), width = 11, height = 9)  
-#toto <- ggplot(dfbis2,aes(x=period,y=value,fill=type,label=paste(covariable,":",round(value),"%",sep="")))+geom_col(width = 0.7) + geom_text(size = 3, position = position_stack(vjust = 0.5)) + theme_perso() + xlab("")+ylab("Pourcentage d'importance") + scale_fill_manual(values=couleur,name="Type") + 
 ```
 ## Analyse des différences cantonales des teneurs en CO
 
@@ -882,10 +932,15 @@ datatest <- datatest[complete.cases(datatest[occupsol]),]
 wilcotest <- generate_label_df(db=datatest,value="diff_med_pourcent",lev=occupsol,letters,position=1)
 lablex <- labelx
 labley <- "Différences des teneurs en CO (%)"
-p <- ggplot(datatest)+ geom_boxplot(aes_string(y="diff_med_pourcent",x=occupsol,fill="zonage_simple"))+ geom_hline(yintercept = 0,color="red") + scale_fill_manual(values=couleur,name="test") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = labels)) + scale_x_discrete(lablex)+scale_y_continuous(labley)+theme_perso() + theme(legend.position="none")# + facet_wrap(~period)
+p <- ggplot(datatest)+ geom_boxplot(aes_string(y="diff_med_pourcent",x=occupsol,fill="zonage_simple"))+ geom_hline(yintercept = 0,color="red") + scale_fill_manual(values=couleur,name="test") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = paste(labels,"/",Nbr_analyse,sep=""))) + scale_x_discrete(lablex)+scale_y_continuous(labley)+theme_perso() + theme(legend.position="none")# + facet_wrap(~period)
 p
 
 ggsave(p,file = paste(reppapier,"diff_canton_boxplotelevage.png",sep=""), width = 11, height = 9)  
+
+# Valeur présente dans l'article
+#bdatdiffsummary <- apply(datatest["diff_med_pourcent"],2, function(x) tapply(x, datatest[,"zonage_simple"],summary))
+#bdatdiffsummary <- lapply(bdatsummary, do.call, what = rbind)
+#bdatdiffsummary
 
 ## Même figure mais pour chaque pérode de temps comparée
 reg_elevage <- c("A","B","C","D","E","F","G")
@@ -895,7 +950,7 @@ p <- list()
 cpt <- 0
 for(i in c("13","15","35")){
   cpt <- cpt + 1
-  datatest <- melted.bdatdiff[melted.bdatdiff$zonage_simple !="H" & melted.bdatdiff$period %in% i,]
+  datatest <- bdatdiff[bdatdiff$zonage_simple !="H" & bdatdiff$period %in% i,]
 
 ##
   datatest <- datatest[complete.cases(datatest[occupsol]),] 
@@ -908,9 +963,6 @@ tt <- do.call(grid.arrange,c(p,list(nrow=1,ncol=3,bottom="Principales régions d
 
 ggsave(tt,file = paste(reppapier,"diff_canton_boxplotelevage_periode.png",sep=""), width = 11, height = 9)  
 
-# Valeur présente dans l'article
-#bdatdiffsummary <- apply(datatest["diff_med"],2, function(x) tapply(x, datatest[,"zonage_simple"],summary))
-#bdatdiffsummary <- lapply(bdatsummary, do.call, what = rbind)
 ```
 
 
@@ -1031,7 +1083,6 @@ ggsave(pp,file = paste(reppapier,"CO_initial_simple.png",sep=""), width = 9, hei
 # Sortie vers un tableau
 test2$r2 <- round(test2$r2,2)
 test2$coeff <- round(test2$coeff,2)
-library(xtable)
 print(xtable(test2[,c("Periode","Type","r2","coeff")],caption=""),include.rownames=FALSE)
 
 ```

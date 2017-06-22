@@ -1009,9 +1009,11 @@ Ci-dessous, la modélisation avec Cubist est relancé selon l'algorithme suivant
    - Calcul de l''importance moyenne des variables pour le nombre de répétition
 ```
 
-```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,error=FALSE}
-#http://stackoverflow.com/questions/24779363/return-variable-importance-for-each-iteration-in-caret-package-in-r
+i-dessous, les figures présentent l'effet des principales types de variables sur les teneurs en CO dans la modélisation. Les figures montrent des relations quasi-linéaire entre des variables comme l'altitude, la surface fouragère principale, la hauteur de pluie l'argile et la teneur en CO.
 
+```{r,highlight=TRUE,eval=TRUE,echo=FALSE,warning=FALSE,error=FALSE}
+# Chargement des variables utilisées
+set.seed(157) #Pour la reproductibilité
 Rcovarclimato <- c("hpluie_an","jfroids_an","ampli_t_juil_janv","pluie_ecart_janv","pluie_ecart_juil","jpluie_janv","jpluie_juil","ttemp_an","jchauds_an")
 typeclimato <- replicate(length(Rcovarclimato), "climat")
 
@@ -1035,19 +1037,23 @@ indexperiod <- list(1:3,1:4,1:4,1:5)
 nbr <- 100
 prob <- 0.8
 model="cubist"
-cpt <- 0
+```
 
+```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,error=FALSE}
+# Modélisation
+cpt <- 0
 for(i in Variay){
   cpt <- cpt + 1
   ra_occupyears <- apply(expand.grid(ra_occup,periodra[indexperiod[[cpt]]]),1, function(x){paste(x[1],x[2],sep="")})
-
-  # Suppression p_protea1970 (inexistant en 1970!)
-  #ra_occupyears <- ra_occupyears[!ra_occupyears %in% "p_protea1970"]
 
   Rcovaroccup <- c(ra_otex,ra_occupyears)
   
   # Ajout des effectifs
   Rcovar <- c(Rcovartopo,Rcovarpedo,Rcovaroccup,Rcovarclimato,Rcovarstrates,effectif[cpt])
+
+  # Construction de la variable "type"
+  typeoccup <- replicate(length(Rcovaroccup), "occup")
+  type <- c(typetopo,typepedo,typeoccup,typeclimato,typestrates,"strates")
 
   # Construction du vecteur des variables du modèle. 
   vNames <- c(i,Rcovar)
@@ -1062,55 +1068,26 @@ for(i in Variay){
   datax <- d[,vNames[-1]]
   datay <- d[,vNames[1]]
   
-  mcubist_fr <- cv_datamining(datax,datay,nbr=nbr,prob,model,select=1:15,tuneGrid,trControl,repsortie)
+  mcubist_fr <- cv_datamining(datax,datay,nbr=nbr,prob,model,select=1:15,tuneGrid,trControl,repsortie,type=type)
 
-  saveRDS(mcubist_fr,file=paste(repsortie,"mcubist_fr_",i,"_",nbr,".rds",sep=""))
+  saveRDS(mcubist_fr[c("varimp","meanvarimport","qualityindex","R2","RMSE","MSE")],file=paste(repsortie,"mcubist_fr_",i,"_",nbr,".rds",sep=""))
 }
-
-#nbr <- 100
-#for(i in Variay){
- # modelcubistrds <- readRDS(paste(repsortie,"mcubist_fr_",i,"_",nbr,".rds",sep=""))
-  #modelcubistrds <- list(varimp=modelcubistrds$varimp,meanvarimport=modelcubistrds$meanvarimport,qualityindex=modelcubistrds$qualityindex,R2=modelcubistrds$R2,RMSE=modelcubistrds$RMSE,MSE=modelcubistrds$MSE)
-  #saveRDS(modelcubistrds,file=paste(repsortie,"mcubist_fr_",i,"_",nbr,"2.rds",sep=""))
-#}
 ```
 
 ```{r,eval=TRUE,echo=FALSE,message=FALSE,warning=FALSE,error=FALSE,fig.height=9, fig.width=11,fig.align="center"}
-# Ci-dessous, construction des graphiques pour calculer l'importance des variables
-
-Rcovarclimato <- c("hpluie_an","jfroids_an","ampli_t_juil_janv","pluie_ecart_janv","pluie_ecart_juil","jpluie_janv","jpluie_juil","ttemp_an","jchauds_an")
-typeclimato <- replicate(length(Rcovarclimato), "climat")
-
-Rcovartopo <- "altimean"
-typetopo <- replicate(length(Rcovartopo), "topographie")
-
-Rcovarpedo <- c("argi_med","sabt_med","mat11")
-typepedo <- replicate(length(Rcovarpedo), "pedologie")
-
-Rcovarstrates <- c("zonage_cplt","zonage_simple","typo_clim","code_dept","eff_corgox9599")#test avec eff_corgco9599
-typestrates <- replicate(length(Rcovarstrates), "strates")
-
-periodra <- c("1970","1979","1988","2000","2010")
-ra_occup <- c("p_sfp","p_prairie","p_sth","p_cop","p_c","p_mf")
-ra_otex <- c("polyelevage1988","elevage1988","elevagehorsol1988","ugbta1988","grdcultures1988")
-Variay <- c("med_corgox_9599","med_corgox_0004","med_corgox_0509","med_corgox_1014")
-effectif <- c("eff_corgox9599","eff_corgox0004","eff_corgox0509","eff_corgox1014")
-
-indexperiod <- list(1:3,1:4,1:4,1:5)
-
-nbr <- 100
 pourcent <- list()
 rest <- array(NA, dim = c(length(Variay), 3),list(Period_co = Variay, mod = c("r2","MSE","RMSE")))
 cpt <- 0
+pp <- list()
+
 for(i in Variay){
   cpt <- cpt + 1
   ra_occupyears <- apply(expand.grid(ra_occup,periodra[indexperiod[[cpt]]]),1, function(x){paste(x[1],x[2],sep="")})
 
   Rcovaroccup <- c(ra_otex,ra_occupyears)
   typeoccup <- replicate(length(Rcovaroccup), "occup")
-  type <- c(typetopo,typepedo,typeoccup,typeclimato,typestrates)
-
   Rcovar <- c(Rcovartopo,Rcovarpedo,Rcovaroccup,Rcovarclimato,Rcovarstrates,effectif[cpt])
+  type <- c(typetopo,typepedo,typeoccup,typeclimato,typestrates,"strates")
 
   varimp <- readRDS(paste(repsortie,"mcubist_fr_",i,"_",nbr,".rds",sep=""))
   qualityindex <- varimp$qualityindex
@@ -1124,75 +1101,193 @@ for(i in Variay){
 
   # Selection quantile(test$value,0.75)>40
   varimp$Q75 <- apply(varimp[,!names(varimp) %in% c("relatmed","median","covariable")],1, function(x) quantile(x, probs=0.75))
-  varimp40 <- varimp[varimp$Q75>40,]
+  varimp40 <- varimp[varimp$Q75>35,]
   varimp40$relatmed <- apply(varimp40[names(varimp40) %in% "median"],2,function(x){(x/sum(x))*100})
 
   test <- melt(varimp)
   test$type <- gsub2(as.character(Rcovar),type,as.character(test$covariable))
-  pp <- list()
+  #pp <- list()
 
-  pp[[1]] <- ggplot(test[!test$variable %in% c("relatmed","median","Q75"),],    aes(x=covariable,y=value,fill=type)) + geom_boxplot()+
-     scale_x_discrete("Variables")+scale_y_continuous("Importance des variables (%)")+
-     coord_flip()+
-     geom_hline(yintercept = 40) +
-     theme_perso()  
+  #pp[[2]]
+  #pp[[i]] <- ggplot(test[!test$variable %in% c("relatmed","median","Q75"),],    aes(x=covariable,y=value,fill=type)) + geom_boxplot()+
+   #  scale_x_discrete("Variables")+scale_y_continuous("Importance des variables (%)")+
+    # coord_flip()+geom_hline(yintercept = 40) + theme_perso() + labs(title=i)
 
   test2 <- melt(varimp40)
   test2$type <- gsub2(as.character(Rcovar),type,as.character(test2$covariable))
   test2$period <- rep(i,nrow(test2))
 
-  pp[[2]] <- ggplot(test2[!test2$variable %in% c("relatmed","median","Q75"),], aes(x=covariable,y=value,fill=type)) + 
-     geom_boxplot()+
-     scale_x_discrete("Variables")+scale_y_continuous("Importance des variables (%)")+
-     coord_flip()+
-     theme_perso()  
-
-  tt <- do.call(grid_arrange_shared_legend,c(pp,list(nrow=1,ncol=2,position="bottom")))
-  ggsave(tt,file = paste(repsortie,"ImpVariable_cubist_",i,".png",sep=""), width = 11, height = 9)  
- 
   pourcent[[i]] <- test2[test2$variable %in% "relatmed",]
 
   rest[cpt,"r2"] <- qualityindex[,"R2"][[1]]
   rest[cpt,"MSE"] <- qualityindex[,"MSE"][[1]]
   rest[cpt,"RMSE"] <- qualityindex[,"RMSE"][[1]]
 }
+rest <- round(as.data.frame(rest[,]),2)
+rest$Period_co <- rownames(rest)
+
+#tt <- do.call(grid_arrange_shared_legend,c(pp,list(nrow=2,ncol=2,position="bottom")))
 
 df <- do.call("rbind",pourcent)
 df <- df[complete.cases(df),]
 df$period <- factor(df$period,levels=c("med_corgox_9599","med_corgox_0004","med_corgox_0509","med_corgox_1014"))
-
-ggplot(df,aes(x=period,y=value,fill=type,label=paste(covariable,":",round(value),"%",sep="")))+geom_col(width = 0.7) + geom_text(size = 3, position = position_stack(vjust = 0.5)) + theme_perso() + xlab("")+ylab("Pourcentage d'importance")
-#ggsave(tt,file = paste(repsortie,"ImpVariable_cubist_",i,".png",sep=""), width = 11, height = 9)  
 ```
-
-Les résultats de la validation croisée de la modélisation des teneurs en CO pour les différentes périodes sont présentés dans le tableau ci-dessous. Sur les 100 répétitions, l'application du modèle sur les 20% du jeu d'apprentissage montre une capacité de prédiction des teneurs en CO équivalente entre les périodes et de bonne qualité. La modélisation des teneurs en CO pour la période 2010-2014 montrent la capacité de prédiction la plus mauvaise avec un coefficient de détermination (R2) de 0.78 et un erreur moyenne (Root Mean Square Error) de 2.4 g/kg. La période 2000-2004 affiche les meilleurs avec un R2 de 0.83 et une erreur moyenne de 2.2 g/kg. En moyenne la modélisation des teneurs en CO toute période confondues affiche donc une capacité d'explication de la variance de plus de 80%.
-
-```{r,eval=TRUE,echo=FALSE,results='asis'}
-pander(as.data.frame(rest),caption="Moyenne des indicateurs de la validation croisée pour les différents modèles")
-```
-
-Les 15 variables explicatives de ces modélisations sont présentées dans la figure ci-dessous. Le taux d'argile (`argi_med`) et l'écart de pluie à la moyenne en janvier (`pluie_ecart_janv`) sont les deux premières variables explicatives des 4 modèles. Elles présentent toutes deux un pourcentage d'importance supérieur à 50%. L'altitude moyenne (`altimean`) par canton et le pourcentage de surface fourragère principale (pour différentes périodes) (`p_sfp`) sont également des variables explicatives d'importance. 
-
-Cette dernière variable est quasiment présente sous toutes ces déclinaisons temporelles (1970, 1979, 1988, 2000, 2010). Dans une moindre mesure, le pourcentage de prairie dans la SAU et le pourcentage de maïs fourrage sont les autres variables de type occupation du sol qui ressortent régulièrement dans ce classement des 15 variables explicatives les plus importantes.
-
-L'ordre d'importance des variables explicatives des 4 périodes des teneurs en CO ne sont pas complètement identique à défaut de la première variables explicatives (l'argile). Toutefois, on note de nombreuses similitude entre les 3 premiers modèles (1995-1999 à 2005-2009). La dernière modélisation (2010-2014) présente des résultats différents, avec une part de variable d'origine climatique plus importante.
-
-```{r,eval=TRUE,echo=FALSE}
-#do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=2,position="bottom")))
-```
-
-> **En conclusion** Ces résultats montrent que la répartition des teneurs en CO de la BDAT à l'échelle de la France est principalement expliquée par des variable d'origine naturelle (pédologique, climatique, et topographique). L'effet de l'occupation du sol apparaît secondaire. Ces résultats concordent avec les premières conclusions du travail de la modélisation avec des régressions linéaires multiples effectuées avec des co-variables naturelles ou d'origines anthropiques. 
 
 ```{r,eval=FALSE,echo=FALSE}
-# Construction de la grille 
-grille <- expand.grid(argi_med = quantile(d[,"argi_med"], c(seq(0,0.9,0.1),0.98)), 
-                      pluie_ecart_janv = quantile(d[,"pluie_ecart_janv"],c(seq(0,0.9,0.1),0.98)),
-                      altimean = quantile(d[,"altimean"],c(seq(0,0.9,0.1),0.98)),
-                      p_sfp1979 = quantile(d[,"p_sfp1979"],c(seq(0,0.9,0.1),0.98)))
+# Ici, on relance la modélisation avec les variables sélectionnées et on analyse le comportement des variables
 
-autre <- vNames[!(vNames %in% c("argi_med","pluie_ecart_janv","p_sfp1979","altimean"))][-1]
+for(i in Variay){
+  selectdf <- df[df$period %in% i,c("covariable","value","type")]
+  Rcovar <- as.character(selectdf$covariable)
+  type <- as.character(selectdf$type)
+  # Modélisation
+  vNames <- c(i,Rcovar)
 
-variaeffect(grille = grille,vNames = autre,data = d,model = mcubist,nameModel = "cubist",neighbors=tuneGrid,nomsortie="test",sortie=repsortie)
+  # Sélection du jeu de données
+  d <- dcast.bdat[complete.cases(dcast.bdat[vNames]),vNames]
+
+  trControl <- trainControl(method = "cv",p=prob,number=10)
+  tuneGrid <- list(gbm=expand.grid(interaction.depth = c(1, 5, 9),n.trees = (1:10)*150,shrinkage = 0.1,n.minobsinnode = 10),cubist=expand.grid(.committees = c(10,50,100),.neighbors = c(1,5,9)))
+    
+  d <- dcast.bdat[complete.cases(dcast.bdat[vNames]),vNames]
+  datax <- d[,vNames[-1]]
+  datay <- d[,vNames[1]]
+  
+  mcubist_fr <- cv_datamining(datax,datay,nbr=nbr,prob,model,select=1:20,tuneGrid,trControl,repsortie,type=type)
+
+  saveRDS(mcubist_fr,file=paste(repsortie,"mcubist_fr_",i,"_",nbr,"_bis.rds",sep=""))
+}
+```
+
+```{r,eval=TRUE,echo=FALSE,message=FALSE,warning=FALSE,error=FALSE}
+restbis <- array(NA, dim = c(length(Variay), 3),list(Period_co = Variay, mod = c("r2","MSE","RMSE")))
+pourcentbis <- list()
+cpt <- 0
+for(i in Variay){
+  print(i)
+  cpt <- cpt + 1
+  mcubist_fr <- readRDS(paste(repsortie,"mcubist_fr_",i,"_",nbr,"_bis.rds",sep=""))
+  
+  selectdf <- df[df$period %in% i,c("covariable","value","type")]
+  Rcovar <- as.character(selectdf$covariable)
+  type <- as.character(selectdf$type)
+  
+  qualityindex <- mcubist_fr$qualityindex
+  varimp <- as.data.frame(mcubist_fr$varimp)
+  varimp <- varimp[grep("Overall",names(varimp))]
+
+  varimp$median <- apply(varimp, 1, function(x){median(x,na.rm=TRUE)})
+  varimp$covariable <- rownames(varimp)
+  varimp <- varimp[with(varimp, order(-median)),]
+  varimp$covariable <- reorder(varimp$covariable, varimp$median)
+
+  # Selection quantile(test$value,0.75)>35
+  varimp$Q75 <- apply(varimp[,!names(varimp) %in% c("relatmed","median","covariable")],1, function(x) quantile(x, probs=0.75))
+  varimp40 <- varimp[varimp$Q75>35,]
+  varimp40$relatmed <- apply(varimp40[names(varimp40) %in% "median"],2,function(x){(x/sum(x))*100})
+
+  test <- melt(varimp)
+  test$type <- gsub2(as.character(Rcovar),type,as.character(test$covariable))
+
+  pp[[i]] <- ggplot(test[!test$variable %in% c("relatmed","median","Q75"),],    aes(x=covariable,y=value,fill=type)) + geom_boxplot()+
+     scale_x_discrete("Variables")+scale_y_continuous("Importance des variables (%)")+
+     coord_flip()+geom_hline(yintercept = 40) + theme_perso() + labs(title=i)
+
+  test2 <- melt(varimp40)
+  test2$type <- gsub2(as.character(Rcovar),type,as.character(test2$covariable))
+  test2$period <- rep(i,nrow(test2))
+
+  pourcentbis[[i]] <- test2[test2$variable %in% "relatmed",]
+
+  restbis[cpt,"r2"] <- qualityindex[,"R2"][[1]]
+  restbis[cpt,"MSE"] <- qualityindex[,"MSE"][[1]]
+  restbis[cpt,"RMSE"] <- qualityindex[,"RMSE"][[1]]
+
+  # Sélection des meilleurs variables par type de variables (climat, topo...)
+  Rcovarselect <- ddply(test2, c("covariable","type"), summarise,value = median(value)) 
+  Rcovarselect2 <- ddply(Rcovarselect, .(type), summarise,value = max(value))
+  Rcovarselect2 <- merge(Rcovarselect2,Rcovarselect,by.x=c("value","type"),by.y=c("value","type"),all=FALSE)
+  
+  # Condition en cas d'égalité
+  if(nrow(Rcovarselect2)>4){
+    # Sélectionner les covariables incriminées 
+    Rcovarselect2 <- Rcovarselect2[!duplicated(Rcovarselect2[,c("type","value")]),]
+    }else{}
+
+  Rcovarselect2 <- as.character(Rcovarselect2$covariable)
+
+  # Construction de la grille de sélection
+  vNames <- c(i,Rcovar)
+  d <- dcast.bdat[complete.cases(dcast.bdat[vNames]),vNames]
+  grille <- as.data.frame(apply(d[,Rcovarselect2],2,function(x){quantile(x,c(seq(0,0.9,0.1),0.98))}))
+  rownames(grille) <- NULL
+  grille <- expand.grid(grille[,Rcovarselect2])
+  autre <- vNames[!(vNames %in% Rcovarselect2)][-1]
+
+  # Nom du modèle
+  mcubist <- mcubist_fr$mdata_miningbst[[1]]$mdata_mining
+
+  # Calcul de l'effet de la variable et sortie graphique
+  plotvariaeffet <- variaeffect(grille = grille,vNames = autre,data = d,model = mcubist,nameModel = "cubist",neighbors=5)
+  tt <- do.call(grid.arrange,c(plotvariaeffet$pgrille,list(nrow=2,bottom="",left="")))
+  ggsave(tt,file = paste(repsortie,"variaeffect_",i,".png",sep=""), width = 11, height = 9)  
+}
+
+restbis <- round(as.data.frame(restbis[,]),2)
+restbis$Period_co <- rownames(restbis)
+
+dfbis <- do.call("rbind",pourcentbis)
+dfbis <- dfbis[complete.cases(dfbis),]
+dfbis$period <- factor(dfbis$period,levels=c("med_corgox_9599","med_corgox_0004","med_corgox_0509","med_corgox_1014"))
+```
+
+Les résultats de la validation croisée de la modélisation des teneurs en CO pour les différentes périodes sont présentés dans le tableau ci-dessous. Sur les 100 répétitions, l'application du modèle sur les 20% du jeu d'apprentissage montre une capacité de prédiction des teneurs en CO équivalente entre les périodes et de bonne qualité. La modélisation des teneurs en CO pour la période 2010-2014 montrent la capacité de prédiction la plus mauvaise avec un coefficient de détermination (R2) de `r restbis[restbis$Period_co %in% "med_corgox_1014","r2"]` et une erreur moyenne (Root Mean Square Error) de `r restbis[restbis$Period_co %in% "med_corgox_1014","RMSE"]` g/kg. La période 2005-2009 affiche les meilleurs résultats de prédiction un R2 de `r restbis[restbis$Period_co %in% "med_corgox_0509","r2"]` et une erreur moyenne de `r restbis[restbis$Period_co %in% "med_corgox_0509","RMSE"]` g/kg. En moyenne la modélisation des teneurs en CO toute période confondues affiche donc une capacité d'explication de la variance de plus de 80%.
+
+```{r,eval=TRUE,echo=FALSE,results='asis'}
+# Fusionner rest et rest_bis pour voir les différences de R2
+pander(restbis[,1:3],caption="Moyenne des indicateurs de la qualité de la validation croisée pour les différentes teneurs en CO modélisées")
+
+#xtable(restbis[,1:3],caption="Moyenne des indicateurs de la qualité de la validation croisée pour les différentes teneurs en CO modélisées")
+
+#pander(rest[,1:3],caption="Moyenne des indicateurs de la validation croisée pour les différents modèles")
+```
+
+Les principales variables explicatives extraites de ces modélisation sont essentiellement d'origine naturelle (voir figure XX). Le taux d'argile, les variables climatiques (notamment l'écart de pluie en janvier) et la topographie occupent une place importante dans la modélsation des teneurs en CO à l'échelle de la France. L'importance de l'occupation du sol est secondaire et est principalement associée au pourcentage de Surface Fourragère Principale (SFP) et au pourcentage de prairie dans la SAU. Ainsi, dans ces modèles, la part des variables d'occupation du sol pour expliquer environ 80% de la variance varie entre 21 et 30%.
+
+```{r,eval=TRUE,echo=FALSE,message=FALSE,warning=FALSE,error=FALSE,fig.height=9, fig.width=11,fig.align="center"}
+from <- c("climat","occup","pedologie","topographie")
+to <- c("Naturelle","Anthropique","Naturelle","Naturelle")
+
+dfbis2 <- dfbis
+dfbis2$type2 <- gsub2(from,to,as.character(dfbis2$type))
+dfbis2$type <- factor(dfbis2$type,levels=c("occup","climat","pedologie","topographie"))
+dfbis2 <- dfbis2[with(dfbis2,order(type)),]
+levels(dfbis2$period) <- list("9599"="med_corgox_9599", "0004"="med_corgox_0004", "0509"="med_corgox_0509", "1014"="med_corgox_1014")
+
+test <- as.data.frame(dfbis2 %>% 
+group_by(period,type2) %>% 
+mutate(perc=round(sum(value))))
+
+test2 <- as.data.frame(test %>% 
+group_by(period,type) %>% 
+mutate(perctype=round(sum(value),1)))
+
+test2$positionperc <- as.numeric(c(rep("82",10),rep("49",32)))
+#test3 <- unique(test2[,c("period","type","type2","perc","perctype")])
+
+###################################
+
+couleur <- c("#60C233E6","#394AA7E6","#F79A39E6","#F1ED0AE6")
+pp <- ggplot(test2,aes(x=period,y=value,fill=type,label=paste(covariable,":",round(value),"%",sep="")))+geom_col(width = 0.7) +
+geom_text(size = 3, position = position_stack(vjust = 0.5)) +
+geom_text(data = test2,aes(x = period, y = positionperc,colour=type2,label = paste(perc,"%",sep="")),size = 5) +
+scale_colour_manual(values = c('Naturelle' = 'red', 'Anthropique' = 'black'),name="Origine") +
+scale_fill_manual(values=couleur,name="Type") +
+theme_perso() + xlab("")+ylab("Pourcentage d'importance")
+pp
+
+ggsave(pp,file = paste(repsortie,"ImpVariable_cubist.png",sep=""), width = 11, height = 9)  
+ggsave(pp,file = paste(reppapier,"ImpVariable_cubist.png",sep=""), width = 11, height = 9)  
 ```
 
 ## Modélisation avec les années (en cours TEST)
