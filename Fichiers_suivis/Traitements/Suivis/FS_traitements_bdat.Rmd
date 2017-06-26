@@ -1454,35 +1454,6 @@ rest[cpt,"MSE"] <- qualityindex[,"MSE"][[1]]
 rest[cpt,"RMSE"] <- qualityindex[,"RMSE"][[1]]
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ## Modélisation par type de variable (TEST)
 
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE,warning=FALSE,error=FALSE}

@@ -1,7 +1,7 @@
 ---
 title: "Fichier de suivi de la création de la base de données"
 author: "Jean-Baptiste Paroissien"
-date: "15/07/2017"
+date: "15/06/2017"
 output:
   html_document:
     toc: yes
@@ -745,11 +745,11 @@ system("ogr2ogr --config PG_LIST_ALL_TABLES YES --config PG_SKIP_VIEWS YES -f "S
 
 La base de données est sauvegardée au format PostgreSQL/PostGIS avec la commande `pg_dump`. Cette commande permet de garder l'ensemble de la base de données mais pour être restaurer, l'utilisateur doit créer un serveur local Postgresql/PostGIS en suivant la procédure présentée dans ce [mode opératoire](https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Modes_operatoires/MO_bdd.html).
 
-Voir le problème avec sur les postgis sur ce lien http://mattmakesmaps.com/blog/2014/01/15/using-pg-dump-with-postgis-topology/
-
 ```{r,eval=FALSE}
 # Export avec pg_dump
 system(paste("pg_dump sol_elevage > sol_elevage",Sys.Date(),".sql",sep=""))
+
+#Voir le problème avec sur les postgis sur ce lien http://mattmakesmaps.com/blog/2014/01/15/using-pg-dump-with-postgis-topology/
 
 # En cas de problème
 #select AddGeometryColumn('dm_vecteurs','canton','geom','2154','MULTIPOLYGON',2)

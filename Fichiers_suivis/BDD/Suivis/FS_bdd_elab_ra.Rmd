@@ -560,7 +560,6 @@ for(i in varia){
 Les données du recencement (pourcentage de prairie par SAU par exemple) sont ré-organisées pour faciliter les traitements statistiques et la production de graphique. La fonction `melt` est utilisée pour transformer les données d'un format "large" à un format "long".
 
 ### Occupation du sol
-Problème avec les données ugbta, revoir!
 
 ```{r,highlight=TRUE,eval=FALSE}
 # Paramètres

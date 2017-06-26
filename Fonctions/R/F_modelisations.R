@@ -338,7 +338,7 @@ vif_func<-function(in_frame,thresh=10,trace=T,...){
 
 #' @title lm_variatype
 #'
-#' @description Revoir...
+#' @description Régression linéaire multiple en fonction du type de variable (naturelle/anthropique)
 #'
 #' @param d nom de la dataframe
 #' @param nbr de répétition
@@ -347,14 +347,17 @@ vif_func<-function(in_frame,thresh=10,trace=T,...){
 #' @param name nom du modèle en sortie
 #' @param Rnaturel Vecteur des variables type naturel
 #' @param Ranthrop Vecteur des variables type anthropique
+#' @param stepaiclm option (true ou false) pour utiliser la sélection de variables STEPAIC (TRUE) ou une régression linéaire multiple (FALSE)
 
 lm_variatype <- function(
               d,
               Rnaturel,
               Ranthrop,
-              Variay
+              Variay,
+              stepaiclm=TRUE
               )
 {
+d1 <- d[complete.cases(d[c(Rnaturel,Ranthrop,Variay)]),]
 
 nmax <- max(length(Ranthrop),length(Rnaturel))
 length(Rnaturel) <- nmax
@@ -364,6 +367,7 @@ typevariable <- colnames(Rnames)
 
 step <- list()
 cpt <- 0
+
 for(i in typevariable){
   cpt <- cpt + 1
   
@@ -371,15 +375,20 @@ for(i in typevariable){
   vNames <- c(Variay,as.character(Rnames[[i]]))
   vNames <- vNames[!is.na(vNames)]
 
-  d1 <- d[complete.cases(d[vNames]),vNames]
+  d2 <- d1[,vNames]
   datax <- d1[, vNames[-1]]
   datay <- d1[, vNames[1]]
   
   # test en cours
-  keep.data <- vif_func(in_frame=datax,thresh=5,trace=T)
+  #keep.data <- vif_func(in_frame=datax,thresh=5,trace=T)
+  #formule <- as.formula(paste(vNames[1], " ~ ", paste(as.character(keep.data),collapse=" + ")))
 
-  formule <- as.formula(paste(vNames[1], " ~ ", paste(as.character(keep.data),collapse=" + ")))
-  step[[i]] <- stepAIC(lm(formule,data=d1),direction="both",data=d1,verbose = FALSE)
+  formule <- as.formula(paste(vNames[1], " ~ ", paste(as.character(vNames),collapse=" + ")))
+  if(stepaiclm==TRUE){
+    step[[i]] <- stepAIC(lm(formule,data=d2),direction="both",data=d2,verbose = FALSE)
+  }else{
+    step[[i]] <- lm(formule,data=d2)
+  }
 }
 
 ####
@@ -393,20 +402,20 @@ bestmodelanthrop <- paste(bestmodelanthrop,collapse="+")
 modelcplt <- paste(c(bestmodelclimat,bestmodelanthrop),collapse="+")
 vNamescplt <- c(Variay,str_split(modelcplt,"\\+")[[1]])
 
-d2 <- d[complete.cases(d[vNamescplt]),vNamescplt]
+d3 <- d[complete.cases(d[vNamescplt]),vNamescplt]
 
 # Application du modèle sur les variables sélectionnées
 formuleanthrop <- as.formula(paste(vNames[1], " ~ ", bestmodelanthrop,sep=""))
 vNamesanthrop <- c(Variay,str_split(bestmodelanthrop,"\\+")[[1]])
-lmanthrop <- lm(formuleanthrop,data=d2)
+lmanthrop <- lm(formuleanthrop,data=d3)
 
 formulenaturel <- as.formula(paste(vNames[1], " ~ ", bestmodelclimat,sep=""))
 vNamesnaturel <- c(Variay,str_split(bestmodelclimat,"\\+")[[1]])
-lmnaturel <- lm(formulenaturel,data=d2)
+lmnaturel <- lm(formulenaturel,data=d3)
 
 # Construction d'un modèle complet (variables anthropiques + naturelles)
 formulecplt <- as.formula(paste(vNamescplt[1], " ~ ", modelcplt,sep=""))
-lmcplt <- lm(formulecplt,data=d2)
+lmcplt <- lm(formulecplt,data=d3)
 
 # Sortie
 formule <- rbind(bestmodelanthrop,bestmodelclimat,modelcplt)[1:3]
@@ -415,6 +424,6 @@ dwtest <- rbind(durbinWatsonTest(lmanthrop)$p,durbinWatsonTest(lmnaturel)$p,durb
 nom <- c("Anthropique","Naturelle","Complet")
 df <- cbind.data.frame(nom,R2,dwtest,formule)
 
-return(list(df=df,lmcplt=lmcplt,d2=d2))
+return(list(df=df,lmcplt=lmcplt,d3=d3,lmnaturel=step[["Rnaturel"]],lmanthrop=step[["Ranthrop"]]))
 
 }#fin de la fonction

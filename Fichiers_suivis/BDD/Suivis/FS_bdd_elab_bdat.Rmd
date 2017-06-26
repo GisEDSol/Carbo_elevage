@@ -618,8 +618,9 @@ variaoccup <- c("p_sth","p_sfp","p_prairie","p_cop","p_c")
 periodoccup <- c("1970","1979","1988","2000","2010")
 id_class <- apply(expand.grid(variaoccup,periodoccup),1, function(x){paste("classe_",x[1],x[2],sep="")})
 
+sau <- "sau_2010"
 # Nom des identifiants
-id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean","mat11","classe_sabt_med","classe_argi_med",id_class)
+id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean","mat11","classe_sabt_med","classe_argi_med",id_class,sau)
 ```
 
 ```{r,highlight=TRUE,eval=FALSE}
@@ -678,6 +679,9 @@ for(tt in tables){
 
   print(sqlQuery(loc,paste("
   COMMENT ON COLUMN ",tablename,".variable IS \'Type de statistiques des teneurs en carbone organique et les effectifs dans les cantons; med_corgox:médiane des médianes;dqua_corgox:médiane du troisième quartile;eff_corgox:effectif pour la méthode corgox.\';",sep="")))
+
+  print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",tablename,".sau_2010 IS \'Surface agricole utile en 2010 (ha).).\';",sep="")))
 }
 ```
 
@@ -704,7 +708,9 @@ id_diff <- apply(expand.grid(p_variable,period_ra,periodref_ra),1, function(x){p
 id_diff <- id_diff[1:(length(id_diff)-length(variaoccup))]# Ici, on supprime les dernières combinaisons représentant une différence 2000-2000
 id_diff <- id_diff[(length(variaoccup)+1):length(id_diff)] # Ici, on supprime les premières combinaisons représentant une différence 1988-1988
 
-id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean","mat11","classe_sabt_med","classe_argi_med",id_class,id_diff,id_varclass)
+sau <- "sau_2010"
+# Nom des identifiants
+id <- c("code_canton","code_reg","nom_region","typo_clim","zonage_simple","zonage_cplt","classe_altimean","mat11","classe_sabt_med","classe_argi_med",id_class,id_diff,id_varclass,sau)
 ```
 
 
@@ -782,6 +788,9 @@ for(tt in tables){
 
   print(sqlQuery(loc,paste("
   COMMENT ON COLUMN ",tablename,".evol_med IS \'Résultat du test statistique de différence des médianes de teneurs en carbone organique entre deux périodes (test de Wilcoxon).).\';",sep="")))
+
+  print(sqlQuery(loc,paste("
+  COMMENT ON COLUMN ",tablename,".sau_2010 IS \'Surface agricole utile en 2010 (ha).).\';",sep="")))
 }
 
 ```

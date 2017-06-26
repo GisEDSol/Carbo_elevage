@@ -61,12 +61,12 @@ variaeffect <- function(grille,
     attach(predVar)
   
     if (is.factor(grille[,i])==TRUE){
-      p[[i]] <- ggplot(predVar,aes_string(names(grille)[1],"pred")) + 
+      p[[i]] <- ggplot(predVar,aes_string(names(grille)[i],"pred")) + 
               geom_point() + geom_boxplot() + geom_smooth(aes(group=1)) + 
               theme(axis.text.x  = element_text(angle=90, vjust=1, size=12)) +
               xlab(names(predVar)[1]) + ylab(paste("f(",names(predVar)[1],")",sep="")) + theme_perso()
       }else{
-        p[[i]] <- ggplot(predVar,aes_string(names(grille)[1],"pred")) + 
+        p[[i]] <- ggplot(predVar,aes_string(names(grille)[i],"pred")) + 
                  geom_point() + geom_smooth() + 
                  xlab(names(predVar)[1]) + ylab(paste("f(",names(predVar)[1],")",sep="")) + theme_perso()
       }

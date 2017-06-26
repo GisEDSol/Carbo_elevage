@@ -842,6 +842,7 @@ pp
 ggsave(pp,file = paste(repsortie,"ImpVariable_cubist.png",sep=""), width = 11, height = 9)  
 ggsave(pp,file = paste(reppapier,"ImpVariable_cubist.png",sep=""), width = 11, height = 9)  
 ```
+
 ## Analyse des différences cantonales des teneurs en CO
 
 ### Etat des lieux
@@ -870,7 +871,6 @@ La proportion de type d'évolution des teneurs en CO pour les différentes péri
 * 15 : Cette comparaison correspond à l'évolution complète entre les deux dates les plus éloignée
 * 13 : Correspond à première la moitié de la période étudiée et correspond 
 * 35 : Correspond à la dernière moitiée de la période étudiée et affiche un important pourcentage de canton en augmentation
-
 
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=12,fig.align="center"}
 # Voir pour créer un graphique facilement lisible d'un point de vue chronologique...
@@ -916,6 +916,44 @@ p[[2]]
 tt <- do.call(grid_arrange_shared_legend,c(p,list(nrow=2,ncol=1,bottom="",left="")))
 ggsave(tt,file = paste(repsortie,"diff_canton_histo.png",sep=""), width = 11, height = 9)  
 ggsave(tt,file = paste(reppapier,"diff_canton_histo.png",sep=""), width = 11, height = 9)  
+
+## Même type de graphique qu'en haut mais avec le pourcentage de SAU qui évolue.
+
+p2 <- list()
+p2[[1]] <- bdatdiff %>% 
+          group_by(period,evol_med) %>% 
+          summarise(sau=sum(sau_2010,na.rm=TRUE),count=n()) %>% 
+          mutate(perc=(round((count/sum(count)*100),1)),perc_sau=(round((sau/sum(sau)*100),1))) %>%
+          ggplot(aes(x = factor(period), y = perc_sau, fill = factor(evol_med),label=paste(perc_sau,"%",sep=""))) +
+          scale_fill_manual(values=couleur,name="Evolution des teneurs en CO")+
+          geom_bar(stat="identity", width = 0.7) +
+          geom_text(size = 3, position = position_stack(vjust = 0.5))+
+          xlab("Périodes comparées")+ylab("Pourcentage de SAU (%)")+
+          theme_perso() + labs(title="a") + coord_flip()
+
+p2[[2]] <- bdatdiff %>% 
+          group_by(period,zonage_simple,evol_med) %>% 
+          summarise(sau=sum(sau_2010,na.rm=TRUE),count=n()) %>% 
+          mutate(perc=(round((count/sum(count)*100),1)),perc_sau=(round((sau/sum(sau)*100),1))) %>%
+          ggplot(aes(x = factor(zonage_simple), y = perc_sau, fill = factor(evol_med),label=paste(perc_sau,"%",sep=""))) + facet_wrap(~period) +
+          scale_fill_manual(values=couleur,name="Evolution des teneurs en CO")+
+          geom_bar(stat="identity", width = 0.7) +
+          geom_text(size = 3, position = position_stack(vjust = 0.5))+
+          xlab("Principales régions d'élevage")+ylab("Pourcentage de SAU (%)")+
+          theme_perso() + labs(title="b")
+
+tt <- do.call(grid_arrange_shared_legend,c(p2,list(nrow=2,ncol=1,bottom="",left="")))
+ggsave(tt,file = paste(repsortie,"diff_canton_histo_sau.png",sep=""), width = 11, height = 9)  
+ggsave(tt,file = paste(reppapier,"diff_canton_histo_sau.png",sep=""), width = 11, height = 9)  
+
+# Test sur les différences relatives pondérées par la SAU (26/06/17) 
+#names(bdatdiff)
+#bdatdiff <- subset(bdatdiff,evol_med!="Non significatif")
+#test <- bdatdiff %>% 
+          #group_by(zonage_simple) %>% 
+          #summarise(sau=sum(sau_2010,na.rm=TRUE),count=n(),diff=median(diff_med_pourcent,na.rm=TRUE)) %>% 
+          #mutate(perc=(round((count/sum(count)*100),1)),perc_sau=(round((sau/sum(sau)*100),1)),diff_sau=(diff/sau)*100000)
+#test <- as.data.frame(test)[,c("zonage_simple","diff","diff_sau")]
 ```
 
 ```{r,eval=TRUE,echo=FALSE,fig.height=6, fig.width=12,fig.align="center"}
@@ -1129,6 +1167,114 @@ p_ra
 ggsave(p_ra,file = paste(reppapier,"evolution_ra_elevage.png",sep=""), width = 10, height = 10)  
 ```
 
+Production de plusieurs figures pour illustrer les évolutions globales du CO et les évolutions de l'occupation du sol
+
+```{r,eval=TRUE,echo=FALSE,results='asis',fig.height=8, fig.width=8,fig.align="center"}
+melted.9014 <- sqlQuery(loc,paste("select * from dm_traitements.melted_bdat_9014",sep=""),stringsAsFactors=TRUE,as.is=TRUE)
+melted.9014$value <- as.numeric(melted.9014$value)
+melted.9014 <- melted.9014[complete.cases(melted.9014$value) & melted.9014$variable %in% "med_corgox",]
+melted.9014$annees <- factor(melted.9014$annees,levels=c("9094","9599","0004","0509","1014"))
+levels(melted.9014$annees) <- c("1990-1994","1995-1999","2000-2004","2005-2009","2010-2014")
+tt <- list()
+for(i in reg_elevage){
+  melted_focus <- melted.9014[melted.9014$zonage_simple %in% i,]
+
+  # Test statistiques
+  wilcotest <- generate_label_df(db=melted_focus,value="value",lev="annees",letters,position=1)
+
+  p_bdat <- ggplot(melted_focus,aes(x=annees,y=value)) + 
+                 geom_boxplot() +
+                 xlab("") +
+                 stat_summary(fun.y=mean, geom="line",size = 1.5, aes(group=1)) +
+                 scale_y_continuous("Teneur en carbone organique (g/kg)")+
+                 theme_classic()+theme_perso("") + labs(title=i)
+                 geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = paste(labels,"/",Nbr_analyse,sep=""))) #+ coord_cartesian(ylim = c(14,15))
+
+  colors <- brewer.pal(3,"Set1")
+  melted.ra_focus <- melted.ra[melted.ra$annees %in% c("1970","1979","1988","2000","2010") & melted.ra$variable %in% c("p_c","p_mf","p_prairie") & melted.ra$zonage_simple %in% i,]
+  
+  levels(melted.ra_focus$variable) <- c("Céréales","COP","Maïs-fourrage","Prairies","Surface fourragère principale","Surface Toujours en Herbe","UGBTA")
+
+  p_ra <- ggplot(melted.ra_focus,aes(x=annees,y=value,col=variable)) +
+               stat_summary(fun.y=mean, geom="line",size = 1.5, aes(group=variable,color=variable))  + 
+               xlab("Années") +
+               scale_color_manual(values=colors,name="Occupation du sol")+
+               scale_y_continuous("Occupation du sol (% de SAU)")+
+               theme_classic()+theme_perso()
+tt <- grid.arrange(p_bdat,p_ra)
+ggsave(tt,file = paste(repsortie,"med_corgox_RA_reg",i,".png",sep=""), width = 8, height = 7) 
+}
+
+#France entière#
+melted.ra_focus <- melted.ra
+
+p_bdat <- ggplot(melted_focus,aes(x=annees,y=value)) + 
+          geom_boxplot() +
+          xlab("") +
+          stat_summary(fun.y=mean, geom="line",size = 1.5, aes(group=1)) +
+          #geom_smooth(aes(x=as.integer(annees),y=value,group=1),color="black",method=loess)+
+          #geom_smooth(method = "loess", se=FALSE, color="black", aes(group=1))+
+          scale_y_continuous("Teneur en carbone organique (g/kg)")+
+          theme_classic()+
+          theme(
+                axis.text.x = element_text(size = 11, colour = "black"),#,face = "bold"),
+                axis.text.y = element_text(size = 11, colour = "black"),#,face = "bold"),face = "bold"),
+                axis.line.x = element_line(colour = "black", size = 0.7),
+                axis.line.y = element_line(colour = "black", size = 0.7),
+                plot.title = element_text(size = 14, face = "bold"), 
+                text = element_text(size = 12),
+                axis.title = element_text(face="bold"),
+                legend.position = "bottom") + labs(title="France")#+
+          #coord_cartesian(ylim = c(14,15))
+
+colors <- brewer.pal(3,"Set1")#wes_palette("Rushmore",nperiod,type="continuous")
+melted.ra_focus <- melted.ra[melted.ra$annees %in% c("1970","1979","1988","2000","2010") & melted.ra$variable %in% c("p_c","p_mf","p_prairie"),]
+levels(melted.ra_focus$variable) <- c("Céréales","COP","Maïs-fourrage","Prairies","Surface fourragère principale","Surface Toujours en Herbe","UGBTA")
+
+  p_ra <- ggplot(melted.ra_focus,aes(x=annees,y=value,col=variable)) +
+          stat_summary(fun.y=mean, geom="line",size = 1.5, aes(group=variable,color=variable))  + 
+            #geom_smooth(aes(group=variable,color=variable),method=loess)+
+            xlab("Années") +
+            scale_color_manual(values=colors,name="Occupation du sol")+
+            scale_y_continuous("Occupation du sol (% de SAU)")+
+            theme_classic()+
+            theme(
+                axis.text.x = element_text(size = 11, colour = "black"),#,face = "bold"),
+                axis.text.y = element_text(size = 11, colour = "black"),#,face = "bold"),face = "bold"),
+                axis.line.x = element_line(colour = "black", size = 0.7),
+                axis.line.y = element_line(colour = "black", size = 0.7),
+                plot.title = element_text(size = 14, face = "bold"), 
+                text = element_text(size = 12),
+                axis.title = element_text(face="bold"),
+                )
+
+# Selon https://gist.github.com/hrbrmstr/83deb0baeabae0824389
+# Ajout des labels
+
+last_vals <- c(34,8.5,41)
+occupsol <- c("Céréales","Maïs-fourrage","Prairies")
+names(colors) <- occupsol
+names(last_vals) <- occupsol
+
+gg <- p_ra + theme(legend.position="none")
+#gg <- p_ra + theme(plot.margin = unit(c(1, 7, 2, 1), "lines"))
+
+cpt <- 0
+for (i in occupsol) {
+  cpt <- cpt + 1
+  gg <- gg + annotation_custom(grob=textGrob(i, hjust=0,
+                                             gp=gpar(fontsize=10,
+                                                     face="bold",
+                                                     col=colors[cpt])),
+                               xmin=5, xmax=5,
+                               ymin=last_vals[cpt], ymax=last_vals[cpt])
+}
+
+tt <- grid.arrange(p_bdat,gg)
+
+ggsave(tt,file = paste(repsortie,"co_occup.png",sep=""), width = 8, height = 7) 
+
+```
 #### L'effet du changement d'occupation du sol 
 
 ```{r,eval=TRUE,echo=FALSE,fig.height=9, fig.width=11,fig.align="center",results='asis'}
@@ -1227,3 +1373,39 @@ for(x in nomdiff$Code){
 
 tt <- do.call(grid.arrange,c(p,list(nrow=3,ncol=4,bottom="Différences des teneurs en CO (g/kg)",left="Type d'évolution de l'occupation du sol")))
 ```
+
+# Test en cours cf. remarques de Pierre D.
+
+```{r,eval=TRUE,echo=TRUE}
+# Meilleurs co-variables du modèle cubist pour une période donnée
+covNames <- test[test$period %in% "9599","covariable"]
+Ranthrop <- as.character(test[test$type2 %in% "Anthropique" & test$period %in% "9599","covariable"])
+Rnaturel <- as.character(test[test$type2 %in% "Naturelle" & test$period %in% "9599","covariable"])
+
+#dcast.bdat[complete.cases(dcast.bdat[c(as.character(Rnaturel),as.character(Ranthrop),Variay)]),]
+
+reslm <- lm_variatype(dcast.bdat,Rnaturel,Ranthrop,"med_corgox_9599",stepaiclm=FALSE)
+
+print(summary(reslm$lmanthrop))
+print(summary(reslm$lmnaturel))
+print(summary(reslm$lmcplt))
+print(reslm$df)
+
+fitanthrop <- reslm$lmanthrop$fitted.value
+fitnaturel <- reslm$lmnaturel$fitted.value
+fitcplt <- reslm$lmcplt$fitted.value
+
+dbplot <- dcast.bdat[complete.cases(dcast.bdat[,c("med_corgox_9599",Ranthrop,Rnaturel)]),]
+plot(dbplot$med_corgox_9599,dbplot$med_corgox_9599,pch=19,col="black")     
+abline(a=0,b=1)     
+points(dbplot$med_corgox_9599,fitanthrop,pch=19,col="red",cex=0.7)     
+points(dbplot$med_corgox_9599,fitnaturel,pch=19,col="green",cex=0.7)     
+points(dbplot$med_corgox_9599,fitcplt,pch=19,col="blue",cex=0.7)     
+     legend(     
+       x="topleft",     
+       legend=c("points originaux","anthrop","naturelles","cplt"),     
+       col=c("black","red","green","blue"),     
+       pch=19     
+     ) # fin de legend     
+```
+
