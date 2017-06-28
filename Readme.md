@@ -12,7 +12,7 @@
 	* De plusieurs [métadonnées](https://github.com/GisEDSol/Carbo_elevage/tree/master/Documentation/Metadonnees) présentées sous forme de tableaux,
 	* De modes opératoires :
 		* un [mode opératoire](https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Modes_operatoires/MO_priseenmain.html) pour prendre en main le projet (importation du projet, importation de la base de données et paramètres de connexion),
-		* un [mode opératoire](https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Modes_operatoires/MO_bdd.html) sur la base de données (organisation des données et métadonnées),
+		* un [mode opératoire](https://rawgit.com/GisEDSol/Carbo_elevage/master/Documentation/Modes_operatoires/MO_bdd.html) sur la base de données (organisation des données et métadonnées).
 
 ----
 
@@ -26,10 +26,5 @@ Pour une lecture aisée des traitements et résultats en cours sur l'analyse des
 
 La synthèse des résultats en vue d'une publication est consultable :
 * **[Synthèse des résultats](https://rawgit.com/GisEDSol/Carbo_elevage/master/Fichiers_suivis/Traitements/Suivis/FS_synthese.html)**
-
-Pour aller plus loin, plusieurs documents détaillent des analyses sur plusieurs régions :
-* **[Les Hauts-de-France](https://rawgit.com/GisEDSol/Carbo_elevage/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_NPCPicardie.html)**
-* **[Bretagne](https://rawgit.com/GisEDSol/Carbo_elevage/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_Bretagne.html)**
-* **[Région Centre](https://rawgit.com/GisEDSol/Carbo_elevage/master/Fichiers_suivis/Traitements/Suivis/FS_traitements_Centre.html)**
 
 ----

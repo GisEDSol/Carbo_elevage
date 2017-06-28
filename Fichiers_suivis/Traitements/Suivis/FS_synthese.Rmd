@@ -875,6 +875,10 @@ La proportion de type d'évolution des teneurs en CO pour les différentes péri
 ```{r,highlight=TRUE,eval=TRUE,echo=FALSE,fig.height=6, fig.width=12,fig.align="center"}
 # Voir pour créer un graphique facilement lisible d'un point de vue chronologique...
 bdatdiff <- melted.bdatdiff[melted.bdatdiff$zonage_simple !="H" & melted.bdatdiff$period %in% c("13","15","35"),]
+bdatdiff$period <- as.factor(bdatdiff$period)
+levels(bdatdiff$period) <- list("9094-0004"="13","9094-1014"="15","0004-1014"="35")
+#levels(test2$Periode) <- list("9094-1014"="15","9094-0004"="13","0004-1014"="35")
+
 bdatdiff$diff_corgox <- as.factor(bdatdiff$evol_med)
 couleur <- c("#4DAF4A","#E41A1C","#377EB8")
 
@@ -888,7 +892,7 @@ p[[1]] <- bdatdiff %>%
           geom_bar(stat="identity", width = 0.7) +
           geom_text(size = 3, position = position_stack(vjust = 0.5))+
           xlab("Périodes comparées")+ylab("Pourcentage de canton (%)")+
-          theme_perso() + labs(title="a") + coord_flip()
+          theme_perso() + labs(title="a") + coord_flip() + theme(axis.text.y = element_text(angle = 90, hjust = 0.5))
 p[[1]]
 ```
 
@@ -898,6 +902,7 @@ L'évolution des teneurs en CO à l'échelle cantonale sur toutes les périodes 
 # Histogramme des valeurs (ajouter les valeurs en %)
 # Modif 31/05 c("13","15","35")
 #bdatdiff <- melted.bdatdiff[melted.bdatdiff$zonage_simple !="H" & melted.bdatdiff$period %in% c("13","15","35"),]
+bdatdiff$zonage_simple <- with(bdatdiff, factor(zonage_simple, levels = rev(levels(zonage_simple))))
 
 p[[2]] <- bdatdiff %>% 
           group_by(period,zonage_simple,evol_med) %>% 
@@ -909,7 +914,7 @@ p[[2]] <- bdatdiff %>%
           geom_bar(stat="identity", width = 0.7) +
           geom_text(size = 3, position = position_stack(vjust = 0.5))+
           xlab("Principales régions d'élevage")+ylab("Pourcentage de canton (%)")+
-          theme_perso() + labs(title="b")
+          theme_perso() + labs(title="b") + coord_flip()
           #+scale_y_continuous(labels=percent)
 p[[2]]
 
@@ -929,7 +934,7 @@ p2[[1]] <- bdatdiff %>%
           geom_bar(stat="identity", width = 0.7) +
           geom_text(size = 3, position = position_stack(vjust = 0.5))+
           xlab("Périodes comparées")+ylab("Pourcentage de SAU (%)")+
-          theme_perso() + labs(title="a") + coord_flip()
+          theme_perso() + labs(title="a") + coord_flip() + theme(axis.text.y = element_text(angle = 90, hjust = 0.5))
 
 p2[[2]] <- bdatdiff %>% 
           group_by(period,zonage_simple,evol_med) %>% 
@@ -940,7 +945,7 @@ p2[[2]] <- bdatdiff %>%
           geom_bar(stat="identity", width = 0.7) +
           geom_text(size = 3, position = position_stack(vjust = 0.5))+
           xlab("Principales régions d'élevage")+ylab("Pourcentage de SAU (%)")+
-          theme_perso() + labs(title="b")
+          theme_perso() + labs(title="b") + coord_flip()
 
 tt <- do.call(grid_arrange_shared_legend,c(p2,list(nrow=2,ncol=1,bottom="",left="")))
 ggsave(tt,file = paste(repsortie,"diff_canton_histo_sau.png",sep=""), width = 11, height = 9)  

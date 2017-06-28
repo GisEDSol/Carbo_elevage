@@ -141,7 +141,7 @@ theme_map3 <- function(...) {
       #plot.margin = unit(c(0,0,0,0), "cm"),#margin around entire plot (unit with the sizes of the top, right, bottom, and left margins) 
       #panel.spacing = unit(c(-.1,0.2,.2,0.2), "cm"),
       panel.border = element_blank(),
-      plot.caption = element_text(size = 7, 
+      plot.caption = element_text(size = 7.5, 
                                   hjust = 0.92, 
                                   margin = margin(t = 0.2, 
                                                   b = 0, 
@@ -211,8 +211,8 @@ table <- gsub2(".*\\.", "", unlist(tablecarto))
 
 if((is.character(dept)==FALSE) & (is.character(reg)==FALSE)){
   map <- dbReadSpatial(con, schemaname=schema, tablename=table, geomcol="geom")
-  dep <- dbReadSpatial(con, schemaname=schema, tablename="zonage_simple", geomcol="geom")
-#  dep <- dbReadSpatial(con, schemaname=schema, tablename="departement", geomcol="geom")
+  #dep <- dbReadSpatial(con, schemaname=schema, tablename="zonage_simple", geomcol="geom")
+  dep <- dbReadSpatial(con, schemaname=schema, tablename="departement", geomcol="geom")
 
   }else{}
 
@@ -296,8 +296,8 @@ if(reg!=FALSE){# Sélection de la zone d'étude
   
 # Conversion des spatialdataframe pour la cartographie sous ggpplot2
 gpclibPermit()
-#cartodep <- fortify(dep,region=id)
-cartodep <- fortify(dep,region="zonage_simple")
+cartodep <- fortify(dep,region=id)
+#cartodep <- fortify(dep,region="zonage_simple")
 
 # Représentation cartographique
 if(length(variablecarto)==1){
@@ -337,8 +337,8 @@ if(style_classe=="fixed"){
 
   colScale <- scale_map(l_legend,myColors,nombrerow)
   applilabs <- labs_map(title,caption)
-	tt <- ggplot(carto, aes(x=long, y=lat)) +
-    	                geom_polygon(data=carto, aes(group=group, fill=fill),size=0.1,na.rm=TRUE) +
+	tt <- ggplot(carto[complete.cases(carto$fill),], aes(x=long, y=lat)) +
+    	                geom_polygon(data=carto[complete.cases(carto$fill),], aes(group=group, fill=fill),size=0.1,na.rm=TRUE) +
                      	geom_path(data=carto, aes(x=long,y=lat,group=group),color="white",size=0.1)+# Représenter les cantons
                      	geom_path(data=cartodep, aes(x=long,y=lat,group=group),color="black",size=0.1)+# Représenter les contours des départements
                       colScale +

@@ -263,8 +263,40 @@ div.tocify {
 </div>
 <div id="calcul-de-differentes-statistiques-et-jointures-vers-la-table-dm_vecteurs.canton" class="section level1">
 <h1><span class="header-section-number">2</span> Calcul de différentes statistiques et jointures vers la table <code>dm_vecteurs.canton</code></h1>
+<div id="creation-des-champs-sau-par-date-au-sein-de-chaque-canton" class="section level2">
+<h2><span class="header-section-number">2.1</span> Création des champs SAU par date au sein de chaque canton</h2>
+<p>Pour des raisons pratiques, la SAU de chaque canton est ajouté dans la base de données</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">schema &lt;-<span class="st"> &quot;ra&quot;</span> <span class="co"># Nom du schéma où est présent la table 'type_RA'</span>
+table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)(table postGIS)</span>
+period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;1970&quot;</span>,<span class="st">&quot;1979&quot;</span>,<span class="st">&quot;1988&quot;</span>,<span class="st">&quot;2000&quot;</span>,<span class="st">&quot;2010&quot;</span>) <span class="co">#périodes de temps analysées </span>
+SAU &lt;-<span class="st"> &quot;(COALESCE(superficieagricoleutilisée1,superficieagricoleutiliséehorsarbresdenoël))&quot;</span><span class="co">#Champs de la SAU : ici, l'un des deux champs est utilisé si l'un deux a une valeur nulle</span>
+type_RA &lt;-<span class="st"> &quot;S_cultures_canton&quot;</span> <span class="co"># Nom de la table brute où les données seront piochées pour être jointe vers </span>
+
+for(i in period){
+    SAUperiod &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;SAU_&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+    <span class="kw">print</span>(SAUperiod)
+    tableRA &lt;-<span class="st"> </span><span class="kw">paste</span>(type_RA,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+
+    <span class="co"># Suppression de la colonne si déjà existante</span>
+    <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                        drop column if exists &quot;</span>,SAUperiod,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+  
+    <span class="co"># Création de la colonne et calcul du ratio occup/SAU</span>
+    <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                        add column &quot;</span>,SAUperiod,<span class="st">&quot; numeric;</span>
+<span class="st">                        update &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                        SET &quot;</span>,SAUperiod,<span class="st">&quot; = s1.&quot;</span>,SAUperiod,<span class="st">&quot; from(</span>
+<span class="st">                        select &quot;</span>,SAU,<span class="st">&quot; as &quot;</span>,SAUperiod,<span class="st">&quot;,num_canton</span>
+<span class="st">                        from &quot;</span>,schema,<span class="st">&quot;.&quot;</span>,tableRA,<span class="st">&quot;) as s1</span>
+<span class="st">                        where &quot;</span>,table_dm,<span class="st">&quot;.code_canton=s1.num_canton::text&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+    
+      <span class="co"># Ajout d'un commentaire sur la nouvelle colonne créée</span>
+        <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">        COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,SAUperiod,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">Surface agricole utile (ha) pour l</span><span class="ch">\'</span><span class="st">'année &quot;</span>,i,<span class="st">&quot;.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+}</code></pre></div>
+</div>
 <div id="calcul-de-la-proportion-doccupation-du-sol-par-sau" class="section level2">
-<h2><span class="header-section-number">2.1</span> Calcul de la proportion d’occupation du sol par SAU</h2>
+<h2><span class="header-section-number">2.2</span> Calcul de la proportion d’occupation du sol par SAU</h2>
 <p>Le code suivant détermine la proportion de la surface d’occupation du sol par rapport à la surface agricole utile pour les différentes périodes de temps étudiées (1970,1979,1988,2000,2010). Les occupations du sol prises en compte sont les suivantes :</p>
 <ul>
 <li>Superficie Toujours en Herbe (STH),</li>
@@ -319,7 +351,7 @@ for(v in variable){
 }</code></pre></div>
 </div>
 <div id="calcul-de-la-surface-des-prairies-et-sa-part-doccupation-dans-la-sau" class="section level2">
-<h2><span class="header-section-number">2.2</span> Calcul de la surface des prairies et sa part d’occupation dans la SAU</h2>
+<h2><span class="header-section-number">2.3</span> Calcul de la surface des prairies et sa part d’occupation dans la SAU</h2>
 <p>Le type d’occupation nommé <code>prairie</code> correspond à la somme des surfaces toujours en herbe et de la surface des prairies temporaires et artificielles. Le code ci-dessous calcul la proportion de prairie pour les 5 périodes du recencement agricole.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Calcul de statistiques pour les prairies (prairies artificielles, prairies temporaires)</span>
 
@@ -366,7 +398,7 @@ for(i in period){
 }</code></pre></div>
 </div>
 <div id="calcul-de-la-cop-cerealesoleagineuxproteagineux" class="section level2">
-<h2><span class="header-section-number">2.3</span> Calcul de la COP (Céréales+Oléagineux+Protéagineux)</h2>
+<h2><span class="header-section-number">2.4</span> Calcul de la COP (Céréales+Oléagineux+Protéagineux)</h2>
 <p>Le type d’occupation nommé <code>COP</code> correspond à la somme des surfaces en céréales+oléagineux et Protéagineux. Le code ci-dessous calcul la proportion de COP pour les 5 périodes du recencement agricole.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Calcul de statistiques pour les prairies (prairies artificielles, prairies temporaires)</span>
 
@@ -413,7 +445,7 @@ for(i in period){
 }</code></pre></div>
 </div>
 <div id="orientation-technico-economiques-des-exploitation" class="section level2">
-<h2><span class="header-section-number">2.4</span> Orientation technico-économiques des exploitation</h2>
+<h2><span class="header-section-number">2.5</span> Orientation technico-économiques des exploitation</h2>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Calcul de statistiques pour les OTEX</span>
 variable &lt;-<span class="st"> </span><span class="kw">cbind</span>(<span class="st">&quot;polyculturepolyélevageautresotex6173838490&quot;</span>,<span class="st">&quot;grandesculturesotex1516&quot;</span>,<span class="st">&quot;elevageshorssolotex51525374&quot;</span>)
 p_variable &lt;-<span class="st"> </span><span class="kw">cbind</span>(<span class="st">&quot;polyelevage&quot;</span>,<span class="st">&quot;grdcultures&quot;</span>,<span class="st">&quot;elevagehorsol&quot;</span>)
@@ -478,7 +510,7 @@ for(i in period){
 }</code></pre></div>
 </div>
 <div id="donnees-associees-aux-ugb" class="section level2">
-<h2><span class="header-section-number">2.5</span> Données associées aux UGB</h2>
+<h2><span class="header-section-number">2.6</span> Données associées aux UGB</h2>
 <p>Les données des UGB proviennent de la table accessible à cette <a href="http://agreste.agriculture.gouv.fr/IMG/xls/Donnees_principales__canton_departement_.xls">adresse</a>. A noter qu’il sagit uniquement des UGB tous aliments et que les données sont uniquement accessibles pour 1988, 2000 et 2010. Cette section présente le calcul de la densité d’UGB tous aliments (UGBTA/SAU) pour les 3 périodes de temps disponibles. Le calcul est appliqué sur les tables importées dans la base postgresql et décrit dans le fichier <a href="https://github.com/GisEDSol/Carbo_elevage/tree/master/Fichiers_suivis/BDD/Suivis/FS_bdd_brute.Rmd">FS_bdd_brute.Rmd</a>.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Paramètres</span>
 SAU &lt;-<span class="st"> &quot;sau&quot;</span> <span class="co"># Nom de la variable correspond à la surface agricole utile</span>
@@ -512,13 +544,13 @@ for(i in periodUGB){
 </div>
 <div id="calcul-des-evolutions-et-jointure-vers-la-table-dm_vecteurs.canton" class="section level1">
 <h1><span class="header-section-number">3</span> Calcul des évolutions et jointure vers la table <code>dm_vecteurs.canton</code></h1>
-<p>Les évolutions d’occupation du sol et de la densité d’UGB sont calculées entre 1970-2010, 1979-2010 et 1988-2010. Le calcul de l’évolution se base sur la relation suivante : test avec (occupA/SAUA)-(occupB/SAUB) avec A l’année la plus récente et B l’année la plus ancienne. (A priori, plus intéressant car la sau peut également évoluer…)</p>
+<p>Les évolutions d’occupation du sol et de la densité d’UGB sont calculées entre 1970-2010, 1979-2010 et 1988-2010. Le calcul de l’évolution se base sur la relation suivante : test avec (occupA/SAUA)-(occupB/SAUB) avec A l’année la plus récente et B l’année la plus ancienne.</p>
 <div id="evolution-pour-loccupation-du-sol" class="section level2">
 <h2><span class="header-section-number">3.1</span> Evolution pour l’occupation du sol</h2>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Calcul de l'évolution des superficies</span>
 <span class="co"># Paramètres</span>
 p_variable &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;sth&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;sfp&quot;</span>,<span class="st">&quot;mf&quot;</span>,<span class="st">&quot;prairie&quot;</span>,<span class="st">&quot;cop&quot;</span>)
-periodref &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;2010&quot;</span>,<span class="st">&quot;2000&quot;</span>)
+periodref &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;1988&quot;</span>,<span class="st">&quot;2010&quot;</span>,<span class="st">&quot;2000&quot;</span>)
 period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;1970&quot;</span>,<span class="st">&quot;1979&quot;</span>,<span class="st">&quot;1988&quot;</span>,<span class="st">&quot;2000&quot;</span>)
 signification &lt;-<span class="st"> </span><span class="kw">cbind</span>(<span class="st">&quot;de la surface toujours en herbe&quot;</span>,<span class="st">&quot;de la surface en céréales&quot;</span>,<span class="st">&quot; de la surface fourragère principale&quot;</span>,<span class="st">&quot;de la surface en maîs fourrage ensilage&quot;</span>,<span class="st">&quot;des prairies&quot;</span>,<span class="st">&quot;des surfaces en cop&quot;</span>)
 table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
@@ -665,8 +697,8 @@ for(i in varia){
 <h2><span class="header-section-number">4.2</span> Evolution de l’occupation du sol</h2>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Paramètres</span>
 p_variable &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;sth&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;sfp&quot;</span>,<span class="st">&quot;mf&quot;</span>,<span class="st">&quot;prairie&quot;</span>,<span class="st">&quot;cop&quot;</span>)
-periodref &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;2010&quot;</span>,<span class="st">&quot;2000&quot;</span>)
-period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;1970&quot;</span>,<span class="st">&quot;1979&quot;</span>,<span class="st">&quot;1988&quot;</span>,<span class="st">&quot;2000&quot;</span>)
+periodref &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;2010&quot;</span>,<span class="st">&quot;2000&quot;</span>,<span class="st">&quot;1988&quot;</span>)
+period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;1979&quot;</span>,<span class="st">&quot;1988&quot;</span>,<span class="st">&quot;2000&quot;</span>)
 varia &lt;-<span class="st"> </span><span class="kw">apply</span>(<span class="kw">expand.grid</span>(p_variable,period,periodref),<span class="dv">1</span>, function(x){<span class="kw">paste</span>(<span class="st">&quot;var_&quot;</span>,x[<span class="dv">1</span>],x[<span class="dv">2</span>],<span class="st">&quot;_&quot;</span>,x[<span class="dv">3</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)})
 style_classe &lt;-<span class="st"> &quot;quantile&quot;</span> <span class="co"># fixed&quot;, &quot;sd&quot;, &quot;equal&quot;, &quot;pretty&quot;, &quot;quantile&quot;, &quot;kmeans&quot;, &quot;hclust&quot;, &quot;bclust&quot;, &quot;fisher&quot;, or &quot;jenks&quot;</span>
 nclasse &lt;-<span class="st"> </span><span class="dv">5</span>
@@ -691,11 +723,11 @@ for(i in varia){
   vNameS &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;diff_&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>) <span class="co"># Nom de la variable simplifiée (augmentation,diminution, pas d'évolution)</span>
 
   mapcanton[,vName] &lt;-<span class="st"> </span><span class="kw">cut</span>(mapcanton[,i],<span class="dt">breaks =</span> <span class="kw">data.frame</span>(classe_valeur)[,<span class="dv">1</span>],<span class="dt">include.lowest=</span>T)  
-  mapcanton[,vNameS] &lt;-<span class="st"> </span><span class="kw">ifelse</span>(mapcanton[,i] &gt;<span class="st"> </span><span class="dv">10</span>,<span class="st">&quot;Augmentation&quot;</span>,<span class="kw">ifelse</span>(mapcanton[,i] &lt;<span class="st"> </span>-<span class="dv">10</span>,<span class="st">&quot;Diminution&quot;</span>,<span class="st">&quot;Pas d'évolution&quot;</span>))
-
+  mapcanton[,vNameS] &lt;-<span class="st"> </span><span class="kw">ifelse</span>(mapcanton[,i] &gt;<span class="st"> </span><span class="dv">5</span>,<span class="st">&quot;Augmentation&quot;</span>,<span class="kw">ifelse</span>(mapcanton[,i] &lt;<span class="st"> </span>-<span class="dv">5</span>,<span class="st">&quot;Diminution&quot;</span>,<span class="st">&quot;Pas d'évolution&quot;</span>))
+   
   <span class="co"># Définition des commentaires </span>
   comment1 &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;Classes de changement d</span><span class="ch">\'</span><span class="st">'occupation du sol basées sur la méthode &quot;</span>,style_classe,<span class="st">&quot; pour le champ &quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
-  comment2 &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;Classes de changement d</span><span class="ch">\'</span><span class="st">'occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d</span><span class="ch">\'</span><span class="st">'évolution. Pour le champ&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+  comment2 &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;Classes de changement d</span><span class="ch">\'</span><span class="st">'occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d</span><span class="ch">\'</span><span class="st">'évolution. Pour le champ&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
   
   comment &lt;-<span class="st"> </span><span class="kw">c</span>(comment1,comment2)
   
@@ -721,7 +753,6 @@ for(i in varia){
     <span class="kw">sqlQuery</span>(loc,<span class="st">&quot;drop table if exists dm_vecteurs.tmp&quot;</span>)
 
     <span class="co"># Commentaires</span>
-
     <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
 <span class="st">       COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,v,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">&quot;</span>,comment[cpt],<span class="st">&quot;.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
     }
@@ -732,7 +763,6 @@ for(i in varia){
 <p>Les données du recencement (pourcentage de prairie par SAU par exemple) sont ré-organisées pour faciliter les traitements statistiques et la production de graphique. La fonction <code>melt</code> est utilisée pour transformer les données d’un format “large” à un format “long”.</p>
 <div id="occupation-du-sol" class="section level3">
 <h3><span class="header-section-number">4.3.1</span> Occupation du sol</h3>
-<p>Problème avec les données ugbta, revoir!</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Paramètres</span>
 varia &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;p_mf&quot;</span>,<span class="st">&quot;p_sth&quot;</span>,<span class="st">&quot;p_sfp&quot;</span>,<span class="st">&quot;p_prairie&quot;</span>,<span class="st">&quot;p_c&quot;</span>,<span class="st">&quot;p_cop&quot;</span>,<span class="st">&quot;ugbta&quot;</span>) <span class="co"># Variable à analyser </span>
 id_class &lt;-<span class="st"> </span><span class="kw">apply</span>(<span class="kw">expand.grid</span>(varia,period),<span class="dv">1</span>, function(x){<span class="kw">paste</span>(<span class="st">&quot;classe_&quot;</span>,x[<span class="dv">1</span>],x[<span class="dv">2</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)})
@@ -854,132 +884,148 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <td align="left">Classes des altitudes moyennes par canton avec la méthode quantile et établies sur la variable altimean.</td>
 </tr>
 <tr class="odd">
+<td align="left">classe_argi_med</td>
+<td align="left">Classe des taux d’argile (g/kg) calculée sur 1990-2009.</td>
+</tr>
+<tr class="even">
 <td align="left">classe_p_c1970</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_c1970.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_p_c1979</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_c1979.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_p_c1988</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_c1988.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_p_c2000</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_c2000.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_p_c2010</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_c2010.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_p_cop1970</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_cop1970.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_p_cop1979</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_cop1979.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_p_cop1988</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_cop1988.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_p_cop2000</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_cop2000.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_p_cop2010</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_cop2010.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_p_mf1970</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_mf1970.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_p_mf1979</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_mf1979.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_p_mf1988</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_mf1988.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_p_mf2000</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_mf2000.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_p_mf2010</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_mf2010.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_p_prairie1970</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_prairie1970.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_p_prairie1979</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_prairie1979.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_p_prairie1988</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_prairie1988.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_p_prairie2000</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_prairie2000.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_p_prairie2010</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_prairie2010.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_p_sfp1970</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_sfp1970.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_p_sfp1979</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_sfp1979.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_p_sfp1988</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_sfp1988.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_p_sfp2000</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_sfp2000.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_p_sfp2010</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_sfp2010.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_p_sth1970</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_sth1970.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_p_sth1979</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_sth1979.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_p_sth1988</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_sth1988.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_p_sth2000</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_sth2000.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_p_sth2010</td>
 <td align="left">Classes d’occupation du sol calculées avec la méthode pretty et établies sur la variable p_sth2010.</td>
 </tr>
+<tr class="even">
+<td align="left">classe_sabt_med</td>
+<td align="left">Classe des taux de sable (g/kg) calculée sur 1990-2009.</td>
+</tr>
 <tr class="odd">
+<td align="left">classe_var_c1970_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_c1970_1988.</td>
+</tr>
+<tr class="even">
 <td align="left">classe_var_c1970_2000</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_c1970_2000.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_var_c1970_2010</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_c1970_2010.</td>
+</tr>
+<tr class="even">
+<td align="left">classe_var_c1979_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_c1979_1988.</td>
 </tr>
 <tr class="odd">
 <td align="left">classe_var_c1979_2000</td>
@@ -998,16 +1044,24 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_c1988_2010.</td>
 </tr>
 <tr class="odd">
+<td align="left">classe_var_c2000_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_c2000_1988.</td>
+</tr>
+<tr class="even">
 <td align="left">classe_var_c2000_2010</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_c2000_2010.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_var_cop1970_2000</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_cop1970_2000.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_var_cop1970_2010</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_cop1970_2010.</td>
+</tr>
+<tr class="odd">
+<td align="left">classe_var_cop1979_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_cop1979_1988.</td>
 </tr>
 <tr class="even">
 <td align="left">classe_var_cop1979_2000</td>
@@ -1026,8 +1080,16 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_cop1988_2010.</td>
 </tr>
 <tr class="even">
+<td align="left">classe_var_cop2000_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_cop2000_1988.</td>
+</tr>
+<tr class="odd">
 <td align="left">classe_var_cop2000_2010</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_cop2000_2010.</td>
+</tr>
+<tr class="even">
+<td align="left">classe_var_mf1970_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_mf1970_1988.</td>
 </tr>
 <tr class="odd">
 <td align="left">classe_var_mf1970_2000</td>
@@ -1038,32 +1100,48 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_mf1970_2010.</td>
 </tr>
 <tr class="odd">
+<td align="left">classe_var_mf1979_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_mf1979_1988.</td>
+</tr>
+<tr class="even">
 <td align="left">classe_var_mf1979_2000</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_mf1979_2000.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_var_mf1979_2010</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_mf1979_2010.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_var_mf1988_2000</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_mf1988_2000.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_var_mf1988_2010</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_mf1988_2010.</td>
+</tr>
+<tr class="even">
+<td align="left">classe_var_mf2000_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_mf2000_1988.</td>
 </tr>
 <tr class="odd">
 <td align="left">classe_var_mf2000_2010</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_mf2000_2010.</td>
 </tr>
 <tr class="even">
+<td align="left">classe_var_prairie1970_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_prairie1970_1988.</td>
+</tr>
+<tr class="odd">
 <td align="left">classe_var_prairie1970_2000</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_prairie1970_2000.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_var_prairie1970_2010</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_prairie1970_2010.</td>
+</tr>
+<tr class="odd">
+<td align="left">classe_var_prairie1979_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_prairie1979_1988.</td>
 </tr>
 <tr class="even">
 <td align="left">classe_var_prairie1979_2000</td>
@@ -1082,8 +1160,16 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_prairie1988_2010.</td>
 </tr>
 <tr class="even">
+<td align="left">classe_var_prairie2000_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_prairie2000_1988.</td>
+</tr>
+<tr class="odd">
 <td align="left">classe_var_prairie2000_2010</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_prairie2000_2010.</td>
+</tr>
+<tr class="even">
+<td align="left">classe_var_sfp1970_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_sfp1970_1988.</td>
 </tr>
 <tr class="odd">
 <td align="left">classe_var_sfp1970_2000</td>
@@ -1094,32 +1180,48 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_sfp1970_2010.</td>
 </tr>
 <tr class="odd">
+<td align="left">classe_var_sfp1979_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_sfp1979_1988.</td>
+</tr>
+<tr class="even">
 <td align="left">classe_var_sfp1979_2000</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_sfp1979_2000.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_var_sfp1979_2010</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_sfp1979_2010.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_var_sfp1988_2000</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_sfp1988_2000.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">classe_var_sfp1988_2010</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_sfp1988_2010.</td>
+</tr>
+<tr class="even">
+<td align="left">classe_var_sfp2000_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_sfp2000_1988.</td>
 </tr>
 <tr class="odd">
 <td align="left">classe_var_sfp2000_2010</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_sfp2000_2010.</td>
 </tr>
 <tr class="even">
+<td align="left">classe_var_sth1970_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_sth1970_1988.</td>
+</tr>
+<tr class="odd">
 <td align="left">classe_var_sth1970_2000</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_sth1970_2000.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">classe_var_sth1970_2010</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_sth1970_2010.</td>
+</tr>
+<tr class="odd">
+<td align="left">classe_var_sth1979_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_sth1979_1988.</td>
 </tr>
 <tr class="even">
 <td align="left">classe_var_sth1979_2000</td>
@@ -1138,32 +1240,56 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_sth1988_2010.</td>
 </tr>
 <tr class="even">
+<td align="left">classe_var_sth2000_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_sth2000_1988.</td>
+</tr>
+<tr class="odd">
 <td align="left">classe_var_sth2000_2010</td>
 <td align="left">Classes de changement d’occupation du sol basées sur la méthode quantile pour le champ var_sth2000_2010.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">clc21_00</td>
 <td align="left">Surface d’occupation du sol en hectare du libellé CLC version 00 : Terres arables</td>
+</tr>
+<tr class="odd">
+<td align="left">clc21_00_06</td>
+<td align="left">Perte en % de la SAU de l’occupation du sol 21 entre l’année 00 et l’année 06</td>
 </tr>
 <tr class="even">
 <td align="left">clc21_06</td>
 <td align="left">Surface d’occupation du sol en hectare du libellé CLC version 06 : Terres arables</td>
 </tr>
 <tr class="odd">
+<td align="left">clc21_06_12</td>
+<td align="left">Perte en % de la SAU de l’occupation du sol 21 entre l’année 06 et l’année 12</td>
+</tr>
+<tr class="even">
 <td align="left">clc21_12</td>
 <td align="left">Surface d’occupation du sol en hectare du libellé CLC version 12 : Terres arables</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">clc21_90</td>
 <td align="left">Surface d’occupation du sol en hectare du libellé CLC version 90 : Terres arables</td>
+</tr>
+<tr class="even">
+<td align="left">clc21_90_00</td>
+<td align="left">Perte en % de la SAU de l’occupation du sol 21 entre l’année 90 et l’année 00</td>
 </tr>
 <tr class="odd">
 <td align="left">clc22_00</td>
 <td align="left">Surface d’occupation du sol en hectare du libellé CLC version 00 : Cultures permanentes</td>
 </tr>
 <tr class="even">
+<td align="left">clc22_00_06</td>
+<td align="left">Perte en % de la SAU de l’occupation du sol 22 entre l’année 00 et l’année 06</td>
+</tr>
+<tr class="odd">
 <td align="left">clc22_06</td>
 <td align="left">Surface d’occupation du sol en hectare du libellé CLC version 06 : Cultures permanentes</td>
+</tr>
+<tr class="even">
+<td align="left">clc22_06_12</td>
+<td align="left">Perte en % de la SAU de l’occupation du sol 22 entre l’année 06 et l’année 12</td>
 </tr>
 <tr class="odd">
 <td align="left">clc22_12</td>
@@ -1174,20 +1300,36 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <td align="left">Surface d’occupation du sol en hectare du libellé CLC version 90 : Cultures permanentes</td>
 </tr>
 <tr class="odd">
+<td align="left">clc22_90_00</td>
+<td align="left">Perte en % de la SAU de l’occupation du sol 22 entre l’année 90 et l’année 00</td>
+</tr>
+<tr class="even">
 <td align="left">clc23_00</td>
 <td align="left">Surface d’occupation du sol en hectare du libellé CLC version 00 : Prairies</td>
+</tr>
+<tr class="odd">
+<td align="left">clc23_00_06</td>
+<td align="left">Perte en % de la SAU de l’occupation du sol 23 entre l’année 00 et l’année 06</td>
 </tr>
 <tr class="even">
 <td align="left">clc23_06</td>
 <td align="left">Surface d’occupation du sol en hectare du libellé CLC version 06 : Prairies</td>
 </tr>
 <tr class="odd">
+<td align="left">clc23_06_12</td>
+<td align="left">Perte en % de la SAU de l’occupation du sol 23 entre l’année 06 et l’année 12</td>
+</tr>
+<tr class="even">
 <td align="left">clc23_12</td>
 <td align="left">Surface d’occupation du sol en hectare du libellé CLC version 12 : Prairies</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">clc23_90</td>
 <td align="left">Surface d’occupation du sol en hectare du libellé CLC version 90 : Prairies</td>
+</tr>
+<tr class="even">
+<td align="left">clc23_90_00</td>
+<td align="left">Perte en % de la SAU de l’occupation du sol 23 entre l’année 90 et l’année 00</td>
 </tr>
 <tr class="odd">
 <td align="left">clc24_00</td>
@@ -1236,102 +1378,6 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <tr class="even">
 <td align="left">clc32_90</td>
 <td align="left">Surface d’occupation du sol en hectare du libellé CLC version 90 : Milieux à végétation arbustive et/ou herbacée</td>
-</tr>
-<tr class="odd">
-<td align="left">corg_medequiv0004</td>
-<td align="left">Médiane des teneurs en carbone organique après ré-échantillonnage pour la période (toutes méthodes confondues)0004.</td>
-</tr>
-<tr class="even">
-<td align="left">corg_medequiv0509</td>
-<td align="left">Médiane des teneurs en carbone organique après ré-échantillonnage pour la période (toutes méthodes confondues)0509.</td>
-</tr>
-<tr class="odd">
-<td align="left">corg_medequiv1014</td>
-<td align="left">Médiane des teneurs en carbone organique après ré-échantillonnage pour la période (toutes méthodes confondues)1014.</td>
-</tr>
-<tr class="even">
-<td align="left">corg_medequiv9094</td>
-<td align="left">Médiane des teneurs en carbone organique après ré-échantillonnage pour la période (toutes méthodes confondues)9094.</td>
-</tr>
-<tr class="odd">
-<td align="left">corg_medequiv9599</td>
-<td align="left">Médiane des teneurs en carbone organique après ré-échantillonnage pour la période (toutes méthodes confondues)9599.</td>
-</tr>
-<tr class="even">
-<td align="left">corgco0004</td>
-<td align="left">Médiane des teneurs en carbone organique après ré-échantillonnage pour la période0004 et pour la méthode Oxydation sèche.</td>
-</tr>
-<tr class="odd">
-<td align="left">corgco0509</td>
-<td align="left">Médiane des teneurs en carbone organique après ré-échantillonnage pour la période0509 et pour la méthode Oxydation sèche.</td>
-</tr>
-<tr class="even">
-<td align="left">corgco1014</td>
-<td align="left">Médiane des teneurs en carbone organique après ré-échantillonnage pour la période1014 et pour la méthode Oxydation sèche.</td>
-</tr>
-<tr class="odd">
-<td align="left">corgco9599</td>
-<td align="left">Médiane des teneurs en carbone organique après ré-échantillonnage pour la période9599 et pour la méthode Oxydation sèche.</td>
-</tr>
-<tr class="even">
-<td align="left">corgox0004</td>
-<td align="left">Médiane des teneurs en carbone organique après ré-échantillonnage pour la période0004 et pour la méthode Oxydation humide.</td>
-</tr>
-<tr class="odd">
-<td align="left">corgox0509</td>
-<td align="left">Médiane des teneurs en carbone organique après ré-échantillonnage pour la période0509 et pour la méthode Oxydation humide.</td>
-</tr>
-<tr class="even">
-<td align="left">corgox1014</td>
-<td align="left">Médiane des teneurs en carbone organique après ré-échantillonnage pour la période1014 et pour la méthode Oxydation humide.</td>
-</tr>
-<tr class="odd">
-<td align="left">corgox9094</td>
-<td align="left">Médiane des teneurs en carbone organique après ré-échantillonnage pour la période9094 et pour la méthode Oxydation humide.</td>
-</tr>
-<tr class="even">
-<td align="left">corgox9599</td>
-<td align="left">Médiane des teneurs en carbone organique après ré-échantillonnage pour la période9599 et pour la méthode Oxydation humide.</td>
-</tr>
-<tr class="odd">
-<td align="left">diff12</td>
-<td align="left">Résultat du test de significacité de la différence de la médiane des teneurs en carbone organique au niveau du canton.</td>
-</tr>
-<tr class="even">
-<td align="left">diff13</td>
-<td align="left">Résultat du test de significacité de la différence de la médiane des teneurs en carbone organique au niveau du canton.</td>
-</tr>
-<tr class="odd">
-<td align="left">diff14</td>
-<td align="left">Résultat du test de significacité de la différence de la médiane des teneurs en carbone organique au niveau du canton.</td>
-</tr>
-<tr class="even">
-<td align="left">diff15</td>
-<td align="left">Résultat du test de significacité de la différence de la médiane des teneurs en carbone organique au niveau du canton.</td>
-</tr>
-<tr class="odd">
-<td align="left">diff23</td>
-<td align="left">Résultat du test de significacité de la différence de la médiane des teneurs en carbone organique au niveau du canton.</td>
-</tr>
-<tr class="even">
-<td align="left">diff24</td>
-<td align="left">Résultat du test de significacité de la différence de la médiane des teneurs en carbone organique au niveau du canton.</td>
-</tr>
-<tr class="odd">
-<td align="left">diff25</td>
-<td align="left">Résultat du test de significacité de la différence de la médiane des teneurs en carbone organique au niveau du canton.</td>
-</tr>
-<tr class="even">
-<td align="left">diff34</td>
-<td align="left">Résultat du test de significacité de la différence de la médiane des teneurs en carbone organique au niveau du canton.</td>
-</tr>
-<tr class="odd">
-<td align="left">diff35</td>
-<td align="left">Résultat du test de significacité de la différence de la médiane des teneurs en carbone organique au niveau du canton.</td>
-</tr>
-<tr class="even">
-<td align="left">diff45</td>
-<td align="left">Résultat du test de significacité de la différence de la médiane des teneurs en carbone organique au niveau du canton.</td>
 </tr>
 <tr class="odd">
 <td align="left">diff_corgco23</td>
@@ -1394,392 +1440,664 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <td align="left">Résultat du test de significacité de la différence de la médiane des teneurs en carbone organique au niveau du canton pour la méthode Oxydation humide</td>
 </tr>
 <tr class="even">
-<td align="left">diff_var_c1970_2000</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_c1970_2000.</td>
+<td align="left">diff_dqua_12</td>
+<td align="left">Différence absolue du 3ème quartile cantonale entre deux périodes 12.</td>
 </tr>
 <tr class="odd">
+<td align="left">diff_dqua_13</td>
+<td align="left">Différence absolue du 3ème quartile cantonale entre deux périodes 13.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_dqua_14</td>
+<td align="left">Différence absolue du 3ème quartile cantonale entre deux périodes 14.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_dqua_15</td>
+<td align="left">Différence absolue du 3ème quartile cantonale entre deux périodes 15.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_dqua_23</td>
+<td align="left">Différence absolue du 3ème quartile cantonale entre deux périodes 23.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_dqua_24</td>
+<td align="left">Différence absolue du 3ème quartile cantonale entre deux périodes 24.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_dqua_25</td>
+<td align="left">Différence absolue du 3ème quartile cantonale entre deux périodes 25.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_dqua_34</td>
+<td align="left">Différence absolue du 3ème quartile cantonale entre deux périodes 34.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_dqua_35</td>
+<td align="left">Différence absolue du 3ème quartile cantonale entre deux périodes 35.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_dqua_45</td>
+<td align="left">Différence absolue du 3ème quartile cantonale entre deux périodes 45.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_dqua_pourcent_12</td>
+<td align="left">Différence relative (%) du 3ème quartile cantonale entre deux périodes 12.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_dqua_pourcent_13</td>
+<td align="left">Différence relative (%) du 3ème quartile cantonale entre deux périodes 13.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_dqua_pourcent_14</td>
+<td align="left">Différence relative (%) du 3ème quartile cantonale entre deux périodes 14.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_dqua_pourcent_15</td>
+<td align="left">Différence relative (%) du 3ème quartile cantonale entre deux périodes 15.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_dqua_pourcent_23</td>
+<td align="left">Différence relative (%) du 3ème quartile cantonale entre deux périodes 23.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_dqua_pourcent_24</td>
+<td align="left">Différence relative (%) du 3ème quartile cantonale entre deux périodes 24.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_dqua_pourcent_25</td>
+<td align="left">Différence relative (%) du 3ème quartile cantonale entre deux périodes 25.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_dqua_pourcent_34</td>
+<td align="left">Différence relative (%) du 3ème quartile cantonale entre deux périodes 34.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_dqua_pourcent_35</td>
+<td align="left">Différence relative (%) du 3ème quartile cantonale entre deux périodes 35.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_dqua_pourcent_45</td>
+<td align="left">Différence relative (%) du 3ème quartile cantonale entre deux périodes 45.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_med_12</td>
+<td align="left">Différence absolue de la médiane cantonale entre deux périodes 12.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_med_13</td>
+<td align="left">Différence absolue de la médiane cantonale entre deux périodes 13.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_med_14</td>
+<td align="left">Différence absolue de la médiane cantonale entre deux périodes 14.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_med_15</td>
+<td align="left">Différence absolue de la médiane cantonale entre deux périodes 15.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_med_23</td>
+<td align="left">Différence absolue de la médiane cantonale entre deux périodes 23.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_med_24</td>
+<td align="left">Différence absolue de la médiane cantonale entre deux périodes 24.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_med_25</td>
+<td align="left">Différence absolue de la médiane cantonale entre deux périodes 25.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_med_34</td>
+<td align="left">Différence absolue de la médiane cantonale entre deux périodes 34.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_med_35</td>
+<td align="left">Différence absolue de la médiane cantonale entre deux périodes 35.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_med_45</td>
+<td align="left">Différence absolue de la médiane cantonale entre deux périodes 45.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_med_pourcent_12</td>
+<td align="left">Différence relative (%) de la médiane cantonale entre deux périodes 12.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_med_pourcent_13</td>
+<td align="left">Différence relative (%) de la médiane cantonale entre deux périodes 13.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_med_pourcent_14</td>
+<td align="left">Différence relative (%) de la médiane cantonale entre deux périodes 14.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_med_pourcent_15</td>
+<td align="left">Différence relative (%) de la médiane cantonale entre deux périodes 15.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_med_pourcent_23</td>
+<td align="left">Différence relative (%) de la médiane cantonale entre deux périodes 23.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_med_pourcent_24</td>
+<td align="left">Différence relative (%) de la médiane cantonale entre deux périodes 24.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_med_pourcent_25</td>
+<td align="left">Différence relative (%) de la médiane cantonale entre deux périodes 25.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_med_pourcent_34</td>
+<td align="left">Différence relative (%) de la médiane cantonale entre deux périodes 34.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_med_pourcent_35</td>
+<td align="left">Différence relative (%) de la médiane cantonale entre deux périodes 35.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_med_pourcent_45</td>
+<td align="left">Différence relative (%) de la médiane cantonale entre deux périodes 45.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_var_c1970_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_c1970_1988.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_var_c1970_2000</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_c1970_2000.</td>
+</tr>
+<tr class="even">
 <td align="left">diff_var_c1970_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_c1970_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_c1970_2010.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_var_c1979_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_c1979_1988.</td>
 </tr>
 <tr class="even">
 <td align="left">diff_var_c1979_2000</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_c1979_2000.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_c1979_2000.</td>
 </tr>
 <tr class="odd">
 <td align="left">diff_var_c1979_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_c1979_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_c1979_2010.</td>
 </tr>
 <tr class="even">
 <td align="left">diff_var_c1988_2000</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_c1988_2000.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_c1988_2000.</td>
 </tr>
 <tr class="odd">
 <td align="left">diff_var_c1988_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_c1988_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_c1988_2010.</td>
 </tr>
 <tr class="even">
-<td align="left">diff_var_c2000_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_c2000_2010.</td>
+<td align="left">diff_var_c2000_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_c2000_1988.</td>
 </tr>
 <tr class="odd">
-<td align="left">diff_var_cop1970_2000</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_cop1970_2000.</td>
+<td align="left">diff_var_c2000_2010</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_c2000_2010.</td>
 </tr>
 <tr class="even">
+<td align="left">diff_var_cop1970_2000</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_cop1970_2000.</td>
+</tr>
+<tr class="odd">
 <td align="left">diff_var_cop1970_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_cop1970_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_cop1970_2010.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_var_cop1979_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_cop1979_1988.</td>
 </tr>
 <tr class="odd">
 <td align="left">diff_var_cop1979_2000</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_cop1979_2000.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_cop1979_2000.</td>
 </tr>
 <tr class="even">
 <td align="left">diff_var_cop1979_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_cop1979_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_cop1979_2010.</td>
 </tr>
 <tr class="odd">
 <td align="left">diff_var_cop1988_2000</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_cop1988_2000.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_cop1988_2000.</td>
 </tr>
 <tr class="even">
 <td align="left">diff_var_cop1988_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_cop1988_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_cop1988_2010.</td>
 </tr>
 <tr class="odd">
+<td align="left">diff_var_cop2000_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_cop2000_1988.</td>
+</tr>
+<tr class="even">
 <td align="left">diff_var_cop2000_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_cop2000_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_cop2000_2010.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_var_mf1970_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_mf1970_1988.</td>
 </tr>
 <tr class="even">
 <td align="left">diff_var_mf1970_2000</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_mf1970_2000.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_mf1970_2000.</td>
 </tr>
 <tr class="odd">
 <td align="left">diff_var_mf1970_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_mf1970_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_mf1970_2010.</td>
 </tr>
 <tr class="even">
+<td align="left">diff_var_mf1979_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_mf1979_1988.</td>
+</tr>
+<tr class="odd">
 <td align="left">diff_var_mf1979_2000</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_mf1979_2000.</td>
-</tr>
-<tr class="odd">
-<td align="left">diff_var_mf1979_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_mf1979_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_mf1979_2000.</td>
 </tr>
 <tr class="even">
-<td align="left">diff_var_mf1988_2000</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_mf1988_2000.</td>
+<td align="left">diff_var_mf1979_2010</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_mf1979_2010.</td>
 </tr>
 <tr class="odd">
+<td align="left">diff_var_mf1988_2000</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_mf1988_2000.</td>
+</tr>
+<tr class="even">
 <td align="left">diff_var_mf1988_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_mf1988_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_mf1988_2010.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_var_mf2000_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_mf2000_1988.</td>
 </tr>
 <tr class="even">
 <td align="left">diff_var_mf2000_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_mf2000_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_mf2000_2010.</td>
 </tr>
 <tr class="odd">
-<td align="left">diff_var_prairie1970_2000</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_prairie1970_2000.</td>
+<td align="left">diff_var_prairie1970_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_prairie1970_1988.</td>
 </tr>
 <tr class="even">
+<td align="left">diff_var_prairie1970_2000</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_prairie1970_2000.</td>
+</tr>
+<tr class="odd">
 <td align="left">diff_var_prairie1970_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_prairie1970_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_prairie1970_2010.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_var_prairie1979_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_prairie1979_1988.</td>
 </tr>
 <tr class="odd">
 <td align="left">diff_var_prairie1979_2000</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_prairie1979_2000.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_prairie1979_2000.</td>
 </tr>
 <tr class="even">
 <td align="left">diff_var_prairie1979_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_prairie1979_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_prairie1979_2010.</td>
 </tr>
 <tr class="odd">
 <td align="left">diff_var_prairie1988_2000</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_prairie1988_2000.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_prairie1988_2000.</td>
 </tr>
 <tr class="even">
 <td align="left">diff_var_prairie1988_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_prairie1988_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_prairie1988_2010.</td>
 </tr>
 <tr class="odd">
+<td align="left">diff_var_prairie2000_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_prairie2000_1988.</td>
+</tr>
+<tr class="even">
 <td align="left">diff_var_prairie2000_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_prairie2000_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_prairie2000_2010.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_var_sfp1970_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sfp1970_1988.</td>
 </tr>
 <tr class="even">
 <td align="left">diff_var_sfp1970_2000</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_sfp1970_2000.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sfp1970_2000.</td>
 </tr>
 <tr class="odd">
 <td align="left">diff_var_sfp1970_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_sfp1970_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sfp1970_2010.</td>
 </tr>
 <tr class="even">
+<td align="left">diff_var_sfp1979_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sfp1979_1988.</td>
+</tr>
+<tr class="odd">
 <td align="left">diff_var_sfp1979_2000</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_sfp1979_2000.</td>
-</tr>
-<tr class="odd">
-<td align="left">diff_var_sfp1979_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_sfp1979_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sfp1979_2000.</td>
 </tr>
 <tr class="even">
-<td align="left">diff_var_sfp1988_2000</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_sfp1988_2000.</td>
+<td align="left">diff_var_sfp1979_2010</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sfp1979_2010.</td>
 </tr>
 <tr class="odd">
+<td align="left">diff_var_sfp1988_2000</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sfp1988_2000.</td>
+</tr>
+<tr class="even">
 <td align="left">diff_var_sfp1988_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_sfp1988_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sfp1988_2010.</td>
+</tr>
+<tr class="odd">
+<td align="left">diff_var_sfp2000_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sfp2000_1988.</td>
 </tr>
 <tr class="even">
 <td align="left">diff_var_sfp2000_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_sfp2000_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sfp2000_2010.</td>
 </tr>
 <tr class="odd">
-<td align="left">diff_var_sth1970_2000</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_sth1970_2000.</td>
+<td align="left">diff_var_sth1970_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sth1970_1988.</td>
 </tr>
 <tr class="even">
+<td align="left">diff_var_sth1970_2000</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sth1970_2000.</td>
+</tr>
+<tr class="odd">
 <td align="left">diff_var_sth1970_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_sth1970_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sth1970_2010.</td>
+</tr>
+<tr class="even">
+<td align="left">diff_var_sth1979_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sth1979_1988.</td>
 </tr>
 <tr class="odd">
 <td align="left">diff_var_sth1979_2000</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_sth1979_2000.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sth1979_2000.</td>
 </tr>
 <tr class="even">
 <td align="left">diff_var_sth1979_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_sth1979_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sth1979_2010.</td>
 </tr>
 <tr class="odd">
 <td align="left">diff_var_sth1988_2000</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_sth1988_2000.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sth1988_2000.</td>
 </tr>
 <tr class="even">
 <td align="left">diff_var_sth1988_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_sth1988_2010.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sth1988_2010.</td>
 </tr>
 <tr class="odd">
+<td align="left">diff_var_sth2000_1988</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sth2000_1988.</td>
+</tr>
+<tr class="even">
 <td align="left">diff_var_sth2000_2010</td>
-<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 10% : Augmentation; inf à -10% : Diminution; entre 10 et -10% : pas d’évolution. Pour le champvar_sth2000_2010.</td>
-</tr>
-<tr class="even">
-<td align="left">diffmedian12</td>
-<td align="left">Pourcentage d évolution de la médiane des teneurs en carbone organique par canton ((medA-medB)/medB))*100 avec B une période antérieure à A.</td>
+<td align="left">Classes de changement d’occupation du sol basées sur la règle : sup à 5% : Augmentation; inf à -5% : Diminution entre 5 et -5% : pas d’évolution. Pour le champvar_sth2000_2010.</td>
 </tr>
 <tr class="odd">
-<td align="left">diffmedian13</td>
-<td align="left">Pourcentage d évolution de la médiane des teneurs en carbone organique par canton ((medA-medB)/medB))*100 avec B une période antérieure à A.</td>
-</tr>
-<tr class="even">
-<td align="left">diffmedian14</td>
-<td align="left">Pourcentage d évolution de la médiane des teneurs en carbone organique par canton ((medA-medB)/medB))*100 avec B une période antérieure à A.</td>
-</tr>
-<tr class="odd">
-<td align="left">diffmedian15</td>
-<td align="left">Pourcentage d évolution de la médiane des teneurs en carbone organique par canton ((medA-medB)/medB))*100 avec B une période antérieure à A.</td>
-</tr>
-<tr class="even">
-<td align="left">diffmedian23</td>
-<td align="left">Pourcentage d évolution de la médiane des teneurs en carbone organique par canton ((medA-medB)/medB))*100 avec B une période antérieure à A.</td>
-</tr>
-<tr class="odd">
-<td align="left">diffmedian24</td>
-<td align="left">Pourcentage d évolution de la médiane des teneurs en carbone organique par canton ((medA-medB)/medB))*100 avec B une période antérieure à A.</td>
-</tr>
-<tr class="even">
-<td align="left">diffmedian25</td>
-<td align="left">Pourcentage d évolution de la médiane des teneurs en carbone organique par canton ((medA-medB)/medB))*100 avec B une période antérieure à A.</td>
-</tr>
-<tr class="odd">
-<td align="left">diffmedian34</td>
-<td align="left">Pourcentage d évolution de la médiane des teneurs en carbone organique par canton ((medA-medB)/medB))*100 avec B une période antérieure à A.</td>
-</tr>
-<tr class="even">
-<td align="left">diffmedian35</td>
-<td align="left">Pourcentage d évolution de la médiane des teneurs en carbone organique par canton ((medA-medB)/medB))*100 avec B une période antérieure à A.</td>
-</tr>
-<tr class="odd">
-<td align="left">diffmedian45</td>
-<td align="left">Pourcentage d évolution de la médiane des teneurs en carbone organique par canton ((medA-medB)/medB))*100 avec B une période antérieure à A.</td>
-</tr>
-<tr class="even">
 <td align="left">diffmedian_corgco23</td>
 <td align="left">Différence entre la période A et la période B (g/kg) pour la méthode de mesure Oxydation sèche.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">diffmedian_corgco24</td>
 <td align="left">Différence entre la période A et la période B (g/kg) pour la méthode de mesure Oxydation sèche.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">diffmedian_corgco34</td>
 <td align="left">Différence entre la période A et la période B (g/kg) pour la méthode de mesure Oxydation sèche.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">diffmedian_corgco35</td>
 <td align="left">Différence entre la période A et la période B (g/kg) pour la méthode de mesure Oxydation sèche.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">diffmedian_corgco45</td>
 <td align="left">Différence entre la période A et la période B (g/kg) pour la méthode de mesure Oxydation sèche.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">diffmedian_corgox12</td>
 <td align="left">Différence entre la période A et la période B (g/kg) pour la méthode de mesure Oxydation humide.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">diffmedian_corgox13</td>
 <td align="left">Différence entre la période A et la période B (g/kg) pour la méthode de mesure Oxydation humide.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">diffmedian_corgox14</td>
 <td align="left">Différence entre la période A et la période B (g/kg) pour la méthode de mesure Oxydation humide.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">diffmedian_corgox15</td>
 <td align="left">Différence entre la période A et la période B (g/kg) pour la méthode de mesure Oxydation humide.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">diffmedian_corgox23</td>
 <td align="left">Différence entre la période A et la période B (g/kg) pour la méthode de mesure Oxydation humide.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">diffmedian_corgox24</td>
 <td align="left">Différence entre la période A et la période B (g/kg) pour la méthode de mesure Oxydation humide.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">diffmedian_corgox25</td>
 <td align="left">Différence entre la période A et la période B (g/kg) pour la méthode de mesure Oxydation humide.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">diffmedian_corgox34</td>
 <td align="left">Différence entre la période A et la période B (g/kg) pour la méthode de mesure Oxydation humide.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">diffmedian_corgox35</td>
 <td align="left">Différence entre la période A et la période B (g/kg) pour la méthode de mesure Oxydation humide.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">diffmedian_corgox45</td>
 <td align="left">Différence entre la période A et la période B (g/kg) pour la méthode de mesure Oxydation humide.</td>
 </tr>
-<tr class="odd">
-<td align="left">eff_coox0004</td>
-<td align="left">Nombre d’effectif par canton (toutes méthodes confondues)0004.</td>
-</tr>
 <tr class="even">
-<td align="left">eff_coox0509</td>
-<td align="left">Nombre d’effectif par canton (toutes méthodes confondues)0509.</td>
+<td align="left">dqua_corgox_0004</td>
+<td align="left">3ème quartile cantonal pour la période 0004.</td>
 </tr>
 <tr class="odd">
-<td align="left">eff_coox1014</td>
-<td align="left">Nombre d’effectif par canton (toutes méthodes confondues)1014.</td>
+<td align="left">dqua_corgox_0509</td>
+<td align="left">3ème quartile cantonal pour la période 0509.</td>
 </tr>
 <tr class="even">
-<td align="left">eff_coox9094</td>
-<td align="left">Nombre d’effectif par canton (toutes méthodes confondues)9094.</td>
+<td align="left">dqua_corgox_1014</td>
+<td align="left">3ème quartile cantonal pour la période 1014.</td>
 </tr>
 <tr class="odd">
-<td align="left">eff_coox9599</td>
-<td align="left">Nombre d’effectif par canton (toutes méthodes confondues)9599.</td>
+<td align="left">dqua_corgox_9094</td>
+<td align="left">3ème quartile cantonal pour la période 9094.</td>
 </tr>
 <tr class="even">
-<td align="left">eff_corgco0004</td>
-<td align="left">Nombre d’effectif par canton pour la période0004 et pour la méthode Oxydation sèche.</td>
+<td align="left">dqua_corgox_9599</td>
+<td align="left">3ème quartile cantonal pour la période 9599.</td>
 </tr>
 <tr class="odd">
-<td align="left">eff_corgco0509</td>
-<td align="left">Nombre d’effectif par canton pour la période0509 et pour la méthode Oxydation sèche.</td>
-</tr>
-<tr class="even">
-<td align="left">eff_corgco1014</td>
-<td align="left">Nombre d’effectif par canton pour la période1014 et pour la méthode Oxydation sèche.</td>
-</tr>
-<tr class="odd">
-<td align="left">eff_corgco9599</td>
-<td align="left">Nombre d’effectif par canton pour la période9599 et pour la méthode Oxydation sèche.</td>
-</tr>
-<tr class="even">
-<td align="left">eff_corgox0004</td>
+<td align="left">eff_corgox_0004</td>
 <td align="left">Nombre d’effectif par canton pour la période0004 et pour la méthode Oxydation humide.</td>
 </tr>
-<tr class="odd">
-<td align="left">eff_corgox0509</td>
+<tr class="even">
+<td align="left">eff_corgox_0509</td>
 <td align="left">Nombre d’effectif par canton pour la période0509 et pour la méthode Oxydation humide.</td>
 </tr>
-<tr class="even">
-<td align="left">eff_corgox1014</td>
+<tr class="odd">
+<td align="left">eff_corgox_1014</td>
 <td align="left">Nombre d’effectif par canton pour la période1014 et pour la méthode Oxydation humide.</td>
 </tr>
-<tr class="odd">
-<td align="left">eff_corgox9094</td>
+<tr class="even">
+<td align="left">eff_corgox_9094</td>
 <td align="left">Nombre d’effectif par canton pour la période9094 et pour la méthode Oxydation humide.</td>
 </tr>
-<tr class="even">
-<td align="left">eff_corgox9599</td>
+<tr class="odd">
+<td align="left">eff_corgox_9599</td>
 <td align="left">Nombre d’effectif par canton pour la période9599 et pour la méthode Oxydation humide.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">elevage1988</td>
 <td align="left">Pourcentage de la somme des OTEX de type elevage (otex 45,46,47,48) pour 1988.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">elevage2000</td>
 <td align="left">Pourcentage de la somme des OTEX de type elevage (otex 45,46,47,48) pour 2000.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">elevage2010</td>
 <td align="left">Pourcentage de la somme des OTEX de type elevage (otex 45,46,47,48) pour 2010.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">elevagehorsol1988</td>
 <td align="left">Pourcentage exploitation ayant une orientation technico-economique de type elevage hors sol (otex 51,52,53,74) en 1988.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">elevagehorsol2000</td>
 <td align="left">Pourcentage exploitation ayant une orientation technico-economique de type elevage hors sol (otex 51,52,53,74) en 2000.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">elevagehorsol2010</td>
 <td align="left">Pourcentage exploitation ayant une orientation technico-economique de type elevage hors sol (otex 51,52,53,74) en 2010.</td>
 </tr>
+<tr class="even">
+<td align="left">evol_dqua_12</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution du 3ème quartile cantonale entre deux périodes 12.</td>
+</tr>
 <tr class="odd">
+<td align="left">evol_dqua_13</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution du 3ème quartile cantonale entre deux périodes 13.</td>
+</tr>
+<tr class="even">
+<td align="left">evol_dqua_14</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution du 3ème quartile cantonale entre deux périodes 14.</td>
+</tr>
+<tr class="odd">
+<td align="left">evol_dqua_15</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution du 3ème quartile cantonale entre deux périodes 15.</td>
+</tr>
+<tr class="even">
+<td align="left">evol_dqua_23</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution du 3ème quartile cantonale entre deux périodes 23.</td>
+</tr>
+<tr class="odd">
+<td align="left">evol_dqua_24</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution du 3ème quartile cantonale entre deux périodes 24.</td>
+</tr>
+<tr class="even">
+<td align="left">evol_dqua_25</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution du 3ème quartile cantonale entre deux périodes 25.</td>
+</tr>
+<tr class="odd">
+<td align="left">evol_dqua_34</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution du 3ème quartile cantonale entre deux périodes 34.</td>
+</tr>
+<tr class="even">
+<td align="left">evol_dqua_35</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution du 3ème quartile cantonale entre deux périodes 35.</td>
+</tr>
+<tr class="odd">
+<td align="left">evol_dqua_45</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution du 3ème quartile cantonale entre deux périodes 45.</td>
+</tr>
+<tr class="even">
+<td align="left">evol_med_12</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution de la médiane cantonale entre deux périodes 12.</td>
+</tr>
+<tr class="odd">
+<td align="left">evol_med_13</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution de la médiane cantonale entre deux périodes 13.</td>
+</tr>
+<tr class="even">
+<td align="left">evol_med_14</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution de la médiane cantonale entre deux périodes 14.</td>
+</tr>
+<tr class="odd">
+<td align="left">evol_med_15</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution de la médiane cantonale entre deux périodes 15.</td>
+</tr>
+<tr class="even">
+<td align="left">evol_med_23</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution de la médiane cantonale entre deux périodes 23.</td>
+</tr>
+<tr class="odd">
+<td align="left">evol_med_24</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution de la médiane cantonale entre deux périodes 24.</td>
+</tr>
+<tr class="even">
+<td align="left">evol_med_25</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution de la médiane cantonale entre deux périodes 25.</td>
+</tr>
+<tr class="odd">
+<td align="left">evol_med_34</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution de la médiane cantonale entre deux périodes 34.</td>
+</tr>
+<tr class="even">
+<td align="left">evol_med_35</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution de la médiane cantonale entre deux périodes 35.</td>
+</tr>
+<tr class="odd">
+<td align="left">evol_med_45</td>
+<td align="left">Résultats du test de wilcoxon de l’évolution de la médiane cantonale entre deux périodes 45.</td>
+</tr>
+<tr class="even">
 <td align="left">fao85lv1</td>
 <td align="left">Type de sol majoritaire par canton. Code de la FAO-UNESCO de 1974 (modifiée 1985).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">grdcultures1988</td>
 <td align="left">Pourcentage exploitation ayant une orientation technico-economique de type grandes cultures (otex 15,16) en 1988.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">grdcultures2000</td>
 <td align="left">Pourcentage exploitation ayant une orientation technico-economique de type grandes cultures (otex 15,16) en 2000.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">grdcultures2010</td>
 <td align="left">Pourcentage exploitation ayant une orientation technico-economique de type grandes cultures (otex 15,16) en 2010.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">hpluie_an</td>
 <td align="left">Cumul annuel (mm)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">jchauds_an</td>
 <td align="left">Jours/an de maximum supérieur à + 30°C</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">jfroids_an</td>
 <td align="left">Jours/an de minimum inférieur à -5°C</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">jpluie_janv</td>
 <td align="left">Jours de précipitation en janvier</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">jpluie_juil</td>
 <td align="left">Jours de précipitation en juillet</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">mat11</td>
 <td align="left">Matériau parental dominant de niveau 1 par canton</td>
+</tr>
+<tr class="even">
+<td align="left">med_corgox_0004</td>
+<td align="left">Médiane cantonale pour la période 0004.</td>
+</tr>
+<tr class="odd">
+<td align="left">med_corgox_0509</td>
+<td align="left">Médiane cantonale pour la période 0509.</td>
+</tr>
+<tr class="even">
+<td align="left">med_corgox_1014</td>
+<td align="left">Médiane cantonale pour la période 1014.</td>
+</tr>
+<tr class="odd">
+<td align="left">med_corgox_9094</td>
+<td align="left">Médiane cantonale pour la période 9094.</td>
+</tr>
+<tr class="even">
+<td align="left">med_corgox_9599</td>
+<td align="left">Médiane cantonale pour la période 9599.</td>
 </tr>
 <tr class="odd">
 <td align="left">p_c1970</td>
@@ -1958,24 +2276,64 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <td align="left">Pourcentage exploitation ayant une orientation technico-economique de type polyculture-elevage (otex 61,73,83,84,90) en 2010.</td>
 </tr>
 <tr class="odd">
+<td align="left">pra</td>
+<td align="left">petiterégionagricole du canton.</td>
+</tr>
+<tr class="even">
+<td align="left">ra</td>
+<td align="left">régionagricole du canton.</td>
+</tr>
+<tr class="odd">
 <td align="left">sabt_med</td>
 <td align="left">Médiane du taux de sable (g/kg) calculée sur 1990-2009.</td>
 </tr>
 <tr class="even">
+<td align="left">sau_1970</td>
+<td align="left">Surface agricole utile (ha) pour l’année 1970.</td>
+</tr>
+<tr class="odd">
+<td align="left">sau_1979</td>
+<td align="left">Surface agricole utile (ha) pour l’année 1979.</td>
+</tr>
+<tr class="even">
+<td align="left">sau_1988</td>
+<td align="left">Surface agricole utile (ha) pour l’année 1988.</td>
+</tr>
+<tr class="odd">
+<td align="left">sau_2000</td>
+<td align="left">Surface agricole utile (ha) pour l’année 2000.</td>
+</tr>
+<tr class="even">
+<td align="left">sau_2010</td>
+<td align="left">Surface agricole utile (ha) pour l’année 2010.</td>
+</tr>
+<tr class="odd">
 <td align="left">std_pluie_janv</td>
 <td align="left">Variabilité 1971-2000 en janvier (mm)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">std_pluie_juil</td>
 <td align="left">Variabilité 1971-2000 en juillet (mm)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">std_temp_janv</td>
 <td align="left">Variabilité 1971-2000 en janvier (°C)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">std_temp_juil</td>
 <td align="left">Variabilité 1971-2000 en juillet (°C)</td>
+</tr>
+<tr class="odd">
+<td align="left">tt_21_90_12</td>
+<td align="left">Somme des pertes en ha de l’occupation du sol 21 entre 1990 et 2012</td>
+</tr>
+<tr class="even">
+<td align="left">tt_22_90_12</td>
+<td align="left">Somme des pertes en ha de l’occupation du sol 22 entre 1990 et 2012</td>
+</tr>
+<tr class="odd">
+<td align="left">tt_23_90_12</td>
+<td align="left">Somme des pertes en ha de l’occupation du sol 23 entre 1990 et 2012</td>
 </tr>
 <tr class="even">
 <td align="left">ttemp_an</td>
@@ -2014,12 +2372,20 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <td align="left">Densité UGBTA/SAU pour 2010.</td>
 </tr>
 <tr class="odd">
+<td align="left">var_c1970_1988</td>
+<td align="left">Evolution de la surface en céréales entre 1988 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
+</tr>
+<tr class="even">
 <td align="left">var_c1970_2000</td>
 <td align="left">Evolution de la surface en céréales entre 2000 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_c1970_2010</td>
 <td align="left">Evolution de la surface en céréales entre 2010 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
+</tr>
+<tr class="even">
+<td align="left">var_c1979_1988</td>
+<td align="left">Evolution de la surface en céréales entre 1988 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
 <tr class="odd">
 <td align="left">var_c1979_2000</td>
@@ -2038,8 +2404,16 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <td align="left">Evolution de la surface en céréales entre 2010 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
 <tr class="odd">
+<td align="left">var_c2000_1988</td>
+<td align="left">Evolution de la surface en céréales entre 1988 et 2000 par rapport à la SAU de 2000 (occupA/SAUA)-(occupB/SAUB).</td>
+</tr>
+<tr class="even">
 <td align="left">var_c2000_2010</td>
 <td align="left">Evolution de la surface en céréales entre 2010 et 2000 par rapport à la SAU de 2000 (occupA/SAUA)-(occupB/SAUB).</td>
+</tr>
+<tr class="odd">
+<td align="left">var_cop1970_1988</td>
+<td align="left">Evolution des surfaces en cop entre 1988 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
 <tr class="even">
 <td align="left">var_cop1970_2000</td>
@@ -2050,20 +2424,28 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <td align="left">Evolution des surfaces en cop entre 2010 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
 <tr class="even">
+<td align="left">var_cop1979_1988</td>
+<td align="left">Evolution des surfaces en cop entre 1988 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
+</tr>
+<tr class="odd">
 <td align="left">var_cop1979_2000</td>
 <td align="left">Evolution des surfaces en cop entre 2000 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_cop1979_2010</td>
 <td align="left">Evolution des surfaces en cop entre 2010 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_cop1988_2000</td>
 <td align="left">Evolution des surfaces en cop entre 2000 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_cop1988_2010</td>
 <td align="left">Evolution des surfaces en cop entre 2010 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
+</tr>
+<tr class="odd">
+<td align="left">var_cop2000_1988</td>
+<td align="left">Evolution des surfaces en cop entre 1988 et 2000 par rapport à la SAU de 2000 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
 <tr class="even">
 <td align="left">var_cop2000_2010</td>
@@ -2082,12 +2464,20 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <td align="left">Evolution du pourcentage d’OTEX en grandes cultures entre 2010 et 1988.</td>
 </tr>
 <tr class="even">
+<td align="left">var_mf1970_1988</td>
+<td align="left">Evolution de la surface en maîs fourrage ensilage entre 1988 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
+</tr>
+<tr class="odd">
 <td align="left">var_mf1970_2000</td>
 <td align="left">Evolution de la surface en maîs fourrage ensilage entre 2000 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_mf1970_2010</td>
 <td align="left">Evolution de la surface en maîs fourrage ensilage entre 2010 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
+</tr>
+<tr class="odd">
+<td align="left">var_mf1979_1988</td>
+<td align="left">Evolution de la surface en maîs fourrage ensilage entre 1988 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
 <tr class="even">
 <td align="left">var_mf1979_2000</td>
@@ -2106,12 +2496,20 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <td align="left">Evolution de la surface en maîs fourrage ensilage entre 2010 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
 <tr class="even">
+<td align="left">var_mf2000_1988</td>
+<td align="left">Evolution de la surface en maîs fourrage ensilage entre 1988 et 2000 par rapport à la SAU de 2000 (occupA/SAUA)-(occupB/SAUB).</td>
+</tr>
+<tr class="odd">
 <td align="left">var_mf2000_2010</td>
 <td align="left">Evolution de la surface en maîs fourrage ensilage entre 2010 et 2000 par rapport à la SAU de 2000 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_polyelevage1988_2010</td>
 <td align="left">Evolution du pourcentage d’OTEX en polyélevage entre 2010 et 1988.</td>
+</tr>
+<tr class="odd">
+<td align="left">var_prairie1970_1988</td>
+<td align="left">Evolution des prairies entre 1988 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
 <tr class="even">
 <td align="left">var_prairie1970_2000</td>
@@ -2122,32 +2520,48 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <td align="left">Evolution des prairies entre 2010 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
 <tr class="even">
+<td align="left">var_prairie1979_1988</td>
+<td align="left">Evolution des prairies entre 1988 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
+</tr>
+<tr class="odd">
 <td align="left">var_prairie1979_2000</td>
 <td align="left">Evolution des prairies entre 2000 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_prairie1979_2010</td>
 <td align="left">Evolution des prairies entre 2010 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_prairie1988_2000</td>
 <td align="left">Evolution des prairies entre 2000 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_prairie1988_2010</td>
 <td align="left">Evolution des prairies entre 2010 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
+</tr>
+<tr class="odd">
+<td align="left">var_prairie2000_1988</td>
+<td align="left">Evolution des prairies entre 1988 et 2000 par rapport à la SAU de 2000 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
 <tr class="even">
 <td align="left">var_prairie2000_2010</td>
 <td align="left">Evolution des prairies entre 2010 et 2000 par rapport à la SAU de 2000 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
 <tr class="odd">
+<td align="left">var_sfp1970_1988</td>
+<td align="left">Evolution de la surface fourragère principale entre 1988 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
+</tr>
+<tr class="even">
 <td align="left">var_sfp1970_2000</td>
 <td align="left">Evolution de la surface fourragère principale entre 2000 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_sfp1970_2010</td>
 <td align="left">Evolution de la surface fourragère principale entre 2010 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
+</tr>
+<tr class="even">
+<td align="left">var_sfp1979_1988</td>
+<td align="left">Evolution de la surface fourragère principale entre 1988 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
 <tr class="odd">
 <td align="left">var_sfp1979_2000</td>
@@ -2166,8 +2580,16 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <td align="left">Evolution de la surface fourragère principale entre 2010 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
 <tr class="odd">
+<td align="left">var_sfp2000_1988</td>
+<td align="left">Evolution de la surface fourragère principale entre 1988 et 2000 par rapport à la SAU de 2000 (occupA/SAUA)-(occupB/SAUB).</td>
+</tr>
+<tr class="even">
 <td align="left">var_sfp2000_2010</td>
 <td align="left">Evolution de la surface fourragère principale entre 2010 et 2000 par rapport à la SAU de 2000 (occupA/SAUA)-(occupB/SAUB).</td>
+</tr>
+<tr class="odd">
+<td align="left">var_sth1970_1988</td>
+<td align="left">Evolution de la surface toujours en herbe entre 1988 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
 <tr class="even">
 <td align="left">var_sth1970_2000</td>
@@ -2178,20 +2600,28 @@ knitr::<span class="kw">kable</span>(tablecomment, <span class="dt">caption =</s
 <td align="left">Evolution de la surface toujours en herbe entre 2010 et 1970 par rapport à la SAU de 1970 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
 <tr class="even">
+<td align="left">var_sth1979_1988</td>
+<td align="left">Evolution de la surface toujours en herbe entre 1988 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
+</tr>
+<tr class="odd">
 <td align="left">var_sth1979_2000</td>
 <td align="left">Evolution de la surface toujours en herbe entre 2000 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_sth1979_2010</td>
 <td align="left">Evolution de la surface toujours en herbe entre 2010 et 1979 par rapport à la SAU de 1979 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">var_sth1988_2000</td>
 <td align="left">Evolution de la surface toujours en herbe entre 2000 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">var_sth1988_2010</td>
 <td align="left">Evolution de la surface toujours en herbe entre 2010 et 1988 par rapport à la SAU de 1988 (occupA/SAUA)-(occupB/SAUB).</td>
+</tr>
+<tr class="odd">
+<td align="left">var_sth2000_1988</td>
+<td align="left">Evolution de la surface toujours en herbe entre 1988 et 2000 par rapport à la SAU de 2000 (occupA/SAUA)-(occupB/SAUB).</td>
 </tr>
 <tr class="even">
 <td align="left">var_sth2000_2010</td>

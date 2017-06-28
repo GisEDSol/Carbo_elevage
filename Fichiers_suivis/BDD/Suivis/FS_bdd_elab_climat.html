@@ -252,7 +252,7 @@ div.tocify {
 
 
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">Sys.Date</span>()</code></pre></div>
-<pre><code>## [1] &quot;2017-03-07&quot;</code></pre>
+<pre><code>## [1] &quot;2017-06-28&quot;</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">sessionInfo</span>()</code></pre></div>
 <pre><code>## R version 3.3.2 (2016-10-31)
 ## Platform: x86_64-pc-linux-gnu (64-bit)
@@ -267,42 +267,45 @@ div.tocify {
 ## [11] LC_MEASUREMENT=fr_FR.UTF-8 LC_IDENTIFICATION=C       
 ## 
 ## attached base packages:
-## [1] parallel  grid      stats     graphics  grDevices utils     datasets 
-## [8] methods   base     
+##  [1] tcltk     parallel  grid      stats     graphics  grDevices utils    
+##  [8] datasets  methods   base     
 ## 
 ## other attached packages:
-##  [1] rgeos_0.3-21       doParallel_1.0.10  foreign_0.8-67    
-##  [4] MASS_7.3-45        corrplot_0.77      RPostgreSQL_0.4-1 
-##  [7] DBI_0.5-1          raster_2.5-8       doMC_1.3.4        
-## [10] iterators_1.0.8    foreach_1.4.3      plyr_1.8.4        
-## [13] caret_6.0-73       factoextra_1.0.3   GGally_1.3.0      
-## [16] pander_0.6.0       knitr_1.15.1       FactoMineR_1.34   
-## [19] wesanderson_0.3.2  mapproj_1.2-4      gridExtra_2.2.1   
-## [22] Hmisc_4.0-0        Formula_1.2-1      survival_2.40-1   
-## [25] lattice_0.20-34    reshape2_1.4.2     devtools_1.12.0   
-## [28] classInt_0.1-23    RColorBrewer_1.1-2 maptools_0.8-40   
-## [31] rgdal_1.2-4        sp_1.2-3           ggplot2_2.2.0     
-## [34] stringr_1.1.0      fields_8.4-1       maps_3.1.1        
-## [37] spam_1.4-0         gdata_2.17.0       RODBC_1.3-14      
+##  [1] rgeos_0.3-21       debug_1.3.1        xtable_1.8-2      
+##  [4] outliers_0.14      multcompView_0.1-7 fmsb_0.6.0        
+##  [7] car_2.1-4          dplyr_0.5.0        mgcv_1.8-16       
+## [10] nlme_3.1-129       viridis_0.3.4      scales_0.4.1      
+## [13] doParallel_1.0.10  foreign_0.8-67     MASS_7.3-45       
+## [16] corrplot_0.77      RPostgreSQL_0.4-1  DBI_0.5-1         
+## [19] raster_2.5-8       doMC_1.3.4         iterators_1.0.8   
+## [22] foreach_1.4.3      plyr_1.8.4         caret_6.0-73      
+## [25] factoextra_1.0.3   GGally_1.3.0       pander_0.6.0      
+## [28] knitr_1.15.1       FactoMineR_1.34    wesanderson_0.3.2 
+## [31] mapproj_1.2-4      gridExtra_2.2.1    Hmisc_4.0-0       
+## [34] Formula_1.2-1      survival_2.40-1    lattice_0.20-34   
+## [37] reshape2_1.4.2     devtools_1.12.0    classInt_0.1-23   
+## [40] RColorBrewer_1.1-2 maptools_0.8-40    rgdal_1.2-4       
+## [43] sp_1.2-3           ggplot2_2.2.1      stringr_1.1.0     
+## [46] fields_8.4-1       maps_3.1.1         spam_1.4-0        
+## [49] gdata_2.17.0       RODBC_1.3-14      
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] splines_3.3.2        gtools_3.5.0         assertthat_0.1      
-##  [4] stats4_3.3.2         latticeExtra_0.6-28  yaml_2.1.14         
-##  [7] ggrepel_0.6.5        backports_1.0.4      quantreg_5.29       
-## [10] digest_0.6.10        minqa_1.2.4          colorspace_1.2-7    
-## [13] htmltools_0.3.5      Matrix_1.2-7.1       SparseM_1.74        
-## [16] scales_0.4.1         lme4_1.1-12          MatrixModels_0.4-1  
-## [19] htmlTable_1.7        tibble_1.2           mgcv_1.8-16         
-## [22] car_2.1-4            withr_1.0.2          nnet_7.3-12         
-## [25] lazyeval_0.2.0       pbkrtest_0.4-6       magrittr_1.5        
-## [28] memoise_1.0.0        evaluate_0.10        nlme_3.1-129        
-## [31] class_7.3-14         tools_3.3.2          data.table_1.10.0   
-## [34] munsell_0.4.3        cluster_2.0.5        flashClust_1.01-2   
-## [37] e1071_1.6-7          nloptr_1.0.4         leaps_2.9           
-## [40] rmarkdown_1.3        gtable_0.2.0         ModelMetrics_1.1.0  
-## [43] codetools_0.2-15     reshape_0.8.6        rprojroot_1.1       
-## [46] stringi_1.1.2        Rcpp_0.12.7          rpart_4.1-10        
-## [49] acepack_1.4.1        scatterplot3d_0.3-37</code></pre>
+##  [1] pbkrtest_0.4-6       rprojroot_1.1        tools_3.3.2         
+##  [4] backports_1.0.4      R6_2.2.0             rpart_4.1-10        
+##  [7] lazyeval_0.2.0       colorspace_1.2-7     nnet_7.3-12         
+## [10] withr_1.0.2          quantreg_5.29        mvbutils_2.7.4.1    
+## [13] htmlTable_1.7        flashClust_1.01-2    SparseM_1.74        
+## [16] digest_0.6.10        minqa_1.2.4          rmarkdown_1.3       
+## [19] htmltools_0.3.5      lme4_1.1-12          gtools_3.5.0        
+## [22] acepack_1.4.1        ModelMetrics_1.1.0   magrittr_1.5        
+## [25] leaps_2.9            Matrix_1.2-7.1       Rcpp_0.12.7         
+## [28] munsell_0.4.3        scatterplot3d_0.3-37 stringi_1.1.2       
+## [31] yaml_2.1.14          ggrepel_0.6.5        splines_3.3.2       
+## [34] codetools_0.2-15     stats4_3.3.2         evaluate_0.10       
+## [37] latticeExtra_0.6-28  data.table_1.10.0    nloptr_1.0.4        
+## [40] MatrixModels_0.4-1   gtable_0.2.0         reshape_0.8.6       
+## [43] assertthat_0.1       e1071_1.6-7          class_7.3-14        
+## [46] tibble_1.2           memoise_1.0.0        cluster_2.0.5</code></pre>
 <div id="objectifs" class="section level1">
 <h1><span class="header-section-number">1</span> Objectifs</h1>
 <p>L’objectif de ce fichier de suivi est de stocker l’ensemble des traitements associés à la préparation des données climatiques. Ces traitements concernent pour le moment l’intégration des données de <a href="http://cybergeo.revues.org/23155">Joly et al., 2010</a>. Les données disponibles sont à l’échelle de la commune, une aggrégation à l’échelle des cantons est donc nécessaire. L’aggrégation est réalisée de la manière suivante :</p>
@@ -310,7 +313,6 @@ div.tocify {
 <li>moyenne dans le cas de variables continues,</li>
 <li>valeur majoritaire (surface la plus importante) si la variable est qualitative (comme le type de climat par exemple).</li>
 </ul>
-<p><strong>Important</strong> Rajouter une fiche nomenclature pour le climat afin de faciliter la création des métadonnées dans la base.</p>
 </div>
 <div id="calcul-de-differentes-statistiques-jointes-vers-la-table-dm_vecteurs.canton" class="section level1">
 <h1><span class="header-section-number">2</span> Calcul de différentes statistiques jointes vers la table <code>dm_vecteurs.canton</code></h1>
@@ -368,7 +370,7 @@ for(i in variable){
   <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
 <span class="st">                      drop column if exists &quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
   
-  <span class="co">#Création de la colonne, aggrégation par canton (valeur majoritaire, fonctio mode()) et jointure vers la table canton </span>
+  <span class="co">#Création de la colonne, aggrégation par canton (valeur majoritaire, fonction mode()) et jointure vers la table canton </span>
   <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
 <span class="st">                      add column &quot;</span>,i,<span class="st">&quot; numeric;</span>
 <span class="st">                      update &quot;</span>,table_dm,<span class="st">&quot;</span>
@@ -402,14 +404,7 @@ for(i in variablecarto){
   nomfichier &lt;-<span class="st"> </span>i
 
   <span class="kw">carto</span>(dsn,tablecarto,i,nclasse,style_classe,couleur,<span class="dt">l_legend=</span>l_variable_i,repsortie,nomfichier,<span class="dt">dept=</span><span class="ot">FALSE</span>,<span class="dt">reg=</span><span class="ot">FALSE</span>,<span class="dt">nrowlayout=</span><span class="dv">1</span>,<span class="dt">ncollayout=</span><span class="dv">1</span>,<span class="dt">position=</span><span class="st">&quot;bottom&quot;</span>,<span class="dt">ggsaveheight=</span><span class="dv">7</span>,<span class="dt">ggsavewidth=</span><span class="dv">10</span>)  
-}
-
-tablecarto &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co">#Nom de la table utilisée pour la cartographie (table postgis)</span>
-variablecarto &lt;-<span class="st"> &quot;argi_med&quot;</span>
-l_legend &lt;-<span class="st"> &quot;Médiane du taux d'argile (g/kg)&quot;</span>
-nomfichier &lt;-<span class="st"> &quot;argi_medBDAT&quot;</span>
-style_classe &lt;-<span class="st"> &quot;quantile&quot;</span>
-<span class="kw">carto</span>(dsn,tablecarto,variablecarto,nclasse,style_classe,couleur,<span class="dt">l_legend=</span>l_legend,repsortie,nomfichier,<span class="dt">dept=</span><span class="ot">FALSE</span>,<span class="dt">reg=</span><span class="ot">FALSE</span>,<span class="dt">nrowlayout=</span><span class="dv">1</span>,<span class="dt">ncollayout=</span><span class="dv">1</span>,<span class="dt">position=</span><span class="st">&quot;bottom&quot;</span>,<span class="dt">ggsaveheight=</span><span class="dv">7</span>,<span class="dt">ggsavewidth=</span><span class="dv">10</span>)  </code></pre></div>
+}</code></pre></div>
 </div>
 
 

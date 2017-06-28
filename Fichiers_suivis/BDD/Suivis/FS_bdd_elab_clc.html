@@ -11,6 +11,7 @@
 
 <meta name="author" content="Jean-Baptiste Paroissien" />
 
+<meta name="date" content="2017-12-02" />
 
 <title>Préparation des données Corine Land Cover</title>
 
@@ -245,6 +246,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Préparation des données Corine Land Cover</h1>
 <h4 class="author"><em>Jean-Baptiste Paroissien</em></h4>
+<h4 class="date"><em>22/02/2017</em></h4>
 
 </div>
 
@@ -308,18 +310,22 @@ for(i in versionclc){
 </div>
 <div id="ajout-des-valeurs-de-changement" class="section level2">
 <h2><span class="header-section-number">2.2</span> Ajout des valeurs de changement</h2>
-<p>Voir pour l’ajout des changemente calculés sur les données de corine land cover Pour la représentation cartographique et l’analyse, on pourra calculer la somme des surfaces initiales en prairie “retournée” par canton. voir <a href="https://halshs.archives-ouvertes.fr/tel-00636846v2/file/soutenance_ppt_sparfel.pdf" class="uri">https://halshs.archives-ouvertes.fr/tel-00636846v2/file/soutenance_ppt_sparfel.pdf</a> pour le développement d’indicateur de changement d’occupation du sol</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">meta_clc &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="kw">paste</span>(repmetadonnees,<span class="st">&quot;Nomenclature_clc.csv&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>),<span class="dt">sep=</span><span class="st">&quot;;&quot;</span>,<span class="dt">header=</span><span class="ot">TRUE</span>)
+<p>Voir pour l’ajout des changemente calculés sur les données de corine land cover Pour la représentation cartographique et l’analyse, on pourra calculer la somme des surfaces initiales en prairie “retournée” par canton.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#voir https://halshs.archives-ouvertes.fr/tel-00636846v2/file/soutenance_ppt_sparfel.pdf pour le développement d'indicateur de changement d'occupation du sol</span>
+
+meta_clc &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="kw">paste</span>(repmetadonnees,<span class="st">&quot;Nomenclature_clc.csv&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>),<span class="dt">sep=</span><span class="st">&quot;;&quot;</span>,<span class="dt">header=</span><span class="ot">TRUE</span>)
 variables &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;21&quot;</span>,<span class="st">&quot;22&quot;</span>,<span class="st">&quot;23&quot;</span>) <span class="co"># Nom des champs à type d'occupation du sol à importer (21   Terres arables,22   Cultures permanentes, 23    Prairies)</span>
 table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
 versionclc &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;90&quot;</span>,<span class="st">&quot;00&quot;</span>,<span class="st">&quot;06&quot;</span>,<span class="st">&quot;12&quot;</span>) <span class="co"># Nom des années clc pris en compte</span>
 
-## Calcul de la moyenne des surfaces d'occupation sur sol par canton
+## Calcul du pourcentage de perte de classe d'occupation du sol par canton
+SAU &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;2000&quot;</span>,<span class="st">&quot;2000&quot;</span>,<span class="st">&quot;2010&quot;</span>) <span class="co">#Surface agricole se rapprochant le mieux des périodes CLC</span>
 
 cpt0 &lt;-<span class="st"> </span><span class="dv">0</span>
 for(i in <span class="dv">1</span>:<span class="dv">3</span>){
+  
   cpt0 &lt;-<span class="st"> </span>cpt0 +<span class="st"> </span><span class="dv">1</span>
-
+  SAU_period &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;sau_&quot;</span>,SAU[cpt0],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
   period_chgt &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;90&quot;</span>,<span class="st">&quot;00&quot;</span>,<span class="st">&quot;06&quot;</span>,<span class="st">&quot;12&quot;</span>)
   period1 &lt;-<span class="st"> </span>period_chgt[cpt0]
   period2 &lt;-<span class="st"> </span>period_chgt[cpt0<span class="dv">+1</span>]
@@ -340,16 +346,17 @@ for(i in <span class="dv">1</span>:<span class="dv">3</span>){
 <span class="st">                      add column &quot;</span>,vName,<span class="st">&quot; numeric;</span>
 <span class="st">                      update &quot;</span>,table_dm,<span class="st">&quot;</span>
 <span class="st">                      SET &quot;</span>,vName,<span class="st">&quot; = s1.&quot;</span>,vName,<span class="st">&quot; from(</span>
-<span class="st">                      select SUM(area_ha) as &quot;</span>,vName,<span class="st">&quot;,(code_dept || code_cant) as num_canton</span>
+<span class="st">                      select ((SUM(area_ha))/&quot;</span>,SAU_period,<span class="st">&quot;)*100 as &quot;</span>,vName,<span class="st">&quot;,(c.code_dept || c.code_cant) as num_canton</span>
 <span class="st">                      from &quot;</span>,tableclc,<span class="st">&quot; as clc</span>
 <span class="st">                      inner join dm_vecteurs.commune as c on c.insee_com=clc.num_com</span>
+<span class="st">                      inner join dm_vecteurs.canton as canton on canton.code_canton=(c.code_dept || c.code_cant)</span>
 <span class="st">                      where code_&quot;</span>,period1,<span class="st">&quot; = &quot;</span>,v,<span class="st">&quot;</span>
-<span class="st">                      group by code_dept || code_cant) as s1</span>
+<span class="st">                      group by (c.code_dept || c.code_cant),&quot;</span>,SAU_period,<span class="st">&quot;) as s1</span>
 <span class="st">                      where &quot;</span>,table_dm,<span class="st">&quot;.code_canton=s1.num_canton::text&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
 
    <span class="co"># Ajout d'un commentaire sur la nouvelle colonne créée</span>
     <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
-<span class="st">            COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,vName,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">Perte en ha de l</span><span class="ch">\'</span><span class="st">'occupation du sol &quot;</span>,v,<span class="st">&quot; entre l</span><span class="ch">\'</span><span class="st">'année &quot;</span>,period1,<span class="st">&quot; et l</span><span class="ch">\'</span><span class="st">'année &quot;</span>,period2,<span class="st">&quot;</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+<span class="st">            COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,vName,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">Perte en % de la SAU de l</span><span class="ch">\'</span><span class="st">'occupation du sol &quot;</span>,v,<span class="st">&quot; entre l</span><span class="ch">\'</span><span class="st">'année &quot;</span>,period1,<span class="st">&quot; et l</span><span class="ch">\'</span><span class="st">'année &quot;</span>,period2,<span class="st">&quot;</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
   }
 }</code></pre></div>
 <p>Dans les lignes suivantes, on calcule la somme des pertes de surfaces d’occupation du sol pour 1990 à 2012</p>

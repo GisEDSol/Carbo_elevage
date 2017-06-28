@@ -11,7 +11,7 @@
 
 <meta name="author" content="Jean-Baptiste Paroissien" />
 
-<meta name="date" content="2017-07-03" />
+<meta name="date" content="2017-12-06" />
 
 <title>Création des données élaborées de la BDAT</title>
 
@@ -246,7 +246,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Création des données élaborées de la BDAT</h1>
 <h4 class="author"><em>Jean-Baptiste Paroissien</em></h4>
-<h4 class="date"><em>07/03/2017</em></h4>
+<h4 class="date"><em>15/06/2017</em></h4>
 
 </div>
 
@@ -261,34 +261,77 @@ div.tocify {
 </div>
 <div id="integration-des-donnees-de-la-bdat-vers-la-table-dm_vecteurs.canton" class="section level1">
 <h1><span class="header-section-number">2</span> Intégration des données de la BDAT vers la table <code>dm_vecteurs.canton</code></h1>
-<div id="integration-de-la-mediane-des-teneurs-en-carbone-organique-par-canton-teneurs-effectifs" class="section level2">
-<h2><span class="header-section-number">2.1</span> Intégration de la médiane des teneurs en carbone organique par canton (teneurs + effectifs)</h2>
+<div id="integration-de-la-mediane-et-3eme-quartile-des-teneurs-en-carbone-organique-par-canton-teneurs-effectifs" class="section level2">
+<h2><span class="header-section-number">2.1</span> Intégration de la médiane et 3ème quartile des teneurs en carbone organique par canton (teneurs + effectifs)</h2>
+<p>Ici, les médianes et 3ème quartile des teneurs en CO (corgox) ré-échantillonnées par canton sont intégrées dans le fichier <code>dm_vecteurs.canton</code>. L’intégration est effectuée sur la médiane des médianes des statistiques ré-échantillonnées.</p>
+<p><strong>Attention</strong> Plusieurs traitements sont obsolètes et sont conservées uniquement pour une future utilisation potentielle. Ces traitments sont signalés par la balise <strong>[Obsolète]</strong>.</p>
 <div id="les-teneurs-en-carbone-organique" class="section level3">
 <h3><span class="header-section-number">2.1.1</span> Les teneurs en carbone organique</h3>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Paramètres</span>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Lecture des tables de métadonnées</span>
+nomdiff &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="kw">paste</span>(repmetadonnees,<span class="st">&quot;Nomenclature_evolutionbdat.csv&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>),<span class="dt">sep=</span><span class="st">&quot;,&quot;</span>,<span class="dt">colClasses =</span> <span class="st">&quot;character&quot;</span>)
+Nom_champs &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="kw">paste</span>(repmetadonnees,<span class="st">&quot;Convention_nommage_dm_bdat.csv&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>),<span class="dt">sep=</span><span class="st">&quot;,&quot;</span>,<span class="dt">colClasses =</span> <span class="st">&quot;character&quot;</span>)
+
+<span class="co"># Paramètres</span>
 table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
 period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;9094&quot;</span>,<span class="st">&quot;9599&quot;</span>,<span class="st">&quot;0004&quot;</span>,<span class="st">&quot;0509&quot;</span>,<span class="st">&quot;1014&quot;</span>)
 schema &lt;-<span class="st"> &quot;bdat&quot;</span>
-<span class="co">#Anciennement corgox_medequi</span>
+stats &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;med&quot;</span>,<span class="st">&quot;dqua&quot;</span>)
 
-for(i in period){
-  var_variable &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;corg_medequiv&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
-  tableBDAT &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;bdat_canton_corgequiv&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
-  
-  <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
+for(s in stats){
+  for(i in period){
+    sel &lt;-<span class="st"> </span><span class="kw">list</span>()
+    <span class="co"># Sélection des comparaisons où la période est exploitée</span>
+    test &lt;-<span class="st"> </span>nomdiff[(nomdiff$Periode1 %in%<span class="st"> </span>i)|(nomdiff$Periode2 %in%<span class="st"> </span>i),]$Code
+
+    <span class="co"># Sélection des tables et calcul de la médiane des valeurs pour les 4 comparaisons </span>
+    ## Lecture de toutes les tables puis jointures
+    cpt &lt;-<span class="st"> </span><span class="dv">0</span>
+    for(x in test){
+      cpt &lt;-<span class="st"> </span>cpt +<span class="st"> </span><span class="dv">1</span>
+      <span class="kw">print</span>(cpt)
+      toto &lt;-<span class="st"> </span><span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;select &quot;</span>,s,<span class="st">&quot;_&quot;</span>,i,<span class="st">&quot; as &quot;</span>,s,<span class="st">&quot;_&quot;</span>,i,<span class="st">&quot;_&quot;</span>,cpt,<span class="st">&quot;,canton</span>
+<span class="st">        from bdat.corgox_&quot;</span>,s,<span class="st">&quot;_&quot;</span>,x,<span class="st">&quot;_canton&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+    if(cpt==<span class="dv">1</span>){
+      corgoxtable &lt;-<span class="st"> </span>toto
+      }else{
+        <span class="co"># Ajout à chaque itération de la variable (i)</span>
+        corgoxtable &lt;-<span class="st"> </span><span class="kw">merge</span>(corgoxtable,toto, <span class="dt">by.x=</span><span class="st">&quot;canton&quot;</span>, <span class="dt">by.y=</span><span class="st">&quot;canton&quot;</span>,<span class="dt">all.x=</span><span class="ot">TRUE</span>,<span class="dt">all.y=</span><span class="ot">TRUE</span>)
+      }
+    }
+
+    ## Calcul de la médiane
+    var_variable &lt;-<span class="st"> </span><span class="kw">paste</span>(s,<span class="st">&quot;_corgox_&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+        
+    corgoxtable[var_variable] &lt;-<span class="st"> </span><span class="kw">apply</span>(corgoxtable[,<span class="dv">2</span>:<span class="dv">5</span>],<span class="dv">1</span>,function(x){<span class="kw">median</span>(x,<span class="dt">na.rm=</span><span class="ot">TRUE</span>)})
+
+    ## Jointure vers dm_vecteurs.canton
+
+    <span class="co"># Création d'une table provisoire pour jointure</span>
+    <span class="kw">sqlSave</span>(loc,corgoxtable[,<span class="kw">c</span>(<span class="st">&quot;canton&quot;</span>,var_variable)],<span class="dt">tablename=</span><span class="st">&quot;dm_vecteurs.tmp&quot;</span>)
+    
+    <span class="co"># Jointure </span>
+    <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
 <span class="st">                      drop column if exists &quot;</span>,var_variable,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
   
-  <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
-<span class="st">                      add column &quot;</span>,var_variable,<span class="st">&quot; numeric;</span>
-<span class="st">                      update &quot;</span>,table_dm,<span class="st">&quot;</span>
-<span class="st">                      SET &quot;</span>,var_variable,<span class="st">&quot; = s1.med from(</span>
-<span class="st">                      select med,canton</span>
-<span class="st">                      from &quot;</span>,schema,<span class="st">&quot;.&quot;</span>,tableBDAT,<span class="st">&quot;) as s1</span>
-<span class="st">                      where &quot;</span>,table_dm,<span class="st">&quot;.code_canton=s1.canton::text&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
-  
-  <span class="co"># Ajout d'un commentaire sur la nouvelle colonne créée</span>
-  <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
-<span class="st">  COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,var_variable,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">Médiane des teneurs en carbone organique après ré-échantillonnage pour la période (toutes méthodes confondues)&quot;</span>,i,<span class="st">&quot;.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+    <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                        add column &quot;</span>,var_variable,<span class="st">&quot; numeric;</span>
+<span class="st">                        update &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                        SET &quot;</span>,var_variable,<span class="st">&quot; = s1.&quot;</span>,var_variable,<span class="st">&quot; from(</span>
+<span class="st">                        select &quot;</span>,var_variable,<span class="st">&quot;,canton</span>
+<span class="st">                        from dm_vecteurs.tmp) as s1</span>
+<span class="st">                        where &quot;</span>,table_dm,<span class="st">&quot;.code_canton=s1.canton&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+    
+    <span class="co"># Suppression de la table temporaire</span>
+    <span class="kw">sqlQuery</span>(loc,<span class="st">&quot;drop table if exists dm_vecteurs.tmp&quot;</span>)
+
+    Commentaire &lt;-<span class="st"> </span>Nom_champs[Nom_champs$Type %in%<span class="st"> &quot;Période&quot;</span>,]
+    Commentaire$Nom_colonne &lt;-<span class="st"> </span><span class="kw">gsub2</span>(<span class="st">&quot;XXXX&quot;</span>,i,Commentaire$Nom_colonne)
+    Commentairestats &lt;-<span class="st"> </span><span class="kw">paste</span>(Commentaire[Commentaire$Nom_colonne %in%<span class="st"> </span>var_variable,<span class="st">&quot;Description&quot;</span>],i,<span class="dt">sep=</span><span class="st">&quot; &quot;</span>)
+
+    <span class="co"># Ajout d'un commentaire sur la nouvelle colonne créée</span>
+    <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">    COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,var_variable,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">&quot;</span>,Commentairestats,<span class="st">&quot;.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+  }
 }</code></pre></div>
 </div>
 <div id="les-effectifs" class="section level3">
@@ -323,33 +366,34 @@ for(i in period){
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
 period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;12&quot;</span>,<span class="st">&quot;13&quot;</span>,<span class="st">&quot;14&quot;</span>,<span class="st">&quot;15&quot;</span>,<span class="st">&quot;23&quot;</span>,<span class="st">&quot;24&quot;</span>,<span class="st">&quot;25&quot;</span>,<span class="st">&quot;34&quot;</span>,<span class="st">&quot;35&quot;</span>,<span class="st">&quot;45&quot;</span>)
 schema &lt;-<span class="st"> &quot;bdat&quot;</span>
+stats &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;med&quot;</span>,<span class="st">&quot;dqua&quot;</span>)
+
+Nom_champs &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="kw">paste</span>(repmetadonnees,<span class="st">&quot;Convention_nommage_dm_bdat.csv&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>),<span class="dt">sep=</span><span class="st">&quot;,&quot;</span>,<span class="dt">colClasses =</span> <span class="st">&quot;character&quot;</span>)
+type &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;numeric&quot;</span>,<span class="st">&quot;numeric&quot;</span>,<span class="st">&quot;text&quot;</span>)
 
 for(i in period){
-  for(v in <span class="kw">c</span>(<span class="st">&quot;diff&quot;</span>,<span class="st">&quot;diffmedian&quot;</span>)){
-  
-  var_variable &lt;-<span class="st"> </span><span class="kw">paste</span>(v,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
-  
-  tableBDAT &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;bdat_canton_corgequiv_comp_&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
-  
-  <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
-<span class="st">                      drop column if exists &quot;</span>,var_variable,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
-  
-  if(v==<span class="st">&quot;diff&quot;</span>){
-  <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
-<span class="st">                      add column &quot;</span>,var_variable,<span class="st">&quot; text;</span>
-<span class="st">                      update &quot;</span>,table_dm,<span class="st">&quot;</span>
-<span class="st">                      SET &quot;</span>,var_variable,<span class="st">&quot; = s1.diff from(</span>
-<span class="st">                      select diff,canton</span>
-<span class="st">                      from &quot;</span>,schema,<span class="st">&quot;.&quot;</span>,tableBDAT,<span class="st">&quot;) as s1</span>
-<span class="st">                      where &quot;</span>,table_dm,<span class="st">&quot;.code_canton=s1.canton::text&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+  cpt &lt;-<span class="st"> </span><span class="dv">0</span>
+  for(v in <span class="kw">c</span>(<span class="st">&quot;diff_XX_&quot;</span>,<span class="st">&quot;diff_XX_pourcent_&quot;</span>,<span class="st">&quot;evol_XX_&quot;</span>)){
+    cpt &lt;-<span class="st"> </span>cpt +<span class="st"> </span><span class="dv">1</span>
+    type_column &lt;-<span class="st"> </span>type[cpt]
+    for(b in stats){
+
+    diffstats &lt;-<span class="st"> </span><span class="kw">gsub2</span>(<span class="st">&quot;XX&quot;</span>,b,v)
+    var_variable &lt;-<span class="st"> </span><span class="kw">paste</span>(diffstats,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
     
-      <span class="co"># Ajout d'un commentaire sur la nouvelle colonne créée</span>
-      <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
-<span class="st">      COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,var_variable,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">Résultat du test de significacité de la différence de la médiane des teneurs en carbone organique au niveau du canton.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
-    
-  }else{
+    tableBDAT &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;corgox_&quot;</span>,b,<span class="st">&quot;_&quot;</span>,i,<span class="st">&quot;_canton&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+
     <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
-<span class="st">                      add column &quot;</span>,var_variable,<span class="st">&quot; numeric;</span>
+<span class="st">                        drop column if exists &quot;</span>,var_variable,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+  
+    Commentaire &lt;-<span class="st"> </span>Nom_champs[Nom_champs$Type %in%<span class="st"> &quot;Différence&quot;</span>,]
+    
+    Commentaire$Nom_colonne &lt;-<span class="st"> </span><span class="kw">gsub2</span>(<span class="st">&quot;XX&quot;</span>,i,Commentaire$Nom_colonne)
+
+    Commentairestats &lt;-<span class="st"> </span><span class="kw">paste</span>(Commentaire[Commentaire$Nom_colonne %in%<span class="st"> </span>var_variable,<span class="st">&quot;Description&quot;</span>],i,<span class="dt">sep=</span><span class="st">&quot; &quot;</span>)
+
+    <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                      add column &quot;</span>,var_variable,<span class="st">&quot; &quot;</span>,type_column,<span class="st">&quot;;</span>
 <span class="st">                      update &quot;</span>,table_dm,<span class="st">&quot;</span>
 <span class="st">                      SET &quot;</span>,var_variable,<span class="st">&quot; = s1.&quot;</span>,var_variable,<span class="st">&quot; from(</span>
 <span class="st">                      select &quot;</span>,var_variable,<span class="st">&quot;,canton</span>
@@ -358,17 +402,17 @@ for(i in period){
     
       <span class="co"># Ajout d'un commentaire sur la nouvelle colonne créée</span>
       <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
-<span class="st">      COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,var_variable,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">Pourcentage d évolution de la médiane des teneurs en carbone organique par canton ((medA-medB)/medB))*100 avec B une période antérieure à A.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+<span class="st">      COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,var_variable,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">&quot;</span>,Commentairestats,<span class="st">&quot;.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
     }
   }
 }</code></pre></div>
 </div>
 </div>
-<div id="integration-des-analyses-par-type-de-determination-teneurs-effectifs" class="section level2">
-<h2><span class="header-section-number">2.2</span> Intégration des analyses par type de détermination (teneurs + effectifs)</h2>
+<div id="integration-des-analyses-par-type-de-determination-teneurs-effectifs-obsolete" class="section level2">
+<h2><span class="header-section-number">2.2</span> Intégration des analyses par type de détermination (teneurs + effectifs) [Obsolète]</h2>
 <p>Même démarche que précédemment. Ci-dessous, les analyses des teneurs en C par type de mesures sont intégrées dans la table <code>dm_vecteurs.canon</code>. Les analyses réalisées avec la méthode oxydation humide sont nommée <code>corgox</code> et les analyses mesurées avec la méthode combustion sèche <code>corgco</code></p>
-<div id="integrations-des-teneurs" class="section level3">
-<h3><span class="header-section-number">2.2.1</span> Intégrations des teneurs</h3>
+<div id="integrations-des-teneurs-obsolete" class="section level3">
+<h3><span class="header-section-number">2.2.1</span> Intégrations des teneurs [Obsolète]</h3>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Paramètres</span>
 table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
 period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;9094&quot;</span>,<span class="st">&quot;9599&quot;</span>,<span class="st">&quot;0004&quot;</span>,<span class="st">&quot;0509&quot;</span>,<span class="st">&quot;1014&quot;</span>)
@@ -376,32 +420,44 @@ schema &lt;-<span class="st"> &quot;bdat&quot;</span>
 
 methodo &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;corgox&quot;</span>,<span class="st">&quot;corgco&quot;</span>)
 m_sign &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;Oxydation humide&quot;</span>,<span class="st">&quot;Oxydation sèche&quot;</span>)
+stats &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;pdec&quot;</span>,<span class="st">&quot;pqua&quot;</span>,<span class="st">&quot;med&quot;</span>,<span class="st">&quot;dqua&quot;</span>,<span class="st">&quot;ddec&quot;</span>)
+commentstats &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;10% centile&quot;</span>,<span class="st">&quot;25% centile&quot;</span>,<span class="st">&quot;Médiane&quot;</span>,<span class="st">&quot;75% centile&quot;</span>,<span class="st">&quot;90% centile&quot;</span>)
+
 cpt &lt;-<span class="st"> </span><span class="dv">0</span>
 for(m in methodo){
   cpt &lt;-<span class="st"> </span>cpt +<span class="st"> </span><span class="dv">1</span>
-  for(i in period){
-    var_variable &lt;-<span class="st"> </span><span class="kw">paste</span>(m,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
-    tableBDAT &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;bdat_canton_&quot;</span>,m,<span class="st">&quot;_&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
 
-    <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
-<span class="st">                        drop column if exists &quot;</span>,var_variable,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+  for(i in period){
+      cpt1 &lt;-<span class="st"> </span><span class="dv">0</span>
+      for(s in stats){
+            cpt1 &lt;-<span class="st"> </span>cpt1 +<span class="st"> </span><span class="dv">1</span>
+        if(s==<span class="st">&quot;med&quot;</span>){
+                var_variable &lt;-<span class="st"> </span><span class="kw">paste</span>(m,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)}
+                else{
+                  var_variable &lt;-<span class="st"> </span><span class="kw">paste</span>(m,<span class="st">&quot;_&quot;</span>,s,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)}
+
+        tableBDAT &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;bdat_canton_&quot;</span>,m,<span class="st">&quot;_&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+
+        <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                            drop column if exists &quot;</span>,var_variable,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
   
-    <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
-<span class="st">                        add column &quot;</span>,var_variable,<span class="st">&quot; numeric;</span>
-<span class="st">                        update &quot;</span>,table_dm,<span class="st">&quot;</span>
-<span class="st">                        SET &quot;</span>,var_variable,<span class="st">&quot; = s1.med from(</span>
-<span class="st">                        select med,canton</span>
-<span class="st">                        from &quot;</span>,schema,<span class="st">&quot;.&quot;</span>,tableBDAT,<span class="st">&quot;) as s1</span>
-<span class="st">                        where &quot;</span>,table_dm,<span class="st">&quot;.code_canton=s1.canton::text&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+        <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                            add column &quot;</span>,var_variable,<span class="st">&quot; numeric;</span>
+<span class="st">                            update &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                            SET &quot;</span>,var_variable,<span class="st">&quot; = s1.&quot;</span>,s,<span class="st">&quot; from(</span>
+<span class="st">                            select &quot;</span>,s,<span class="st">&quot;,canton</span>
+<span class="st">                            from &quot;</span>,schema,<span class="st">&quot;.&quot;</span>,tableBDAT,<span class="st">&quot;) as s1</span>
+<span class="st">                            where &quot;</span>,table_dm,<span class="st">&quot;.code_canton=s1.canton::text&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
   
-    <span class="co"># Ajout d'un commentaire sur la nouvelle colonne créée</span>
-    <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
-<span class="st">    COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,var_variable,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">Médiane des teneurs en carbone organique après ré-échantillonnage pour la période&quot;</span>,i,<span class="st">&quot; et pour la méthode &quot;</span>,m_sign[cpt],<span class="st">&quot;.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+        <span class="co"># Ajout d'un commentaire sur la nouvelle colonne créée</span>
+        <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">        COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,var_variable,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">&quot;</span>,commentstats[cpt],<span class="st">&quot; des teneurs en carbone organique après ré-échantillonnage pour la période&quot;</span>,i,<span class="st">&quot; et pour la méthode &quot;</span>,m_sign[cpt],<span class="st">&quot;.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+      }
   }
 }</code></pre></div>
 </div>
-<div id="integrations-des-effefifs-par-type-de-methode" class="section level3">
-<h3><span class="header-section-number">2.2.2</span> Intégrations des effefifs par type de méthode</h3>
+<div id="integrations-des-effectifs-par-type-de-methode-obsolete" class="section level3">
+<h3><span class="header-section-number">2.2.2</span> Intégrations des effectifs par type de méthode [Obsolète]</h3>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Paramètres</span>
 table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
 period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;9094&quot;</span>,<span class="st">&quot;9599&quot;</span>,<span class="st">&quot;0004&quot;</span>,<span class="st">&quot;0509&quot;</span>,<span class="st">&quot;1014&quot;</span>)
@@ -413,7 +469,7 @@ cpt &lt;-<span class="st"> </span><span class="dv">0</span>
 for(m in methodo){
   cpt &lt;-<span class="st"> </span>cpt +<span class="st"> </span><span class="dv">1</span>
   for(i in period){
-    var_variable &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;eff_&quot;</span>,m,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+    var_variable &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;eff_&quot;</span>,m,<span class="st">&quot;_&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
     tableBDAT &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;bdat_canton_&quot;</span>,m,<span class="st">&quot;_&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
 
     <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
@@ -433,21 +489,39 @@ for(m in methodo){
   }
 }</code></pre></div>
 </div>
-<div id="les-resultats-des-tests-statistiques-des-differences-de-teneur-en-carbone-organique-par-type-de-methode" class="section level3">
-<h3><span class="header-section-number">2.2.3</span> Les résultats des tests statistiques des différences de teneur en carbone organique par type de méthode</h3>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
+<div id="les-resultats-des-tests-statistiques-des-differences-de-teneur-en-carbone-organique-par-type-de-methode-obsolete" class="section level3">
+<h3><span class="header-section-number">2.2.3</span> Les résultats des tests statistiques des différences de teneur en carbone organique par type de méthode [Obsolète]</h3>
+<p>Ci-dessous, les différences des teneurs en carbone organique par type de méthode et pour les différentes statistiques cantonales sont calculées.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## En cours. Revoir si il est possible d'obtenir les résultats des tests de différences pour les autres statistiques cantonales...?cf courriel envoyée à Laetitia...
+
+table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
 period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;12&quot;</span>,<span class="st">&quot;13&quot;</span>,<span class="st">&quot;14&quot;</span>,<span class="st">&quot;15&quot;</span>,<span class="st">&quot;23&quot;</span>,<span class="st">&quot;24&quot;</span>,<span class="st">&quot;25&quot;</span>,<span class="st">&quot;34&quot;</span>,<span class="st">&quot;35&quot;</span>,<span class="st">&quot;45&quot;</span>)
 schema &lt;-<span class="st"> &quot;bdat&quot;</span>
-
-bdat.bdat_canton_corgox_comp_45
-bdat_canton_corgco_comp_23
-
 methodo &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;corgox&quot;</span>,<span class="st">&quot;corgco&quot;</span>)
 m_sign &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;Oxydation humide&quot;</span>,<span class="st">&quot;Oxydation sèche&quot;</span>)
+
+<span class="co"># Ouverture du fichier présentant les différentes combinaisons</span>
+nomdiff &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="kw">paste</span>(repmetadonnees,<span class="st">&quot;Nomenclature_evolutionbdat.csv&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>),<span class="dt">sep=</span><span class="st">&quot;,&quot;</span>,<span class="dt">colClasses =</span> <span class="st">&quot;character&quot;</span>)
+stats &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;pdec&quot;</span>,<span class="st">&quot;pqua&quot;</span>,<span class="st">&quot;med&quot;</span>,<span class="st">&quot;dqua&quot;</span>,<span class="st">&quot;ddec&quot;</span>)
+commentstats &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;10% centile&quot;</span>,<span class="st">&quot;25% centile&quot;</span>,<span class="st">&quot;Médiane&quot;</span>,<span class="st">&quot;75% centile&quot;</span>,<span class="st">&quot;90% centile&quot;</span>)
+
 cpt &lt;-<span class="st"> </span><span class="dv">0</span>
 for(m in methodo){
+
   cpt &lt;-<span class="st"> </span>cpt +<span class="st"> </span><span class="dv">1</span>
+  
   for(i in period){
+
+    for(s in stats){
+
+    <span class="co"># Calcul des différences relatives pour les différentes stats</span>
+
+    diffname &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;reladiff&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+    period1 &lt;-<span class="st"> </span><span class="kw">paste</span>(m,nomdiff[nomdiff$Code %in%<span class="st"> </span>i,<span class="st">&quot;Periode1&quot;</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+    period2 &lt;-<span class="st"> </span><span class="kw">paste</span>(m,nomdiff[nomdiff$Code %in%<span class="st"> </span>i,<span class="st">&quot;Periode2&quot;</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+    vNames &lt;-<span class="st"> </span><span class="kw">c</span>(diffname,Rcovar)
+    dcast.bdat[diffname] &lt;-<span class="st"> </span>((dcast.bdat[,period2]-dcast.bdat[,period1])/dcast.bdat[,period1])*<span class="dv">100</span>
+
     for(v in <span class="kw">c</span>(<span class="st">&quot;diff&quot;</span>,<span class="st">&quot;diffmedian&quot;</span>)){
     
     var_variable &lt;-<span class="st"> </span><span class="kw">paste</span>(v,<span class="st">&quot;_&quot;</span>,m,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
@@ -485,17 +559,30 @@ for(m in methodo){
       }
     }
   }
-}</code></pre></div>
+}
+
+variaCO &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;corgox&quot;</span>,<span class="st">&quot;corgco&quot;</span>)
+stats &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;pdec&quot;</span>,<span class="st">&quot;pqua&quot;</span>,<span class="st">&quot;dqua&quot;</span>,<span class="st">&quot;ddec&quot;</span>)
+varia_stats &lt;-<span class="st"> </span><span class="kw">apply</span>(<span class="kw">expand.grid</span>(variaCO,stats),<span class="dv">1</span>, function(x){<span class="kw">paste</span>(x[<span class="dv">1</span>],<span class="st">&quot;_&quot;</span>,x[<span class="dv">2</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)})
+varia_stats &lt;-<span class="st"> </span><span class="kw">c</span>(varia_stats,<span class="st">&quot;corg_pdecequiv&quot;</span>,<span class="st">&quot;corg_pquaequiv&quot;</span>,<span class="st">&quot;corg_medequiv&quot;</span>,<span class="st">&quot;corg_dquaequiv&quot;</span>,<span class="st">&quot;corg_ddecequiv&quot;</span>)
+varia &lt;-<span class="st"> </span><span class="kw">c</span>(varia_stats,varia_eff,variaCO)
+ 
+variaoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;p_sth&quot;</span>,<span class="st">&quot;p_sfp&quot;</span>,<span class="st">&quot;p_prairie&quot;</span>,<span class="st">&quot;p_cop&quot;</span>,<span class="st">&quot;p_c&quot;</span>)
+<span class="co">#id_class &lt;- apply(expand.grid(varia,period), 1, paste, collapse=&quot;&quot;)</span>
+periodoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;1970&quot;</span>,<span class="st">&quot;1979&quot;</span>,<span class="st">&quot;1988&quot;</span>,<span class="st">&quot;2000&quot;</span>,<span class="st">&quot;2010&quot;</span>)
+id_class &lt;-<span class="st"> </span><span class="kw">apply</span>(<span class="kw">expand.grid</span>(variaoccup,periodoccup),<span class="dv">1</span>, function(x){<span class="kw">paste</span>(<span class="st">&quot;classe_&quot;</span>,x[<span class="dv">1</span>],x[<span class="dv">2</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)})
+id &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;code_canton&quot;</span>,<span class="st">&quot;code_reg&quot;</span>,<span class="st">&quot;nom_region&quot;</span>,<span class="st">&quot;typo_clim&quot;</span>,<span class="st">&quot;zonage_simple&quot;</span>,<span class="st">&quot;zonage_cplt&quot;</span>,<span class="st">&quot;classe_altimean&quot;</span>,<span class="st">&quot;mat11&quot;</span>,id_class) <span class="co">#Nom des identifiants</span></code></pre></div>
 </div>
 </div>
 <div id="integration-des-donnees-texturales" class="section level2">
 <h2><span class="header-section-number">2.3</span> Intégration des données texturales</h2>
+<div id="donnees-brutes-par-canton" class="section level3">
+<h3><span class="header-section-number">2.3.1</span> Données brutes par canton</h3>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Paramètres</span>
 table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
 period &lt;-<span class="st"> &quot;9009&quot;</span>
 schema &lt;-<span class="st"> &quot;bdat&quot;</span>
-vpedo &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;argi_med&quot;</span>,<span class="st">&quot;sabt_med&quot;</span>)
-
+vpedo &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;argi_med&quot;</span>,<span class="st">&quot;sabt_med&quot;</span>) <span class="co">#Intégration du taux d'argile et du taux de sable de la BDAT (voir pour le pH)</span>
 signification &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;taux d</span><span class="ch">\'</span><span class="st">'argile&quot;</span>,<span class="st">&quot;taux de sable&quot;</span>)
 
 cpt &lt;-<span class="st"> </span><span class="dv">0</span>
@@ -519,292 +606,306 @@ for(i in vpedo){
 <span class="st">  COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,i,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">Médiane du &quot;</span>,signification[cpt],<span class="st">&quot; (g/kg) calculée sur 1990-2009.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
 }</code></pre></div>
 </div>
-</div>
-<div id="creation-des-tables-de-travail-au-format-long" class="section level1">
-<h1><span class="header-section-number">3</span> Création des tables de travail au format “long”</h1>
-<div id="integration-des-teneurs-en-carbone-organique" class="section level2">
-<h2><span class="header-section-number">3.1</span> Intégration des teneurs en carbone organique</h2>
-<p>Les données de la BDAT sont ré-organisées pour faciliter les traitements statistiques et la production de graphiques. La fonction <code>melt</code> est utilisée pour transformer les données d’un format “large” à un format “long”. Deux tables sont créées :</p>
-<ul>
-<li><code>dm_traitements.melted.bdat</code> : table des valeurs des médianes teneurs en carbone organique</li>
-<li><code>dm_traitements.melted_bdatdiff</code> : table des valeurs de différences des teneurs en carbone organique entre plusieurs périodes.</li>
-</ul>
-<p><strong>Important :</strong> La création de ces tables nécessite le lancement de plusieurs scripts au préalable : <code>FS_bdd_brute.Rmd</code>,<code>FS_bdd_elab_climat.Rmd</code>,<code>FS_bdd_elab_ra.Rmd</code> et <code>FS_bdd_elab_clc.Rmd</code>.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Paramètres</span>
+<div id="evolution-de-largile-et-des-limons-totaux" class="section level3">
+<h3><span class="header-section-number">2.3.2</span> Evolution de l’argile et des limons totaux</h3>
+<p>Relancer pour mettre les commentaires</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Lecture des tables de métadonnées</span>
+nomdiff &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="kw">paste</span>(repmetadonnees,<span class="st">&quot;Nomenclature_evolutionbdat.csv&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>),<span class="dt">sep=</span><span class="st">&quot;,&quot;</span>,<span class="dt">colClasses =</span> <span class="st">&quot;character&quot;</span>)
+Nom_champs &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="kw">paste</span>(repmetadonnees,<span class="st">&quot;Convention_nommage_dm_bdat.csv&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>),<span class="dt">sep=</span><span class="st">&quot;,&quot;</span>,<span class="dt">colClasses =</span> <span class="st">&quot;character&quot;</span>)
+
+<span class="co"># Paramètres</span>
 table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
-varia &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;corgox&quot;</span>,<span class="st">&quot;corgco&quot;</span>,<span class="st">&quot;corg_medequiv&quot;</span>,<span class="st">&quot;eff_coox&quot;</span>,<span class="st">&quot;eff_corgox&quot;</span>,<span class="st">&quot;eff_corgco&quot;</span>) <span class="co"># Variable à analyser test</span>
-variaoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;p_sth&quot;</span>,<span class="st">&quot;p_sfp&quot;</span>,<span class="st">&quot;p_prairie&quot;</span>,<span class="st">&quot;p_cop&quot;</span>,<span class="st">&quot;p_c&quot;</span>)
-<span class="co">#id_class &lt;- apply(expand.grid(varia,period), 1, paste, collapse=&quot;&quot;)</span>
-periodoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;1970&quot;</span>,<span class="st">&quot;1979&quot;</span>,<span class="st">&quot;1988&quot;</span>,<span class="st">&quot;2000&quot;</span>,<span class="st">&quot;2010&quot;</span>)
-id_class &lt;-<span class="st"> </span><span class="kw">apply</span>(<span class="kw">expand.grid</span>(variaoccup,periodoccup),<span class="dv">1</span>, function(x){<span class="kw">paste</span>(<span class="st">&quot;classe_&quot;</span>,x[<span class="dv">1</span>],x[<span class="dv">2</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)})
-id &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;code_canton&quot;</span>,<span class="st">&quot;code_reg&quot;</span>,<span class="st">&quot;nom_region&quot;</span>,<span class="st">&quot;typo_clim&quot;</span>,<span class="st">&quot;zonage_simple&quot;</span>,<span class="st">&quot;zonage_cplt&quot;</span>,<span class="st">&quot;classe_altimean&quot;</span>,<span class="st">&quot;mat11&quot;</span>,id_class) <span class="co">#Nom des identifiants</span>
+period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;9094&quot;</span>,<span class="st">&quot;9599&quot;</span>,<span class="st">&quot;0004&quot;</span>,<span class="st">&quot;0509&quot;</span>,<span class="st">&quot;1014&quot;</span>)
+schema &lt;-<span class="st"> &quot;bdat&quot;</span>
+stats &lt;-<span class="st"> &quot;med&quot;</span>
+variable &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;argi&quot;</span>,<span class="st">&quot;limt&quot;</span>)
 
-<span class="co"># Lecture de la table dm_vecteurs.canton</span>
-mapcanton &lt;-<span class="st"> </span><span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;select * from &quot;</span>,table_dm,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+for(v in variable){
+for(s in stats){
+  for(i in period){
+    sel &lt;-<span class="st"> </span><span class="kw">list</span>()
+    <span class="co"># Sélection des comparaisons où la période est exploitée</span>
+    test &lt;-<span class="st"> </span>nomdiff[(nomdiff$Periode1 %in%<span class="st"> </span>i)|(nomdiff$Periode2 %in%<span class="st"> </span>i),]$Code
 
-<span class="co"># Boucle pour séparer l'année du nom de la variable étudiée</span>
-
-cpt &lt;-<span class="st"> </span><span class="dv">0</span>
-for(i in varia){
-  if(i==<span class="st">&quot;corgco&quot;</span>|i==<span class="st">&quot;eff_corgco&quot;</span>){
-    period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;9599&quot;</span>,<span class="st">&quot;0004&quot;</span>,<span class="st">&quot;0509&quot;</span>,<span class="st">&quot;1014&quot;</span>)
-  }else{period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;9094&quot;</span>,<span class="st">&quot;9599&quot;</span>,<span class="st">&quot;0004&quot;</span>,<span class="st">&quot;0509&quot;</span>,<span class="st">&quot;1014&quot;</span>)}
-
-  cpt &lt;-<span class="st"> </span>cpt +<span class="st"> </span><span class="dv">1</span>
-  variaperiod &lt;-<span class="st"> </span><span class="kw">paste</span>(i,period,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)  
-  
-  stats.canton &lt;-<span class="st"> </span>mapcanton[,<span class="kw">c</span>(id,variaperiod)]
-
-  <span class="co"># Modification de la structure de la table</span>
-  stats.canton &lt;-<span class="st"> </span><span class="kw">melt</span>(<span class="dt">data=</span>stats.canton,<span class="dt">id.vars=</span>id)
-  
-  <span class="co"># Extraction de l'année et renommage des colonnes</span>
-  stats.canton[,<span class="st">&quot;variable&quot;</span>] &lt;-<span class="st"> </span><span class="kw">as.character</span>(<span class="kw">unlist</span>(<span class="kw">regmatches</span>(stats.canton[,<span class="st">&quot;variable&quot;</span>],<span class="kw">gregexpr</span>(<span class="st">'[0-9]+.[0-9]+'</span>,stats.canton[,<span class="st">&quot;variable&quot;</span>]))))
-  <span class="kw">colnames</span>(stats.canton)[(<span class="kw">length</span>(id)+<span class="dv">1</span>):(<span class="kw">length</span>(id)+<span class="dv">2</span>)] &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;annees&quot;</span>,i)
-    
-  if(cpt==<span class="dv">1</span>){
-    <span class="co"># Construction de la première table</span>
-    melt.canton &lt;-<span class="st"> </span>stats.canton
-  }else{
-    <span class="co"># Ajout à chaque itération de la variable (i)</span>
-    melt.canton &lt;-<span class="st"> </span><span class="kw">merge</span>(melt.canton,stats.canton, <span class="dt">by.x=</span><span class="kw">c</span>(id,<span class="st">&quot;annees&quot;</span>), <span class="dt">by.y=</span><span class="kw">c</span>(id,<span class="st">&quot;annees&quot;</span>),<span class="dt">all.x=</span><span class="ot">TRUE</span>,<span class="dt">all.y=</span><span class="ot">TRUE</span>)
-  }
-}
-
-<span class="co"># Création finale de la table</span>
-melted.bdat &lt;-<span class="st"> </span><span class="kw">melt</span>(<span class="dt">data=</span>melt.canton,<span class="dt">id.vars=</span><span class="kw">c</span>(id,<span class="st">&quot;annees&quot;</span>))
-melted.bdat$annees &lt;-<span class="st"> </span><span class="kw">as.character</span>(melted.bdat$annees)
-melted.bdat$typo_clim &lt;-<span class="st"> </span><span class="kw">as.factor</span>(melted.bdat$typo_clim)
-
-<span class="co"># Enregistrement dans le schema dm_traitements  </span>
-tablename &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;dm_traitements.&quot;</span>,<span class="st">&quot;melted_bdat&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
-<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;drop table if exists &quot;</span>,tablename,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
-<span class="kw">sqlSave</span>(loc,melted.bdat,<span class="dt">tablename=</span>tablename)
-
-<span class="co"># Ajout de quelques commentaires</span>
-<span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
-<span class="st">COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.value IS </span><span class="ch">\'</span><span class="st">Médiane des teneurs en carbone organique et les effectifs après ré-échantillonnage sur l</span><span class="ch">\'</span><span class="st">'ensemble des périodes et les différentes méthodes de mesure.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
-
-<span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
-<span class="st">COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.annees IS </span><span class="ch">\'</span><span class="st">Périodes d</span><span class="ch">\'</span><span class="st">'analyse des teneurs en carbone organique.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
-
-<span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
-<span class="st">COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.variable IS </span><span class="ch">\'</span><span class="st">Type de méthode de mesure des teneurs en carbone organique et les effectifs (corgox:oxydation humide; corgco:combustion sèche; corg_medequiv:corgox+corgco; eff_corgox:effectif pour la méthode corgox; eff_corgco:effectif pour la méthode corgco; eff_coox:effectif pour les méthodes méthodes corgox+corgco.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))</code></pre></div>
-</div>
-<div id="integration-des-resultats-de-levolution-des-teneurs-en-carbone-organique-dans-une-table-au-format-long" class="section level2">
-<h2><span class="header-section-number">3.2</span> Intégration des résultats de l’évolution des teneurs en carbone organique dans une table au format long</h2>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Paramètres</span>
-table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
-varia &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;diffmedian&quot;</span>,<span class="st">&quot;diff&quot;</span>,<span class="st">&quot;diff_corgox&quot;</span>,<span class="st">&quot;diff&quot;</span>) <span class="co"># Préfixe de la variable à intégrer (varia+period)</span>
-variaoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;sth&quot;</span>,<span class="st">&quot;sfp&quot;</span>,<span class="st">&quot;prairie&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;mf&quot;</span>,<span class="st">&quot;cop&quot;</span>)
-periodra &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;1970&quot;</span>,<span class="st">&quot;1979&quot;</span>,<span class="st">&quot;1988&quot;</span>,<span class="st">&quot;2000&quot;</span>,<span class="st">&quot;2010&quot;</span>)
-<span class="co"># Classes d'occupation du sol</span>
-id_class &lt;-<span class="st"> </span><span class="kw">apply</span>(<span class="kw">expand.grid</span>(variaoccup,periodra),<span class="dv">1</span>,function(x){<span class="kw">paste</span>(<span class="st">&quot;classe_p_&quot;</span>,x[<span class="dv">1</span>],x[<span class="dv">2</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)})
-
-## Variables associées aux changements d'occupation du sol
-
-p_variable &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;sth&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;sfp&quot;</span>,<span class="st">&quot;mf&quot;</span>,<span class="st">&quot;prairie&quot;</span>,<span class="st">&quot;cop&quot;</span>)
-periodref_ra &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;2010&quot;</span>,<span class="st">&quot;2000&quot;</span>)
-period_ra &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;1970&quot;</span>,<span class="st">&quot;1979&quot;</span>,<span class="st">&quot;1988&quot;</span>,<span class="st">&quot;2000&quot;</span>)
-id_varclass &lt;-<span class="st"> </span><span class="kw">apply</span>(<span class="kw">expand.grid</span>(p_variable,period_ra,periodref_ra),<span class="dv">1</span>, function(x){<span class="kw">paste</span>(<span class="st">&quot;classe_var_&quot;</span>,x[<span class="dv">1</span>],x[<span class="dv">2</span>],<span class="st">&quot;_&quot;</span>,x[<span class="dv">3</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)})
-id_varclass &lt;-<span class="st"> </span>id_varclass[<span class="dv">1</span>:(<span class="kw">length</span>(id_varclass)-<span class="kw">length</span>(variaoccup))] <span class="co"># Ici, on supprime les dernières combinaisons représentant une différence 2000-2000</span>
-<span class="co">#</span>
-id_diff &lt;-<span class="st"> </span><span class="kw">apply</span>(<span class="kw">expand.grid</span>(p_variable,period_ra,periodref_ra),<span class="dv">1</span>, function(x){<span class="kw">paste</span>(<span class="st">&quot;diff_var_&quot;</span>,x[<span class="dv">1</span>],x[<span class="dv">2</span>],<span class="st">&quot;_&quot;</span>,x[<span class="dv">3</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)})
-id_diff &lt;-<span class="st"> </span>id_diff[<span class="dv">1</span>:(<span class="kw">length</span>(id_diff)-<span class="kw">length</span>(variaoccup))]<span class="co"># Ici, on supprime les dernières combinaisons représentant une différence 2000-2000</span>
-
-id &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;code_canton&quot;</span>,<span class="st">&quot;code_reg&quot;</span>,<span class="st">&quot;nom_region&quot;</span>,<span class="st">&quot;typo_clim&quot;</span>,<span class="st">&quot;zonage_simple&quot;</span>,<span class="st">&quot;zonage_cplt&quot;</span>,<span class="st">&quot;classe_altimean&quot;</span>,<span class="st">&quot;mat11&quot;</span>,id_class,id_diff,id_varclass)
-
-<span class="co"># Lecture de la table dm_vecteurs.canton</span>
-mapcanton &lt;-<span class="st"> </span><span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;select * from &quot;</span>,table_dm,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
-<span class="co">#mapcanton &lt;- sqlQuery(loc,paste(&quot;select &quot;,paste(id,collapse=&quot;,&quot;),&quot;,&quot;,paste(variaperiod,collapse=&quot;,&quot;),&quot; from &quot;,table_dm,sep=&quot;&quot;))</span>
-
-<span class="co"># Boucle pour séparer les périodes analysées du nom de la variable étudiée</span>
-
-methodo &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;&quot;</span>,<span class="st">&quot;corgox&quot;</span>)<span class="co">#,&quot;corgco&quot;) </span>
-cpt &lt;-<span class="st"> </span><span class="dv">0</span>
-for(m in methodo){
-  cpt &lt;-<span class="st"> </span>cpt +<span class="st"> </span><span class="dv">1</span>
-  if(m==<span class="st">&quot;corgco&quot;</span>){
-    period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;23&quot;</span>,<span class="st">&quot;24&quot;</span>,<span class="st">&quot;34&quot;</span>,<span class="st">&quot;35&quot;</span>,<span class="st">&quot;45&quot;</span>)
-}else{
-  period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;12&quot;</span>,<span class="st">&quot;13&quot;</span>,<span class="st">&quot;14&quot;</span>,<span class="st">&quot;15&quot;</span>,<span class="st">&quot;23&quot;</span>,<span class="st">&quot;24&quot;</span>,<span class="st">&quot;25&quot;</span>,<span class="st">&quot;34&quot;</span>,<span class="st">&quot;35&quot;</span>,<span class="st">&quot;45&quot;</span>)
-}
-
-  if(m==<span class="st">&quot;&quot;</span>){
-    varia &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;diffmedian&quot;</span>,<span class="st">&quot;diff&quot;</span>)
-    }else{
-      varia &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="kw">paste</span>(<span class="st">&quot;diffmedian_&quot;</span>,m,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>),<span class="kw">paste</span>(<span class="st">&quot;diff_&quot;</span>,m,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
-  }
-  <span class="kw">print</span>(varia)
-
-  for(i in varia){
-    variaperiod &lt;-<span class="st"> </span><span class="kw">paste</span>(i,period,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)  
-    stats.canton &lt;-<span class="st"> </span>mapcanton[,<span class="kw">c</span>(id,variaperiod)]
-
-    <span class="co"># Modification de la structure de la table</span>
-    stats.canton &lt;-<span class="st"> </span><span class="kw">melt</span>(<span class="dt">data=</span>stats.canton,<span class="dt">id.vars=</span>id)
-
-    <span class="co"># Extraction de l'année et renommage des colonnes</span>
-    stats.canton[,<span class="st">&quot;variable&quot;</span>] &lt;-<span class="st"> </span><span class="kw">as.character</span>(<span class="kw">unlist</span>(<span class="kw">regmatches</span>(stats.canton[,<span class="st">&quot;variable&quot;</span>],<span class="kw">gregexpr</span>(<span class="st">'[0-9]+.'</span>,stats.canton[,<span class="st">&quot;variable&quot;</span>]))))
-    <span class="kw">colnames</span>(stats.canton)[(<span class="kw">length</span>(id)+<span class="dv">1</span>):(<span class="kw">length</span>(id)+<span class="dv">2</span>)] &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;period&quot;</span>,i) <span class="co">#revoir la sélection de ces colonnes</span>
+    <span class="co"># Sélection des tables et calcul de la médiane des valeurs pour les 4 comparaisons </span>
+    ## Lecture de toutes les tables puis jointures
+    cpt &lt;-<span class="st"> </span><span class="dv">0</span>
+    for(x in test){
+      cpt &lt;-<span class="st"> </span>cpt +<span class="st"> </span><span class="dv">1</span>
+      <span class="kw">print</span>(cpt)
+      toto &lt;-<span class="st"> </span><span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;select &quot;</span>,s,<span class="st">&quot;_&quot;</span>,i,<span class="st">&quot; as &quot;</span>,s,<span class="st">&quot;_&quot;</span>,i,<span class="st">&quot;_&quot;</span>,cpt,<span class="st">&quot;,canton</span>
+<span class="st">        from bdat.&quot;</span>,v,<span class="st">&quot;_&quot;</span>,s,<span class="st">&quot;_&quot;</span>,x,<span class="st">&quot;_canton&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
     
     if(cpt==<span class="dv">1</span>){
-      <span class="co"># Construction de la première table</span>
-      melt.canton &lt;-<span class="st"> </span>stats.canton
-    }else{
-      <span class="co"># Ajout à chaque itération de la variable (i)</span>
-      melt.canton &lt;-<span class="st"> </span><span class="kw">merge</span>(melt.canton,stats.canton, <span class="dt">by.x=</span><span class="kw">c</span>(id,<span class="st">&quot;period&quot;</span>), <span class="dt">by.y=</span><span class="kw">c</span>(id,<span class="st">&quot;period&quot;</span>),<span class="dt">all.x=</span><span class="ot">TRUE</span>,<span class="dt">all.y=</span><span class="ot">TRUE</span>)
-      
+      corgoxtable &lt;-<span class="st"> </span>toto
+      }else{
+        <span class="co"># Ajout à chaque itération de la variable (i)</span>
+        corgoxtable &lt;-<span class="st"> </span><span class="kw">merge</span>(corgoxtable,toto, <span class="dt">by.x=</span><span class="st">&quot;canton&quot;</span>, <span class="dt">by.y=</span><span class="st">&quot;canton&quot;</span>,<span class="dt">all.x=</span><span class="ot">TRUE</span>,<span class="dt">all.y=</span><span class="ot">TRUE</span>)
+      }
     }
+
+    ## Calcul de la médiane
+    var_variable &lt;-<span class="st"> </span><span class="kw">paste</span>(s,<span class="st">&quot;_&quot;</span>,v,<span class="st">&quot;_&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+        
+    corgoxtable[var_variable] &lt;-<span class="st"> </span><span class="kw">apply</span>(corgoxtable[,<span class="dv">2</span>:<span class="dv">5</span>],<span class="dv">1</span>,function(x){<span class="kw">median</span>(x,<span class="dt">na.rm=</span><span class="ot">TRUE</span>)})
+
+    ## Jointure vers dm_vecteurs.canton
+
+    <span class="co"># Création d'une table provisoire pour jointure</span>
+    <span class="kw">sqlSave</span>(loc,corgoxtable[,<span class="kw">c</span>(<span class="st">&quot;canton&quot;</span>,var_variable)],<span class="dt">tablename=</span><span class="st">&quot;dm_vecteurs.tmp&quot;</span>)
+    
+    <span class="co"># Jointure </span>
+    <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                      drop column if exists &quot;</span>,var_variable,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+  
+    <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                        add column &quot;</span>,var_variable,<span class="st">&quot; numeric;</span>
+<span class="st">                        update &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                        SET &quot;</span>,var_variable,<span class="st">&quot; = s1.&quot;</span>,var_variable,<span class="st">&quot; from(</span>
+<span class="st">                        select &quot;</span>,var_variable,<span class="st">&quot;,canton</span>
+<span class="st">                        from dm_vecteurs.tmp) as s1</span>
+<span class="st">                        where &quot;</span>,table_dm,<span class="st">&quot;.code_canton=s1.canton&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+    
+    <span class="co"># Suppression de la table temporaire</span>
+    <span class="kw">sqlQuery</span>(loc,<span class="st">&quot;drop table if exists dm_vecteurs.tmp&quot;</span>)
+
+    Commentaire &lt;-<span class="st"> </span>Nom_champs[Nom_champs$Type %in%<span class="st"> &quot;Période&quot;</span>,]
+    Commentaire$Nom_colonne &lt;-<span class="st"> </span><span class="kw">gsub2</span>(<span class="st">&quot;XXXX&quot;</span>,i,Commentaire$Nom_colonne)
+    Commentairestats &lt;-<span class="st"> </span><span class="kw">paste</span>(Commentaire[Commentaire$Nom_colonne %in%<span class="st"> </span>var_variable,<span class="st">&quot;Description&quot;</span>],i,<span class="dt">sep=</span><span class="st">&quot; &quot;</span>)
+
+    <span class="co"># Ajout d'un commentaire sur la nouvelle colonne créée</span>
+    <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">    COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,var_variable,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">&quot;</span>,Commentairestats,<span class="st">&quot;.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
   }
 }
+}</code></pre></div>
+</div>
+<div id="classes-de-valeurs-par-canton" class="section level3">
+<h3><span class="header-section-number">2.3.3</span> Classes de valeurs par canton</h3>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
+period &lt;-<span class="st"> &quot;9009&quot;</span>
+schema &lt;-<span class="st"> &quot;bdat&quot;</span>
+vpedo &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;argi_med&quot;</span>,<span class="st">&quot;sabt_med&quot;</span>)<span class="co">#,&quot;pho_med&quot;) voir si c'est intéressant de rajouter le ph dans l'analyse (calculer une médiane des médianes pour les 5)</span>
 
-<span class="co"># Création finale de la table</span>
-melted.bdatdiff &lt;-<span class="st"> </span>melt.canton
-melted.bdatdiff$typo_clim &lt;-<span class="st"> </span><span class="kw">as.factor</span>(melted.bdatdiff$typo_clim)
+signification &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;Classe des taux d</span><span class="ch">\'</span><span class="st">'argile&quot;</span>,<span class="st">&quot;Classe des taux de sable&quot;</span>,<span class="st">&quot;ph eau&quot;</span>)
+nclasse &lt;-<span class="st"> </span><span class="dv">4</span>
+style_classe &lt;-<span class="st"> &quot;quantile&quot;</span>
 
-<span class="co"># Enregistrement dans le schéma dm_traitements</span>
-tablename &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;dm_traitements.&quot;</span>,<span class="st">&quot;melted_bdatdiff&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
-<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;drop table if exists &quot;</span>,tablename,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
-<span class="kw">sqlSave</span>(loc,melted.bdatdiff,<span class="dt">tablename=</span>tablename)
+mapcanton &lt;-<span class="st"> </span><span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;select * from &quot;</span>,table_dm,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+cpt &lt;-<span class="st"> </span><span class="dv">0</span>
+for(i in vpedo){
+  cpt &lt;-<span class="st"> </span>cpt +<span class="st"> </span><span class="dv">1</span>
+  
+  <span class="co"># Classement des valeurs</span>
+  stats.value &lt;-<span class="st"> </span><span class="kw">melt</span>(mapcanton[,i])$value
+  classe_valeur &lt;-<span class="st"> </span><span class="kw">classIntervals</span>(stats.value,<span class="dt">n=</span>nclasse,<span class="dt">style=</span>style_classe,<span class="dt">digits=</span><span class="dv">1</span>,<span class="dt">na.rm=</span><span class="ot">TRUE</span>)[[<span class="dv">2</span>]]
 
-<span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
-<span class="st">COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.period IS </span><span class="ch">\'</span><span class="st">Périodes comparées des teneurs en carbone organique.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+  vName &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;classe_&quot;</span>,i,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+  mapcanton[,vName] &lt;-<span class="st"> </span><span class="kw">cut</span>(mapcanton[,i],<span class="dt">breaks =</span> <span class="kw">data.frame</span>(classe_valeur)[,<span class="dv">1</span>],<span class="dt">include.lowest=</span>T)
+    
+  <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                      drop column if exists &quot;</span>,vName,<span class="st">&quot;;</span>
+<span class="st">                      alter table &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                      add column &quot;</span>,vName,<span class="st">&quot; text&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+                       
+  <span class="co"># Création d'une table provisoire pour jointure</span>
+  <span class="kw">sqlSave</span>(loc,mapcanton[,<span class="kw">c</span>(<span class="st">&quot;id_geofla&quot;</span>,vName)],<span class="dt">tablename=</span><span class="st">&quot;dm_vecteurs.tmp&quot;</span>)
+    
+  <span class="co"># Jointure </span>
+  <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;update &quot;</span>,table_dm,<span class="st">&quot;</span>
+<span class="st">                      SET &quot;</span>,vName,<span class="st">&quot; = s1.&quot;</span>,vName,<span class="st">&quot; from(</span>
+<span class="st">                      select &quot;</span>,vName,<span class="st">&quot;,id_geofla</span>
+<span class="st">                      from dm_vecteurs.tmp) as s1</span>
+<span class="st">                      where &quot;</span>,table_dm,<span class="st">&quot;.id_geofla=s1.id_geofla&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+    
+  <span class="co"># Suppression de la table temporaire</span>
+  <span class="kw">sqlQuery</span>(loc,<span class="st">&quot;drop table if exists dm_vecteurs.tmp&quot;</span>)
 
-<span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
-<span class="st">COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.diffmedian IS </span><span class="ch">\'</span><span class="st">Différences des teneurs en carbone organique entre deux périodes. Toutes méthodes de mesure confondues (corgox+corgco).</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
-
-<span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
-<span class="st">COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.diffmedian_corgox IS </span><span class="ch">\'</span><span class="st">Différences des teneurs en carbone organique entre deux périodes. Méthode de mesure oxydation humide (corgox).</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
-
-<span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
-<span class="st">COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.diff IS </span><span class="ch">\'</span><span class="st">Résultat du test statistique de différence des teneurs en carbone organique entre deux périodes (test de Wilcoxon). Toutes méthodes de mesure confondues (corgox+corgco).</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
-
-<span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
-<span class="st">COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.diff_corgox IS </span><span class="ch">\'</span><span class="st">Résultat du test statistique de différence des teneurs en carbone organique entre deux périodes (test de Wilcoxon). Méthode de mesure oxydation humide (corgox).</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))</code></pre></div>
+  <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">  COMMENT ON COLUMN &quot;</span>,table_dm,<span class="st">&quot;.&quot;</span>,vName,<span class="st">&quot; IS </span><span class="ch">\'</span><span class="st">&quot;</span>,signification[cpt],<span class="st">&quot; (g/kg) calculée sur 1990-2009.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+  }  </code></pre></div>
+</div>
 </div>
 </div>
 <div id="creation-dune-table-de-travail-de-donnees-complete" class="section level1">
-<h1><span class="header-section-number">4</span> Création d’une table de travail de données complète</h1>
-<p>Ici, la table <code>dm_vecteurs.canton</code> est dupliquée et filtrée pour un travail basé uniquement sur un nombre de canton ayant des analyses sur l’ensemble de période étudiée. Deux tables tables sont crées. Elles serviront de base pour la création de tables au format long.</p>
+<h1><span class="header-section-number">3</span> Création d’une table de travail de données complète</h1>
+<p>Ici, la table <code>dm_vecteurs.canton</code> est dupliquée et filtrée pour un travail basé uniquement sur un nombre de canton ayant des analyses sur l’ensemble des périodes étudiées. Deux tables sont créées. Elles serviront de base pour la création de tables au format long.</p>
 <ul>
 <li><strong>canton_9014</strong> pour toutes les périodes</li>
 <li><strong>canton_9514</strong> pour l’exclusion de la première période</li>
 </ul>
 <div id="format-large" class="section level2">
-<h2><span class="header-section-number">4.1</span> Format large</h2>
+<h2><span class="header-section-number">3.1</span> Format large</h2>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">sqlQuery</span>(loc,<span class="st">&quot;DROP TABLE IF EXISTS dm_vecteurs.canton_9014&quot;</span>)
 <span class="kw">sqlQuery</span>(loc,<span class="st">&quot;CREATE TABLE dm_vecteurs.canton_9014 as</span>
 <span class="st">SELECT *</span>
 <span class="st">FROM dm_vecteurs.canton</span>
-<span class="st">where corgox9094 is not null and corgox9599 is not null and corgox0004 is not null</span>
-<span class="st">and corgox0509 is not null and corgox1014 is not null</span>
+<span class="st">where med_corgox_9094 is not null and med_corgox_9599 is not null and med_corgox_0004 is not null</span>
+<span class="st">and med_corgox_0509 is not null and med_corgox_1014 is not null</span>
 <span class="st">&quot;</span>)
 
 <span class="kw">sqlQuery</span>(loc,<span class="st">&quot;DROP TABLE IF EXISTS dm_vecteurs.canton_9514&quot;</span>)
 <span class="kw">sqlQuery</span>(loc,<span class="st">&quot;CREATE TABLE dm_vecteurs.canton_9514 as</span>
 <span class="st">SELECT *</span>
 <span class="st">FROM dm_vecteurs.canton</span>
-<span class="st">where corgox9599 is not null and corgox0004 is not null</span>
-<span class="st">and corgox0509 is not null and corgox1014 is not null</span>
+<span class="st">where med_corgox_9599 is not null and med_corgox_0004 is not null</span>
+<span class="st">and med_corgox_0509 is not null and med_corgox_1014 is not null</span>
 <span class="st">&quot;</span>)</code></pre></div>
 </div>
-<div id="format-long" class="section level2">
-<h2><span class="header-section-number">4.2</span> Format long</h2>
-<p>Pour le canton_9014</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Paramètres</span>
-table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton_9014&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
-varia &lt;-<span class="st"> &quot;corgox&quot;</span> <span class="co"># Variable à analyser </span>
-period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;9094&quot;</span>,<span class="st">&quot;9599&quot;</span>,<span class="st">&quot;0004&quot;</span>,<span class="st">&quot;0509&quot;</span>,<span class="st">&quot;1014&quot;</span>)
-variaoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;p_sth&quot;</span>,<span class="st">&quot;p_sfp&quot;</span>,<span class="st">&quot;p_prairie&quot;</span>,<span class="st">&quot;p_cop&quot;</span>,<span class="st">&quot;p_c&quot;</span>)
-<span class="co">#id_class &lt;- apply(expand.grid(varia,period), 1, paste, collapse=&quot;&quot;)</span>
-periodoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;1970&quot;</span>,<span class="st">&quot;1979&quot;</span>,<span class="st">&quot;1988&quot;</span>,<span class="st">&quot;2000&quot;</span>,<span class="st">&quot;2010&quot;</span>)
-id_class &lt;-<span class="st"> </span><span class="kw">apply</span>(<span class="kw">expand.grid</span>(variaoccup,periodoccup),<span class="dv">1</span>, function(x){<span class="kw">paste</span>(<span class="st">&quot;classe_&quot;</span>,x[<span class="dv">1</span>],x[<span class="dv">2</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)})
-id &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;code_canton&quot;</span>,<span class="st">&quot;code_reg&quot;</span>,<span class="st">&quot;nom_region&quot;</span>,<span class="st">&quot;typo_clim&quot;</span>,<span class="st">&quot;zonage_simple&quot;</span>,<span class="st">&quot;zonage_cplt&quot;</span>,<span class="st">&quot;classe_altimean&quot;</span>,<span class="st">&quot;mat11&quot;</span>,id_class) <span class="co">#Nom des identifiants</span>
-
-<span class="co"># Lecture de la table dm_vecteurs.canton</span>
-mapcanton &lt;-<span class="st"> </span><span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;select * from &quot;</span>,table_dm,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
-
-<span class="co"># Boucle pour séparer l'année du nom de la variable étudiée</span>
+</div>
+<div id="creation-des-tables-de-travail-au-format-long" class="section level1">
+<h1><span class="header-section-number">4</span> Création des tables de travail au format “long”</h1>
+<div id="format-long-pour-les-teneurs-en-carbone-organique-dm_traitement.melted.bdatxxxx" class="section level2">
+<h2><span class="header-section-number">4.1</span> Format long pour les teneurs en carbone organique (dm_traitement.melted.bdatXXXX)</h2>
+<p>Les données de la BDAT sont ré-organisées pour faciliter les traitements statistiques et la production de graphiques. La fonction <code>melt</code> est utilisée pour transformer les données d’un format “large” à un format “long”. Deux tables sont créées :</p>
+<ul>
+<li><code>dm_traitements.melted.bdat</code> : table des valeurs des médianes teneurs en carbone organique</li>
+<li><code>dm_traitements.melted_bdatdiff</code> : table des valeurs de différences des teneurs en carbone organique entre plusieurs périodes.</li>
+</ul>
+<p><strong>Important :</strong> La création de ces tables nécessite le lancement de plusieurs scripts au préalable : <code>FS_bdd_brute.Rmd</code>,<code>FS_bdd_elab_climat.Rmd</code>,<code>FS_bdd_elab_ra.Rmd</code> et <code>FS_bdd_elab_clc.Rmd</code>.</p>
+<p>Ci-dessous, la création du nom des variables à rajouter dans les tables au format long.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">tables &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;&quot;</span>,<span class="st">&quot;_9014&quot;</span>,<span class="st">&quot;_9514&quot;</span>)
 cpt &lt;-<span class="st"> </span><span class="dv">0</span>
-for(i in varia){
+for(tt in tables){
   cpt &lt;-<span class="st"> </span>cpt +<span class="st"> </span><span class="dv">1</span>
-  variaperiod &lt;-<span class="st"> </span><span class="kw">paste</span>(i,period,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)  
-  
-  stats.canton &lt;-<span class="st"> </span>mapcanton[,<span class="kw">c</span>(id,variaperiod)]
+  if(cpt==<span class="dv">3</span>){period &lt;-<span class="kw">c</span>(<span class="st">&quot;9599&quot;</span>,<span class="st">&quot;0004&quot;</span>,<span class="st">&quot;0509&quot;</span>,<span class="st">&quot;1014&quot;</span>)}else{}
 
-  <span class="co"># Modification de la structure de la table</span>
-  stats.canton &lt;-<span class="st"> </span><span class="kw">melt</span>(<span class="dt">data=</span>stats.canton,<span class="dt">id.vars=</span>id)
+  <span class="co"># voir pour changer période</span>
+  <span class="co"># Paramètres</span>
+  table_dm &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;dm_vecteurs.canton&quot;</span>,tt,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>) <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
+
+  <span class="co"># Lecture de la table dm_vecteurs.canton</span>
+  mapcanton &lt;-<span class="st"> </span><span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;select * from &quot;</span>,table_dm,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+
+  <span class="co"># Boucle pour séparer l'année du nom de la variable étudiée</span>
+  cpt &lt;-<span class="st"> </span><span class="dv">0</span>
+  for(i in varia){
+    cpt &lt;-<span class="st"> </span>cpt +<span class="st"> </span><span class="dv">1</span>
+    variaperiod &lt;-<span class="st"> </span><span class="kw">paste</span>(i,<span class="st">&quot;_&quot;</span>,period,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)  
+    stats.canton &lt;-<span class="st"> </span>mapcanton[,<span class="kw">c</span>(id,variaperiod)]
+
+    <span class="co"># Modification de la structure de la table</span>
+    stats.canton &lt;-<span class="st"> </span><span class="kw">melt</span>(<span class="dt">data=</span>stats.canton,<span class="dt">id.vars=</span>id)
   
-  <span class="co"># Extraction de l'année et renommage des colonnes</span>
-  stats.canton[,<span class="st">&quot;variable&quot;</span>] &lt;-<span class="st"> </span><span class="kw">as.character</span>(<span class="kw">unlist</span>(<span class="kw">regmatches</span>(stats.canton[,<span class="st">&quot;variable&quot;</span>],<span class="kw">gregexpr</span>(<span class="st">'[0-9]+.[0-9]+'</span>,stats.canton[,<span class="st">&quot;variable&quot;</span>]))))
-  <span class="kw">colnames</span>(stats.canton)[(<span class="kw">length</span>(id)+<span class="dv">1</span>):(<span class="kw">length</span>(id)+<span class="dv">2</span>)] &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;annees&quot;</span>,i)
+    <span class="co"># Extraction de l'année et renommage des colonnes</span>
+    stats.canton[,<span class="st">&quot;variable&quot;</span>] &lt;-<span class="st"> </span><span class="kw">as.character</span>(<span class="kw">unlist</span>(<span class="kw">regmatches</span>(stats.canton[,<span class="st">&quot;variable&quot;</span>],<span class="kw">gregexpr</span>(<span class="st">'[0-9]+.[0-9]+'</span>,stats.canton[,<span class="st">&quot;variable&quot;</span>]))))
+    <span class="kw">colnames</span>(stats.canton)[(<span class="kw">length</span>(id)+<span class="dv">1</span>):(<span class="kw">length</span>(id)+<span class="dv">2</span>)] &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;annees&quot;</span>,i)
     
-  if(cpt==<span class="dv">1</span>){
-    <span class="co"># Construction de la première table</span>
-    melt.canton &lt;-<span class="st"> </span>stats.canton
-  }else{
-    <span class="co"># Ajout à chaque itération de la variable (i)</span>
-    melt.canton &lt;-<span class="st"> </span><span class="kw">merge</span>(melt.canton,stats.canton, <span class="dt">by.x=</span><span class="kw">c</span>(id,<span class="st">&quot;annees&quot;</span>), <span class="dt">by.y=</span><span class="kw">c</span>(id,<span class="st">&quot;annees&quot;</span>),<span class="dt">all.x=</span><span class="ot">TRUE</span>,<span class="dt">all.y=</span><span class="ot">TRUE</span>)
+    if(cpt==<span class="dv">1</span>){
+      <span class="co"># Construction de la première table</span>
+      melt.canton &lt;-<span class="st"> </span>stats.canton
+    }else{
+      <span class="co"># Ajout à chaque itération de la variable (i)</span>
+      melt.canton &lt;-<span class="st"> </span><span class="kw">merge</span>(melt.canton,stats.canton, <span class="dt">by.x=</span><span class="kw">c</span>(id,<span class="st">&quot;annees&quot;</span>), <span class="dt">by.y=</span><span class="kw">c</span>(id,<span class="st">&quot;annees&quot;</span>),<span class="dt">all.x=</span><span class="ot">TRUE</span>,<span class="dt">all.y=</span><span class="ot">TRUE</span>)
+    }
   }
-}
 
-<span class="co"># Création finale de la table</span>
-melted.bdat &lt;-<span class="st"> </span><span class="kw">melt</span>(<span class="dt">data=</span>melt.canton,<span class="dt">id.vars=</span><span class="kw">c</span>(id,<span class="st">&quot;annees&quot;</span>))
-melted.bdat$annees &lt;-<span class="st"> </span><span class="kw">as.character</span>(melted.bdat$annees)
-melted.bdat$typo_clim &lt;-<span class="st"> </span><span class="kw">as.factor</span>(melted.bdat$typo_clim)
+  <span class="co"># Création finale de la table</span>
+  melted.bdat &lt;-<span class="st"> </span><span class="kw">melt</span>(<span class="dt">data=</span>melt.canton,<span class="dt">id.vars=</span><span class="kw">c</span>(id,<span class="st">&quot;annees&quot;</span>))
+  melted.bdat$annees &lt;-<span class="st"> </span><span class="kw">as.character</span>(melted.bdat$annees)
+  melted.bdat$typo_clim &lt;-<span class="st"> </span><span class="kw">as.factor</span>(melted.bdat$typo_clim)
 
-<span class="co"># Enregistrement dans le schema dm_traitements  </span>
-tablename &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;dm_traitements.&quot;</span>,<span class="st">&quot;melted_bdat_9014&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
-<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;drop table if exists &quot;</span>,tablename,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
-<span class="kw">sqlSave</span>(loc,melted.bdat,<span class="dt">tablename=</span>tablename)</code></pre></div>
-<p>Pour canton_9504</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Paramètres</span>
-table_dm &lt;-<span class="st"> &quot;dm_vecteurs.canton_9514&quot;</span> <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
-varia &lt;-<span class="st"> &quot;corgox&quot;</span> <span class="co"># Variable à analyser </span>
-period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;9599&quot;</span>,<span class="st">&quot;0004&quot;</span>,<span class="st">&quot;0509&quot;</span>,<span class="st">&quot;1014&quot;</span>)
-variaoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;p_sth&quot;</span>,<span class="st">&quot;p_sfp&quot;</span>,<span class="st">&quot;p_prairie&quot;</span>,<span class="st">&quot;p_cop&quot;</span>,<span class="st">&quot;p_c&quot;</span>)
-<span class="co">#id_class &lt;- apply(expand.grid(varia,period), 1, paste, collapse=&quot;&quot;)</span>
-periodoccup &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;1970&quot;</span>,<span class="st">&quot;1979&quot;</span>,<span class="st">&quot;1988&quot;</span>,<span class="st">&quot;2000&quot;</span>,<span class="st">&quot;2010&quot;</span>)
-id_class &lt;-<span class="st"> </span><span class="kw">apply</span>(<span class="kw">expand.grid</span>(variaoccup,periodoccup),<span class="dv">1</span>, function(x){<span class="kw">paste</span>(<span class="st">&quot;classe_&quot;</span>,x[<span class="dv">1</span>],x[<span class="dv">2</span>],<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)})
-id &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;code_canton&quot;</span>,<span class="st">&quot;code_reg&quot;</span>,<span class="st">&quot;nom_region&quot;</span>,<span class="st">&quot;typo_clim&quot;</span>,<span class="st">&quot;zonage_simple&quot;</span>,<span class="st">&quot;zonage_cplt&quot;</span>,<span class="st">&quot;classe_altimean&quot;</span>,<span class="st">&quot;mat11&quot;</span>,id_class) <span class="co">#Nom des identifiants</span>
+  <span class="co"># Enregistrement dans le schema dm_traitements  </span>
+  tablename &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;dm_traitements.&quot;</span>,<span class="st">&quot;melted_bdat&quot;</span>,tt,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+  <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;drop table if exists &quot;</span>,tablename,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+  <span class="kw">sqlSave</span>(loc,melted.bdat,<span class="dt">tablename=</span>tablename)
 
-<span class="co"># Lecture de la table dm_vecteurs.canton</span>
-mapcanton &lt;-<span class="st"> </span><span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;select * from &quot;</span>,table_dm,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+  <span class="co"># Ajout de quelques commentaires</span>
+  <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">  COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.value IS </span><span class="ch">\'</span><span class="st">Statistiques des teneurs en carbone organique et les effectifs après ré-échantillonnage sur l</span><span class="ch">\'</span><span class="st">'ensemble des périodes et les différentes méthodes de mesure. med:median;dqua:75% precentile</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
 
-<span class="co"># Boucle pour séparer l'année du nom de la variable étudiée</span>
+  <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">  COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.annees IS </span><span class="ch">\'</span><span class="st">Périodes d</span><span class="ch">\'</span><span class="st">'analyse des teneurs en carbone organique.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+
+  <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">  COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.variable IS </span><span class="ch">\'</span><span class="st">Type de statistiques des teneurs en carbone organique et les effectifs dans les cantons; med_corgox:médiane des médianes;dqua_corgox:médiane du troisième quartile;eff_corgox:effectif pour la méthode corgox.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+
+  <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">  COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.sau_2010 IS </span><span class="ch">\'</span><span class="st">Surface agricole utile en 2010 (ha).).</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+}</code></pre></div>
+</div>
+<div id="integration-des-resultats-de-levolution-des-teneurs-en-carbone-organique-dans-une-table-au-format-long" class="section level2">
+<h2><span class="header-section-number">4.2</span> Intégration des résultats de l’évolution des teneurs en carbone organique dans une table au format long</h2>
+<div id="creation-des-variables-a-integrer-dans-les-tables-au-format-long" class="section level3">
+<h3><span class="header-section-number">4.2.1</span> Création des variables à intégrer dans les tables au format long</h3>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">tables &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;&quot;</span>,<span class="st">&quot;_9014&quot;</span>,<span class="st">&quot;_9514&quot;</span>)
 cpt &lt;-<span class="st"> </span><span class="dv">0</span>
-for(i in varia){
+for(tt in tables){
   cpt &lt;-<span class="st"> </span>cpt +<span class="st"> </span><span class="dv">1</span>
-  variaperiod &lt;-<span class="st"> </span><span class="kw">paste</span>(i,period,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)  
-  
-  stats.canton &lt;-<span class="st"> </span>mapcanton[,<span class="kw">c</span>(id,variaperiod)]
+    if(cpt==<span class="dv">3</span>){period &lt;-<span class="kw">c</span>(<span class="st">&quot;9599&quot;</span>,<span class="st">&quot;0004&quot;</span>,<span class="st">&quot;0509&quot;</span>,<span class="st">&quot;1014&quot;</span>)}else{}
+  <span class="co"># Paramètres</span>
+  table_dm &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;dm_vecteurs.canton&quot;</span>,tt,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>) <span class="co"># Nom de la table pour rassembler les calculs (vers le schéma dm_vecteurs)</span>
 
-  <span class="co"># Modification de la structure de la table</span>
-  stats.canton &lt;-<span class="st"> </span><span class="kw">melt</span>(<span class="dt">data=</span>stats.canton,<span class="dt">id.vars=</span>id)
-  
-  <span class="co"># Extraction de l'année et renommage des colonnes</span>
-  stats.canton[,<span class="st">&quot;variable&quot;</span>] &lt;-<span class="st"> </span><span class="kw">as.character</span>(<span class="kw">unlist</span>(<span class="kw">regmatches</span>(stats.canton[,<span class="st">&quot;variable&quot;</span>],<span class="kw">gregexpr</span>(<span class="st">'[0-9]+.[0-9]+'</span>,stats.canton[,<span class="st">&quot;variable&quot;</span>]))))
-  <span class="kw">colnames</span>(stats.canton)[(<span class="kw">length</span>(id)+<span class="dv">1</span>):(<span class="kw">length</span>(id)+<span class="dv">2</span>)] &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;annees&quot;</span>,i)
+  <span class="co"># Lecture de la table dm_vecteurs.canton</span>
+  mapcanton &lt;-<span class="st"> </span><span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;select * from &quot;</span>,table_dm,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+
+  <span class="co"># Boucle pour séparer les périodes analysées du nom de la variable étudiée</span>
+  methodo &lt;-<span class="st"> &quot;corgox&quot;</span>
+  stats &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;med&quot;</span>,<span class="st">&quot;dqua&quot;</span>)
+  period &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;12&quot;</span>,<span class="st">&quot;13&quot;</span>,<span class="st">&quot;14&quot;</span>,<span class="st">&quot;15&quot;</span>,<span class="st">&quot;23&quot;</span>,<span class="st">&quot;24&quot;</span>,<span class="st">&quot;25&quot;</span>,<span class="st">&quot;34&quot;</span>,<span class="st">&quot;35&quot;</span>,<span class="st">&quot;45&quot;</span>)
+
+  cpt &lt;-<span class="st"> </span><span class="dv">0</span>
+  for(m in methodo){  
+    for(v in <span class="kw">c</span>(<span class="st">&quot;diff_XX&quot;</span>,<span class="st">&quot;diff_XX_pourcent&quot;</span>,<span class="st">&quot;evol_XX&quot;</span>)){    
+      for(s in stats){
+        cpt &lt;-<span class="st"> </span>cpt +<span class="st"> </span><span class="dv">1</span>
+        diffstats &lt;-<span class="st"> </span><span class="kw">gsub2</span>(<span class="st">&quot;XX&quot;</span>,s,v)
+        varia &lt;-<span class="st"> </span><span class="kw">paste</span>(diffstats,<span class="st">&quot;_&quot;</span>,period,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+
+        stats.canton &lt;-<span class="st"> </span>mapcanton[,<span class="kw">c</span>(id,varia)]
+
+        <span class="co"># Modification de la structure de la table</span>
+        stats.canton &lt;-<span class="st"> </span><span class="kw">melt</span>(<span class="dt">data=</span>stats.canton,<span class="dt">id.vars=</span>id)
+
+        <span class="co"># Extraction de l'année et renommage des colonnes</span>
+        stats.canton[,<span class="st">&quot;variable&quot;</span>] &lt;-<span class="st"> </span><span class="kw">as.character</span>(<span class="kw">unlist</span>(<span class="kw">regmatches</span>(stats.canton[,<span class="st">&quot;variable&quot;</span>],<span class="kw">gregexpr</span>(<span class="st">'[0-9]+.'</span>,stats.canton[,<span class="st">&quot;variable&quot;</span>]))))
+        <span class="kw">colnames</span>(stats.canton)[(<span class="kw">length</span>(id)+<span class="dv">1</span>):(<span class="kw">length</span>(id)+<span class="dv">2</span>)] &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;period&quot;</span>,diffstats) 
     
-  if(cpt==<span class="dv">1</span>){
-    <span class="co"># Construction de la première table</span>
-    melt.canton &lt;-<span class="st"> </span>stats.canton
-  }else{
-    <span class="co"># Ajout à chaque itération de la variable (i)</span>
-    melt.canton &lt;-<span class="st"> </span><span class="kw">merge</span>(melt.canton,stats.canton, <span class="dt">by.x=</span><span class="kw">c</span>(id,<span class="st">&quot;annees&quot;</span>), <span class="dt">by.y=</span><span class="kw">c</span>(id,<span class="st">&quot;annees&quot;</span>),<span class="dt">all.x=</span><span class="ot">TRUE</span>,<span class="dt">all.y=</span><span class="ot">TRUE</span>)
+        if(cpt==<span class="dv">1</span>){
+          <span class="co"># Construction de la première table</span>
+          melt.canton &lt;-<span class="st"> </span>stats.canton
+        }else{
+          <span class="co"># Ajout à chaque itération de la variable (i)</span>
+          melt.canton &lt;-<span class="st"> </span><span class="kw">merge</span>(melt.canton,stats.canton, <span class="dt">by.x=</span><span class="kw">c</span>(id,<span class="st">&quot;period&quot;</span>), <span class="dt">by.y=</span><span class="kw">c</span>(id,<span class="st">&quot;period&quot;</span>),<span class="dt">all.x=</span><span class="ot">TRUE</span>,<span class="dt">all.y=</span><span class="ot">TRUE</span>)
+        }
+      }
+    }
   }
-}
 
-<span class="co"># Création finale de la table</span>
-melted.bdat &lt;-<span class="st"> </span><span class="kw">melt</span>(<span class="dt">data=</span>melt.canton,<span class="dt">id.vars=</span><span class="kw">c</span>(id,<span class="st">&quot;annees&quot;</span>))
-melted.bdat$annees &lt;-<span class="st"> </span><span class="kw">as.character</span>(melted.bdat$annees)
-melted.bdat$typo_clim &lt;-<span class="st"> </span><span class="kw">as.factor</span>(melted.bdat$typo_clim)
+  <span class="co"># Création finale de la table</span>
+  melted.bdatdiff &lt;-<span class="st"> </span>melt.canton
+  melted.bdatdiff$typo_clim &lt;-<span class="st"> </span><span class="kw">as.factor</span>(melted.bdatdiff$typo_clim)
 
-<span class="co"># Enregistrement dans le schema dm_traitements  </span>
-tablename &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;dm_traitements.&quot;</span>,<span class="st">&quot;melted_bdat_9514&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
-<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;drop table if exists &quot;</span>,tablename,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
-<span class="kw">sqlSave</span>(loc,melted.bdat,<span class="dt">tablename=</span>tablename)</code></pre></div>
+  <span class="co"># Enregistrement dans le schéma dm_traitements</span>
+  tablename &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;dm_traitements.&quot;</span>,<span class="st">&quot;melted_bdatdiff&quot;</span>,tt,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)
+  <span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;drop table if exists &quot;</span>,tablename,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>))
+  <span class="kw">sqlSave</span>(loc,melted.bdatdiff,<span class="dt">tablename=</span>tablename)
+
+  <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">  COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.period IS </span><span class="ch">\'</span><span class="st">Périodes comparées des teneurs en carbone organique.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+
+  <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">  COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.diff_med IS </span><span class="ch">\'</span><span class="st">Différences relatives des médianes des teneurs en carbone organique entre deux périodes.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+
+  <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">  COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.diff_dqua IS </span><span class="ch">\'</span><span class="st">Différences relatives du troisième quartile des teneurs en carbone organique entre deux périodes.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+
+  <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">  COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.diff_med_pourcent IS </span><span class="ch">\'</span><span class="st">Différences absolues des médianes des teneurs en carbone organique entre deux périodes.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+
+  <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">  COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.diff_dqua_pourcent IS </span><span class="ch">\'</span><span class="st">Différences absolues du troisième quartile des teneurs en carbone organique entre deux périodes.</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+
+  <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">  COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.evol_dqua IS </span><span class="ch">\'</span><span class="st">Résultat du test statistique de différence du troisième quartile des teneurs en carbone organique entre deux périodes (test de Wilcoxon).</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+
+  <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">  COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.evol_med IS </span><span class="ch">\'</span><span class="st">Résultat du test statistique de différence des médianes de teneurs en carbone organique entre deux périodes (test de Wilcoxon).).</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+
+  <span class="kw">print</span>(<span class="kw">sqlQuery</span>(loc,<span class="kw">paste</span>(<span class="st">&quot;</span>
+<span class="st">  COMMENT ON COLUMN &quot;</span>,tablename,<span class="st">&quot;.sau_2010 IS </span><span class="ch">\'</span><span class="st">Surface agricole utile en 2010 (ha).).</span><span class="ch">\'</span><span class="st">;&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;&quot;</span>)))
+}</code></pre></div>
+</div>
 </div>
 </div>
 
