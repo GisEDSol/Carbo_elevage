@@ -65,12 +65,11 @@ Ce document centralise les principaux résultats du travail sur l'évolution des
 ##Sélection des facteurs explicatifs
 
 ```{r,eval=FALSE,echo=FALSE}
-tabledata <- read.csv("/media/sf_GIS_ED/Dev/Tab/Donnees_papier.csv")
-print(xtable(tabledata),include.rownames=FALSE)
+#tabledata <- read.csv("/media/sf_GIS_ED/Dev/Tab/Donnees_papier.csv")
+#print(xtable(tabledata),include.rownames=FALSE)
 
 table_ra <- read.csv(paste(repmetadonnees,"Nomenclature_ra.csv",sep=""))
 print(xtable(table_ra),include.rownames=FALSE)
-
 ```
 
 ## Les grandes régions d'élevage
