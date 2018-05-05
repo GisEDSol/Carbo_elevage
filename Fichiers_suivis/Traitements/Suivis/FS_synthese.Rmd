@@ -14,11 +14,16 @@ output:
 
 ```{r setup, include=FALSE,warning=FALSE,echo=FALSE,message=FALSE,eval=TRUE}
 # Importation des paramètres de travail
-source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
-repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
-importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/Data/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
+repmaster <- "/media/jb/ec0c5059-c127-4ca9-9a18-28515f593aa2/Carbo_elevage/"
+repdata <- "/media/jb/ec0c5059-c127-4ca9-9a18-28515f593aa2/Sauvegarde_GISED/GIS_ED/Dev/Data/"
+source(paste(repmaster,"Fonctions/R/importparametres.R",sep=""))
+importparametres(repmaster=repmaster,repdata=repdata,dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
+
+#source("/media/sf_GIS_ED/Dev/Scripts/master/Fonctions/R/importparametres.R")
+#repmaster <- "/media/sf_GIS_ED/Dev/Scripts/master/"
+#importparametres(repmaster=repmaster,repdata="/media/sf_GIS_ED/Dev/Data/",dsn="PG:dbname='sol_elevage' host='localhost' port='5432' user='jb'")
 repsortie <- paste(repmaster,"Fichiers_suivis/Traitements/Fichiers/",sep="") #répertoire de sortie pour des différents fichiers
-reppapier <- "/media/sf_GIS_ED/Com/Papier_carboelevage/Fig/" #répertoire de sortie pour la rédaction de l'article
+reppapier <- "/media/jb/ec0c5059-c127-4ca9-9a18-28515f593aa2/Sauvegarde_GISED/GIS_ED/Com/Papier_carboelevage/Relectures_v1/Correction/Fig/" #répertoire de sortie pour la rédaction de l'article
 set.seed(157) #Pour la reproductibilité
 cl <- makeCluster(4);registerDoParallel(cl) #Configuration pour le calcul en parallèle
 ```
@@ -65,7 +70,7 @@ Ce document centralise les principaux résultats du travail sur l'évolution des
 ##Sélection des facteurs explicatifs
 
 ```{r,eval=FALSE,echo=FALSE}
-#tabledata <- read.csv("/media/sf_GIS_ED/Dev/Tab/Donnees_papier.csv")
+#tabledata <- read.csv("/media/sf_GIS_ED/Dev/ /Donnees_papier.csv")
 #print(xtable(tabledata),include.rownames=FALSE)
 
 table_ra <- read.csv(paste(repmetadonnees,"Nomenclature_ra.csv",sep=""))
@@ -215,9 +220,9 @@ p[["1"]] <- ggplot(melted.bdat,aes(x=annees,y=value)) +
  datasummary2$pvalue <- res.wilcoxon$value
  datasummary2$value <- datasummary2$Group
   
-p[["2"]] <- ggplot(datasummary2, aes(ymin = StartDate, ymax = EndDate, x = Count)) + geom_linerange(aes(colour=value),size=3) + coord_flip() + scale_colour_gradient2(limit = c(min(datasummary2$value),max(datasummary2$value)),breaks=c(round(min(datasummary2$value),1),round(max(datasummary2$value),1)),low="orange",high=muted("purple"),name="Taux d'évolution annuel (%)") + ylab("Périodes") + xlab("Code des périodes comparées") + theme_perso() + geom_text(aes(fontface=2,y = StartDate, x = Count, label = ifelse(pvalue<=0.05,paste(round(value,1),"% **",sep=""),paste(round(value,1),"%",sep=""))), hjust = 0, vjust = 0.5, size = 3.5)# + labs(title= paste(i))
+p[["2"]] <- ggplot(datasummary2, aes(ymin = StartDate, ymax = EndDate, x = Count)) + geom_linerange(aes(colour=value),size=3) + coord_flip() + scale_colour_gradient2(low="red",mid="grey",high=muted("blue"),name="Taux d'évolution annuel (%)",breaks=c(round(min(datasummary2$value),1),0,round(max(datasummary2$value),1)),labels=c(round(min(datasummary2$value),1),0,round(max(datasummary2$value),1)),limits=c(round(min(datasummary2$value),1),round(max(datasummary2$value),1))) + ylab("Périodes") + xlab("Code des périodes comparées") + theme_perso() + geom_text(aes(fontface=2,y = StartDate, x = Count, label = ifelse(pvalue<=0.05,paste(round(value,1),"% **",sep=""),paste(round(value,1),"%",sep=""))), hjust = 0, vjust = 0.5, size = 3.5) #+ labs(title= paste(i)) ## Dans scale_colour_gradient2 : breaks=c(round(min(datasummary2$value),1),round(max(datasummary2$value),1))
 #}
-
+  
 #tt <- do.call(grid.arrange,p)
 #tt
 p[["2"]]
@@ -255,7 +260,7 @@ wilcotest <- generate_label_df(db=melted.bdat_regelevage,value="value",lev="zona
 
 p <- ggplot(melted.bdat_regelevage) +
             geom_boxplot(aes(x=zonage_simple,y=value,fill=zonage_simple))+
-            scale_fill_manual(values=couleur,name="") + scale_x_discrete("Grandes régions d'élevage")+scale_y_continuous("Teneur en carbone organique (g/kg)")+ theme_perso("") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = paste(labels,"/",Nbr_analyse,sep="")))
+            scale_fill_manual(values=couleur,name="") + scale_x_discrete("Grandes régions d'élevage")+scale_y_continuous("Teneur en carbone organique (g/kg)")+ theme_perso("") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = paste(labels,"/",Nbr_analyse,sep="")),size=5)#Ici, légère augmentation de la taille de la police
             
 p 
 ggsave(p,file = paste(reppapier,"boxplotbdat_zonage_simple.png",sep=""), width = 12, height = 6)
@@ -364,13 +369,14 @@ meltstats <- melt(stats.canton[!colnames(stats.canton) %in% paste("pvalue",reg_e
 pvaluemeltstats <- melt(stats.canton[!colnames(stats.canton) %in% reg_elevage],id.vars=c("EndDate","StartDate","Count"))
 meltstats$pvalue <- pvaluemeltstats$value
 
-evol_elevage <- ggplot(meltstats, aes(ymin = StartDate, ymax = EndDate, x = Count)) + geom_linerange(aes(colour=value),size=3) + facet_wrap(~variable) + coord_flip() + scale_colour_gradient2(limit = c(min(meltstats$value),max(meltstats$value)),low="orange",high=muted("purple"),name="Taux d'évolution annuel (%)") + ylab("Périodes") + xlab("") + theme_perso() + geom_text(aes(fontface=2,y = StartDate, x = Count, label = ifelse(pvalue<=0.05,paste(round(value,1),"% **",sep=""),paste(round(value,1),"%",sep=""))), hjust = 0, vjust = 0.5, size = 3.5)
+evol_elevage <- ggplot(meltstats, aes(ymin = StartDate, ymax = EndDate, x = Count)) + geom_linerange(aes(colour=value),size=3) + facet_wrap(~variable) + coord_flip() + scale_colour_gradient2(limit = c(min(meltstats$value),max(meltstats$value)),low="red",mid="grey",high=muted("blue"),name="Taux d'évolution annuel (%)") + ylab("Périodes") + xlab("") + theme_perso() + geom_text(aes(fontface=2,y = StartDate, x = Count, label = ifelse(pvalue<=0.05,paste(round(value,1),"% **",sep=""),paste(round(value,1),"%",sep=""))), hjust = 0, vjust = 0.5, size = 3.5)# + theme(legend.position="none")
 evol_elevage
 
 ggsave(evol_elevage,file = paste(repsortie,"evol_elevage.png",sep=""), width = 17, height = 6)  
 
 ## Exemple à reprendre?http://stackoverflow.com/questions/35848654/ggplot2-plot-two-data-sets-into-one-picture
 ```
+
 ```{r,highlight=TRUE,eval=FALSE,echo=FALSE,fig.height=8, fig.width=12,fig.align="center",warning=FALSE,message=FALSE}
 
 reg_elevage <- c("A","B","C","D","E","F","G")
@@ -468,11 +474,13 @@ meltstats <- merge(meltstats,surface_elevage,by.x="variable",by.y="zonage_simple
 meltstats$value_surface <- (meltstats$value/meltstats$area_elevage)*100000
 
 # Valeur absolu
-evol_elevage <- ggplot(meltstats, aes(ymin = StartDate, ymax = EndDate, x = Count)) + geom_linerange(aes(colour=value),size=3) + facet_wrap(~variable) + coord_flip() + scale_colour_gradient2(limit = c(min(meltstats$value),max(meltstats$value)),low="orange",high=muted("purple"),name="Taux d'évolution annuel (%)") + ylab("Périodes") + xlab("Code des périodes comparées") + theme_perso() + geom_text(aes(fontface=2,y = StartDate, x = Count, label = ifelse(pvalue<=0.05,paste(round(value,1),"% **",sep=""),paste(round(value,1),"%",sep=""))), hjust = 0, vjust = 0.5, size = 3.5) + theme(legend.position="none")
+label_legend <- c((round(min(meltstats$value),1)+round(min(meltstats$value)*0.01,1)),0,round(max(meltstats$value),1))
+#label_legend <- c("Min","0","Max")
+evol_elevage <- ggplot(meltstats, aes(ymin = StartDate, ymax = EndDate, x = Count)) + geom_linerange(aes(colour=value),size=3) + facet_wrap(~variable) + coord_flip() + scale_colour_gradient2(low="red",high=muted("blue"),mid="grey",name="Taux d'évolution annuel (%)",breaks=c((round(min(meltstats$value),1)+round(min(meltstats$value)*0.01,1)),0,round(max(meltstats$value),1)),labels=label_legend,limits=c((round(min(meltstats$value),1)+round(min(meltstats$value)*0.1,1)),round(max(meltstats$value),1))) + ylab("Périodes") + xlab("Code des périodes comparées") + theme_perso() + geom_text(aes(fontface=2,y = StartDate, x = Count, label = ifelse(pvalue<=0.05,paste(round(value,1),"% **",sep=""),paste(round(value,1),"%",sep=""))), hjust = 0, vjust = 0.5, size = 3.5)# + theme(legend.position="none")
 evol_elevage
 
 # Valeur relative à la surface des régions d'élevage (100000 km2)
-evol_elevage_surface <- ggplot(meltstats, aes(ymin = StartDate, ymax = EndDate, x = Count)) + geom_linerange(aes(colour=value_surface ),size=3) + facet_wrap(~variable) + coord_flip() + scale_colour_gradient2(limit = c(min(meltstats$value_surface ),max(meltstats$value_surface )),low="orange",high=muted("purple"),name="Taux d'évolution annuel (%)") + ylab("Périodes") + xlab("Code des périodes comparées") + theme_perso() + geom_text(aes(fontface=2,y = StartDate, x = Count, label = ifelse(pvalue<=0.05,paste(round(value_surface ,1),"% **",sep=""),paste(round(value_surface ,1),"%",sep=""))), hjust = 0, vjust = 0.5, size = 3.5) + theme(legend.position="none")
+evol_elevage_surface <- ggplot(meltstats, aes(ymin = StartDate, ymax = EndDate, x = Count)) + geom_linerange(aes(colour=value_surface ),size=3) + facet_wrap(~variable) + coord_flip() + scale_colour_gradient2(limit = c(min(meltstats$value_surface ),max(meltstats$value_surface )),low="red",high=muted("blue"),mid="grey",name="Taux d'évolution annuel (%)") + ylab("Périodes") + xlab("Code des périodes comparées") + theme_perso() + geom_text(aes(fontface=2,y = StartDate, x = Count, label = ifelse(pvalue<=0.05,paste(round(value_surface ,1),"% **",sep=""),paste(round(value_surface ,1),"%",sep=""))), hjust = 0, vjust = 0.5, size = 3.5) + theme(legend.position="none")
 evol_elevage_surface
 
 ggsave(evol_elevage,file = paste(reppapier,"evol_elevage_simple_surface.png",sep=""), width = 10, height = 6)
@@ -829,11 +837,16 @@ test2$positionperc <- as.numeric(c(rep("82",10),rep("49",32)))
 
 ###################################
 
-couleur <- c("#60C233E6","#394AA7E6","#F79A39E6","#F1ED0AE6")
+#couleur <- c("#60C233E6","#394AA7E6","#F79A39E6","#F1ED0AE6")
+
+# Changement des couleurs basée sur une palette couleur adaptée aux daltoniens http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/#a-colorblind-friendly-palette
+colorblind <- c("#009E73","#56B4E9","#D55E00","#F0E442")
+couleur <- colorblind
+
 pp <- ggplot(test2,aes(x=period,y=value,fill=type,label=paste(covariable,":",round(value),"%",sep="")))+geom_col(width = 0.7) +
 geom_text(size = 3, position = position_stack(vjust = 0.5)) +
 geom_text(data = test2,aes(x = period, y = positionperc,colour=type2,label = paste(perc,"%",sep="")),size = 5) +
-scale_colour_manual(values = c('Naturelle' = 'red', 'Anthropique' = 'black'),name="Origine") +
+scale_colour_manual(values = c('Naturelle' = 'red', 'Anthropique' = 'blue'),name="Origine des variables") +
 scale_fill_manual(values=couleur,name="Type") +
 theme_perso() + xlab("")+ylab("Pourcentage d'importance")
 pp
@@ -974,7 +987,7 @@ datatest <- datatest[complete.cases(datatest[occupsol]),]
 wilcotest <- generate_label_df(db=datatest,value="diff_med_pourcent",lev=occupsol,letters,position=1)
 lablex <- labelx
 labley <- "Différences des teneurs en CO (%)"
-p <- ggplot(datatest)+ geom_boxplot(aes_string(y="diff_med_pourcent",x=occupsol,fill="zonage_simple"))+ geom_hline(yintercept = 0,color="red") + scale_fill_manual(values=couleur,name="test") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = paste(labels,"/",Nbr_analyse,sep=""))) + scale_x_discrete(lablex)+scale_y_continuous(labley)+theme_perso() + theme(legend.position="none")# + facet_wrap(~period)
+p <- ggplot(datatest)+ geom_boxplot(aes_string(y="diff_med_pourcent",x=occupsol,fill="zonage_simple"))+ geom_hline(yintercept = 0,color="red") + scale_fill_manual(values=couleur,name="test") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = paste(labels,"/",Nbr_analyse,sep=""),size=5)) + scale_x_discrete(lablex)+scale_y_continuous(labley)+theme_perso() + theme(legend.position="none")# + facet_wrap(~period)
 p
 
 ggsave(p,file = paste(reppapier,"diff_canton_boxplotelevage.png",sep=""), width = 11, height = 9)  
@@ -998,7 +1011,7 @@ for(i in c("13","15","35")){
   datatest <- datatest[complete.cases(datatest[occupsol]),] 
   wilcotest <- generate_label_df(db=datatest,value="diff_med_pourcent",lev=occupsol,letters,position=1)
 
-  p[[i]] <- ggplot(datatest)+ geom_boxplot(aes_string(y="diff_med_pourcent",x=occupsol,fill="zonage_simple"))+ geom_hline(yintercept = 0,color="red") + scale_fill_manual(values=couleur,name="test") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = paste(labels,"/",Nbr_analyse,sep=""))) +theme_perso() + theme(legend.position="none") + labs(title=i,x = NULL, y = NULL) + ylim(-50, 155)
+  p[[i]] <- ggplot(datatest)+ geom_boxplot(aes_string(y="diff_med_pourcent",x=occupsol,fill="zonage_simple"))+ geom_hline(yintercept = 0,color="red") + scale_fill_manual(values=couleur,name="test") + geom_text(data = wilcotest, vjust=-0.75,aes(x = plot.labels, y = V1, label = paste(labels,"/",Nbr_analyse,sep=""),size=5)) +theme_perso() + theme(legend.position="none") + labs(title=i,x = NULL, y = NULL) + ylim(-50, 155)
 }
 
 tt <- do.call(grid.arrange,c(p,list(nrow=1,ncol=3,bottom="Principales régions d'élevage",left="Différences des teneurs en CO (%)")))
@@ -1291,7 +1304,7 @@ melted.bdatdiff <- melted.bdatdiff[complete.cases(melted.bdatdiff$diff_med_pourc
 bdatdiff <- subset(melted.bdatdiff,evol_med!="I")
 
 p_variable <- c("sfp","mf","prairie","c")
-nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat.csv",sep=""),sep=",",colClasses = "character")
+nomdiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionBDAT.csv",sep=""),sep=",",colClasses = "character")
 periodetud <- c("13","35","15")
 nomdiff <- nomdiff[nomdiff$Code %in% periodetud,]
 nomperiodiff <- read.csv(paste(repmetadonnees,"Nomenclature_evolutionbdat_ra.csv",sep=""),sep=",",colClasses = "character")
